@@ -3150,3 +3150,25 @@ body[data-st-theme] .diyGuide,body[data-st-theme] .diyTabs button{background:var
 .inboxNew summary b{color:#2f4d16}.inboxBody{white-space:pre-wrap;line-height:1.45}.inboxReply{background:#f4eef7;border-radius:8px;padding:6px 9px;white-space:pre-wrap}
 .inboxItem textarea{width:100%;box-sizing:border-box;margin-top:6px}
 .peerTag{background:#eef5e6;color:#2f4d16;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700}
+/* V3.44 */
+.logSearchLabel{display:block;margin-top:14px}
+.rackCard{padding:10px 10px 0}
+.rackMini{display:grid;gap:3px;aspect-ratio:4/3;width:100%;padding:8px;box-sizing:border-box;background:#f4eef7;border-radius:10px}
+.rackMini i{display:block;border-radius:3px;background:#e2d5e8;min-height:6px}.rackMini i.on{background:#79538e}
+.pairCard{justify-content:center;min-height:96px}.pairCard .homeCardText{padding:12px 8px}
+.clutchCard{background:#eef5e6}
+.homeBizSec{margin-top:18px}
+.homePets{margin-top:14px}
+.homePetsLink{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fffaf5;border:1px solid #e3d4ea;border-radius:14px;padding:12px 14px;font:inherit;color:#45205b;cursor:pointer}
+.homePetsLink small{flex:1;color:#7a6a80}.homePetsLink span{font-size:22px;color:#79538e}
+body[data-st-theme] .rackMini{background:var(--t-panel,#f4eef7)}
+body[data-st-theme] .homePetsLink{background:var(--t-panel,#fffaf5);color:var(--t-text,#45205b)}
+.saleGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px}
+.saleStats{display:flex;flex-wrap:wrap;gap:8px 14px;margin:6px 0 12px;color:#45205b}.saleStats b{font-size:1.15em}
+.salePill{display:inline-block;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px;margin-left:4px;vertical-align:2px;background:#f1e5f4;color:#45205b}
+.salePill.saleListed{background:#e8eef9;color:#244a8a}.salePill.salePending{background:#fbefdc;color:#8a5414}.salePill.saleSold{background:#fde3e3;color:#9a2a2a}
+.salePill.saleShipped{background:#e4f1f4;color:#1f5d6b}.salePill.saleReceived{background:#eef5e6;color:#2f4d16}
+#bizBanner{display:flex;align-items:center;gap:14px;margin:10px 12px 4px;padding:14px 16px;border-radius:18px;background:#79538e;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+#bizBanner img{width:64px;height:64px;object-fit:contain;background:#fff;border-radius:14px;padding:4px;flex:none}
+#bizBanner b{display:block;font:700 22px/1.2 Georgia,serif}#bizBanner small{opacity:.85;font-size:12px}
+.diyTabs{flex-wrap:wrap}

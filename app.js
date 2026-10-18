@@ -475,6 +475,8 @@ const HOME_CARD_SLOTS = [
 function renderHomeCards() {
   const row = document.getElementById("homeReptileRow");
   if (!row) return;
+  if (homeBusinessMode()) return renderHomeBusiness(row);
+  homeResetPersonal();
   const count = document.getElementById("homeCount");
   const logs = entries.filter((e) => e.section !== "Calendar").length;
   if (count)
@@ -748,6 +750,7 @@ async function founderRefreshEntitlement() {
       updateAuthGate();
       if (stCanUseApp() && ["empty", "synced"].includes(cloudAutoStatus)) cloudSetStatus(cloudAutoStatus);
       setTimeout(stMaybeShowUpgrade, 1500);
+      try { renderHomeCards(); } catch (e) {}
       if (current === "Founding Keeper Studio") render();
     }
   }
@@ -1808,15 +1811,17 @@ const RECOMMENDED = [
     brand: "Amazon",
     name: "Budget grow-out & temporary enclosures",
     tag: "Keeper tested ♡",
-    why: "Verified by a keeper who uses them: affordable, not terribly priced, and easy to put together. Great as grow-out, quarantine or temporary homes.",
-    url: "https://a.co/d/029VGh2t",
+    why: "In our Reptile Recommendations list. Verified by a keeper who uses them: affordable, not terribly priced, and easy to put together. Great as grow-out, quarantine or temporary homes.",
+    url: "https://amzn.to/4yQVGY9",
+    affiliate: true,
   },
   {
     brand: "Amazon",
     name: "Cordless power screwdriver",
     tag: "Saves your hands ♡",
-    why: "Keeper tested: a dream for screwing enclosures together and a real hand-saver when you're building or breaking down several at once.",
-    url: "https://a.co/d/03BML3N4",
+    why: "In our Reptile Recommendations list. Keeper tested: a dream for screwing enclosures together and a real hand-saver when you're building or breaking down several at once.",
+    url: "https://amzn.to/4yQVGY9",
+    affiliate: true,
   },
   {
     brand: "SensorPush",
@@ -3862,7 +3867,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.43";
+const SCALE_LC_VERSION = "3.44";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4156,7 +4161,7 @@ function render() {
       history.length +
       "</b></div><div><small>Next care</small><b>" +
       nextCareLabel(a) +
-      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button><button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
+      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button>' + (homeBusinessMode() ? '<button onclick="saleOpen(selectedAnimal)">Listing &amp; sale</button>' : '') + '<button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
     profileTab("Overview");
     return;
   }
@@ -4390,7 +4395,7 @@ function render() {
   if (current === "Care Logs") {
     let names = [...new Set([...animals, ...entries.filter((e) => e.section !== "Calendar").map((e) => e.animal)])];
     el.innerHTML =
-      '<p class="muted">One shared care history for every animal.</p><button class="action secondary" onclick="openPanel(&quot;Import Existing Records&quot;)">📷 Import old logs from a screenshot</button><label>Search care records<input type="search" id="logSearch" maxlength="100" placeholder="Feeding, prey, notes…" oninput="filterLogs()"></label><details class="compactDisclosure" id="careFilterDetails" ' +
+      '<p class="muted">One shared care history for every animal.</p><button class="action secondary" onclick="openPanel(&quot;Import Existing Records&quot;)">📷 Import old logs from a screenshot</button><label class="logSearchLabel">Search care records<input type="search" id="logSearch" maxlength="100" placeholder="Feeding, prey, notes…" oninput="filterLogs()"></label><details class="compactDisclosure" id="careFilterDetails" ' +
       (logPrefillAnimal ? "open" : "") +
       '><summary>Filter by animal, activity or date</summary><div class="filters"><label>Reptile<select id="logAnimal" onchange="filterLogs()"><option value="">All reptiles</option>' +
       names.map((a) => '<option value="' + esc(a) + '">' + esc(a) + "</option>").join("") +
@@ -10407,22 +10412,46 @@ async function bizLoadBrand() {
   }
   bizApplyBrand();
 }
+function bizShade(hex, amt) {
+  // amt < 0 darkens toward black, amt > 0 lightens toward white.
+  const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt));
+  return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
 function bizApplyBrand() {
-  let chip = document.getElementById("bizBrandChip");
+  document.getElementById("bizBrandChip")?.remove();
+  const hello = document.querySelector(".homeHello");
+  let banner = document.getElementById("bizBanner"), css = document.getElementById("bizBrandCss");
   const on = bizBrand && (bizBrand.business_name || bizBrand.logoUrl);
   if (!on) {
-    chip?.remove();
-    document.body.style.removeProperty("--biz-accent");
+    banner?.remove();
+    css?.remove();
+    if (hello) hello.style.display = "";
     return;
   }
-  if (bizBrand.accent) document.body.style.setProperty("--biz-accent", bizBrand.accent);
-  if (!chip) {
-    chip = document.createElement("div");
-    chip.id = "bizBrandChip";
-    document.querySelector(".headerArt")?.appendChild(chip);
+  // Their brand replaces the welcome banner on the home screen.
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "bizBanner";
+    hello?.after(banner);
   }
-  chip.innerHTML = (bizBrand.logoUrl ? '<img alt="" src="' + esc(bizBrand.logoUrl) + '">' : "") + (bizBrand.business_name ? "<span>" + esc(bizBrand.business_name) + "</span>" : "");
+  if (hello) hello.style.display = "none";
+  banner.innerHTML = (bizBrand.logoUrl ? '<img alt="" src="' + esc(bizBrand.logoUrl) + '">' : "") +
+    '<div><b>' + esc(bizBrand.business_name || "") + '</b><small>Powered by Scale &amp; Tell ♡ Herps &amp; Hers</small></div>';
+  // Their color becomes the app's accent: buttons, headings, tabs and badges.
+  const a = /^#[0-9a-f]{6}$/i.test(bizBrand.accent || "") ? bizBrand.accent : null;
+  if (!a) { css?.remove(); return; }
+  if (!css) { css = document.createElement("style"); css.id = "bizBrandCss"; document.head.appendChild(css); }
+  const dark = bizShade(a, -0.35), light = bizShade(a, 0.85), soft = bizShade(a, 0.93);
+  css.textContent =
+    ".action:not(.secondary),.homeViewAll,.homeTodayActions button,.diyTabs button.on,.menuFeature,#bizBanner{background:" + a + "!important;color:#fff!important;border-color:" + a + "!important}" +
+    ".action.secondary,.homeTodayActions button+button{background:" + light + "!important;color:" + dark + "!important}" +
+    ".homeSecHead h2,.sectionTitle,.sheet h2,.resourceTile strong,.menuTile strong,.homeCardText b,.homeToday h2,.homeToday h3{color:" + dark + "!important}" +
+    ".stBadge{background:" + dark + "!important}.rackMini i{background:" + light + "}.rackMini i.on{background:" + a + "!important}.rackMini{background:" + soft + "!important}" +
+    ".homeCard,.resourceTile,.menuTile,.deviceCard,.diyGuide{border-color:" + light + "!important}" +
+    ".homeCardAdd,.homePetsLink{border-color:" + a + "!important;color:" + dark + "!important}" +
+    "a{color:" + dark + "}";
 }
+
 function bizBrandPrint(html) {
   if (!bizBrand || !(bizBrand.business_name || bizBrand.logoUrl)) return html;
   const bar = '<div style="display:flex;align-items:center;gap:10px;padding:8px 0 10px;margin-bottom:10px;border-bottom:3px solid ' + esc(bizBrand.accent || "#45205b") + ';font-family:Arial,sans-serif">' +
@@ -10503,7 +10532,8 @@ function mmCsv() {
       grams = String((w ? w.detail : p.weight) || "").match(/[\d.]+/)?.[0] || "",
       dob = p.hatchDate && validDate(p.hatchDate) ? p.hatchDate.slice(8, 10) + "-" + p.hatchDate.slice(5, 7) + "-" + p.hatchDate.slice(0, 4) : "",
       prey = entries.filter((e) => e.animal === a && e.section === "Feeding Tracker" && e.preyType).sort((x, y) => y.date.localeCompare(x.date))[0]?.preyType || "";
-    return [String(species[a] || "").toLowerCase(), a, a, mmMaturity(p.hatchDate), "", "Not For Sale", "private", "inactive", sex, dob, grams, 1,
+    const sl = p.sale || {}, forSale = ["Listed", "Pending"].includes(sl.status);
+    return [String(species[a] || "").toLowerCase(), a, a, mmMaturity(p.hatchDate), sl.price || "", forSale ? (sl.status === "Pending" ? "On Hold" : "For Sale") : "Not For Sale", "private", "inactive", sex, dob, grams, 1,
       String(p.morph || "").replace(/[,/]+/g, " ").replace(/\s+/g, " ").trim().toLowerCase(), "", "self produced", prey, "FALSE"].map(q).join(",");
   });
   return [head.join(",")].concat(rows).join("\r\n");
@@ -10534,6 +10564,7 @@ const BIZ_PANELS = {
     return '<p class="resourceIntro">Tools for running your breeding business or rescue.</p>' +
       t("Team Logins", "♡ Team logins", "Invite up to 2 people to share your journal (3 logins total).") +
       t("Inbox", "✉ Inbox" + (bizUnread ? " · " + bizUnread + " new" : ""), "Inquiries from your public page and website.") +
+      t("Sales", "$ Listings &amp; sales", "Listed, pending, sold, buyer, shipped and received dates.") +
       t("My Public Page", "✦ Public page &amp; social links", "Your inquiry link for your website, Facebook and Instagram bio.") +
       (stIsRescue() ? t("Rescue Profile", "♧ Rescue profile &amp; intake", "Your Scale Hub listing, intake open/full, and 501(c)(3) verification.") : "") +
       (stCanBrand() ? t("Branding", "❦ Your logo &amp; colors", "Shows in the app and on Care Binder printouts.") + t("MorphMarket Export", "⇪ MorphMarket export", "Download your animals in MorphMarket’s bulk-import format.")
@@ -10696,3 +10727,150 @@ async function bizLoadRescues() {
       : '<p class="helperLine">No rescues listed yet. Run a reptile rescue? The Rescue plan includes a free listing here.</p>';
   } catch (e) { box.innerHTML = '<p class="helperLine">Couldn’t load rescues right now.</p>'; }
 }
+
+/* V3.44 · Business home: breeders see racks and pairings first, rescues see racks; personal pets stay one tap away. */
+function homeBusinessMode() {
+  try {
+    return stOwnsEntitlements() && stSkus.some((k) => ["founding_breeder", "premium_breeder", "rescue"].includes(k));
+  } catch (e) {
+    return false;
+  }
+}
+function homeResetPersonal() {
+  const t = document.getElementById("homeReptilesTitle"), v = document.querySelector(".homeReptiles .homeViewAll");
+  if (t) t.textContent = "My Reptiles ♡";
+  if (v) v.setAttribute("onclick", "openPanel('My Reptiles')");
+  document.getElementById("homePairings")?.remove();
+  document.getElementById("homePets")?.remove();
+}
+function rackMini(r) {
+  const rows = Math.min(Number(r.rows) || 0, 8), cols = Math.min(Number(r.cols) || 0, 8);
+  let cells = "";
+  for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) cells += '<i class="' + (r.slots?.[i + "-" + j] ? "on" : "") + '"></i>';
+  return '<span class="rackMini" style="grid-template-columns:repeat(' + Math.max(cols, 1) + ',1fr)" aria-hidden="true">' + cells + "</span>";
+}
+function renderHomeBusiness(row) {
+  const rescue = stSkus.includes("rescue") && !stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder");
+  const rs = rackList(), inRacks = new Set(rs.flatMap((r) => Object.values(r.slots || {}).filter(Boolean)));
+  const breeding = entries.filter((e) => e.section === "Breeding");
+  const pairings = breeding.filter((e) => e.kind === "pairing" && e.status !== "done").sort((a, b) => b.date.localeCompare(a.date));
+  const incubating = breeding.filter((e) => e.kind === "clutch" && !e.hatchDate);
+  const pets = animals.filter((a) => !inRacks.has(a));
+  const sec = row.closest(".homeReptiles");
+  const t = document.getElementById("homeReptilesTitle"), v = sec?.querySelector(".homeViewAll");
+  if (t) t.textContent = "My Racks ♡";
+  if (v) v.setAttribute("onclick", "openPanel('Racks & Breeding')");
+  const count = document.getElementById("homeCount");
+  if (count)
+    count.innerHTML = stBadgeMarkup() + " " + esc(rs.length + (rs.length === 1 ? " rack" : " racks") + " · " + animals.length + (animals.length === 1 ? " animal" : " animals") +
+      (rescue ? "" : " · " + pairings.length + " active " + (pairings.length === 1 ? "pairing" : "pairings") + (incubating.length ? " · " + incubating.length + " incubating" : "")));
+  row.classList.toggle("homeRowEmpty", !rs.length);
+  row.innerHTML = rs.length
+    ? rs.map((r) => {
+        const filled = Object.values(r.slots || {}).filter(Boolean).length, total = (Number(r.rows) || 0) * (Number(r.cols) || 0);
+        const due = Object.values(r.slots || {}).filter(Boolean).filter((a) => { const f = lastFeed(a); const n = carePlans[a]?.feedDays; return n && (!f || daysSince(f.date) >= n); }).length;
+        return '<button class="homeCard rackCard" onclick="breederOpen(&quot;Rack View&quot;,&quot;' + esc(r.id) + '&quot;)">' + rackMini(r) +
+          '<span class="homeCardText"><b>' + esc(r.name) + "</b><small>" + filled + " of " + total + " tubs" + (due ? " · " + due + " to feed" : "") + "</small></span></button>";
+      }).join("") + '<button class="homeCard homeCardAdd" onclick="breederOpen(&quot;Rack Setup&quot;,&quot;&quot;)"><span aria-hidden="true">＋</span><small>Add rack</small></button>'
+    : '<button class="homeFirst" onclick="breederOpen(&quot;Rack Setup&quot;,&quot;&quot;)"><span class="homeFirstPlus" aria-hidden="true">＋</span><strong>Set up your first rack</strong><small>Rows and tubs, then place your animals. Feed a whole rack in one go.</small></button>';
+  // Pairings (breeders only)
+  let ps = document.getElementById("homePairings");
+  if (rescue) ps?.remove();
+  else {
+    if (!ps) { ps = document.createElement("section"); ps.id = "homePairings"; ps.className = "homeReptiles homeBizSec"; sec.after(ps); }
+    ps.innerHTML = '<div class="homeSecHead"><h2>My Pairings ♡</h2><button class="homeViewAll" onclick="openPanel(\'Racks & Breeding\')">View All ›</button></div>' +
+      '<div class="homeRow homePairRow">' +
+      (pairings.length ? pairings.slice(0, 8).map((p) => {
+        const last = Array.isArray(p.events) && p.events.length ? p.events[p.events.length - 1] : null;
+        return '<button class="homeCard pairCard" onclick="breederOpen(&quot;Pairing&quot;,&quot;' + esc(p.id) + '&quot;)"><span class="homeCardText"><b>' + esc(p.animal) + " × " + esc(p.partner || "?") +
+          "</b><small>" + (last ? esc(last.type) + " · " + agoText(last.date) : "Started " + agoText(p.date)) + "</small></span></button>";
+      }).join("") : "") +
+      '<button class="homeCard homeCardAdd" onclick="breederOpen(&quot;Pairing&quot;,&quot;&quot;)"><span aria-hidden="true">＋</span><small>New pairing</small></button>' +
+      (incubating.length ? '<button class="homeCard pairCard clutchCard" onclick="openPanel(\'Racks & Breeding\')"><span class="homeCardText"><b>' + incubating.length + " incubating</b><small>Clutches</small></span></button>" : "") +
+      "</div>";
+  }
+  // Sales strip
+  let sp = document.getElementById("homeSales");
+  const sr = saleRows().filter((r) => r.st !== "Received");
+  if (!sr.length) sp?.remove();
+  else {
+    if (!sp) { sp = document.createElement("section"); sp.id = "homeSales"; sp.className = "homePets"; (ps && !rescue ? ps : sec).after(sp); }
+    const c = (st) => sr.filter((r) => r.st === st).length;
+    sp.innerHTML = '<button class="homePetsLink" onclick="openPanel(\'Sales\')"><b>My Sales</b><small>' + c("Listed") + " listed · " + c("Pending") + " pending · " + c("Sold") + " to ship · " + c("Shipped") + ' in transit</small><span aria-hidden="true">›</span></button>';
+  }
+  // Personal pets: animals not placed in a rack
+  let pp = document.getElementById("homePets");
+  if (!pp) { pp = document.createElement("section"); pp.id = "homePets"; pp.className = "homePets"; (document.getElementById("homeSales") || (ps && !rescue ? ps : sec)).after(pp); }
+  pp.innerHTML = '<button class="homePetsLink" onclick="openPanel(\'My Reptiles\')"><b>' + (rescue ? "All animals" : "My pets &amp; all animals") + "</b><small>" +
+    (pets.length ? esc(pets.slice(0, 4).join(", ")) + (pets.length > 4 ? " +" + (pets.length - 4) : "") + " not in a rack" : animals.length + " animals") + "</small><span aria-hidden=\"true\">›</span></button>";
+}
+
+/* V3.44 · Listings & sales (breeder / rescue accounts). Saved on each animal's profile so it syncs. */
+const SALE_STATUSES = ["Not listed", "Listed", "Pending", "Sold", "Shipped", "Received"];
+const SALE_SITES = ["MorphMarket", "Facebook", "Expo / in person", "Website", "Other"];
+let saleAnimal = "", saleFilter = "Active";
+function saleOf(a) {
+  return (profiles[a] && profiles[a].sale) || {};
+}
+function saleStage(x) {
+  // Dates move a sale forward even if the status wasn't changed by hand.
+  if (x.receivedDate) return "Received";
+  if (x.shippedDate) return "Shipped";
+  return SALE_STATUSES.includes(x.status) ? x.status : "Not listed";
+}
+function saleOpen(a) {
+  if (!animals.includes(a)) return;
+  saleAnimal = a;
+  openPanel("Sale Details");
+}
+function saleSave() {
+  const a = saleAnimal;
+  if (!animals.includes(a)) return;
+  const v = (id) => (document.getElementById(id)?.value || "").trim();
+  const d = (id) => (validDate(v(id)) ? v(id) : "");
+  let url = v("slUrl");
+  if (url && !/^https:\/\//i.test(url)) url = "https://" + url.replace(/^http:\/\//i, "");
+  const next = { status: v("slStatus"), site: v("slSite"), price: v("slPrice").replace(/[^\d.]/g, "").slice(0, 10), url: url.slice(0, 300), listedDate: d("slListed"),
+    buyer: v("slBuyer").slice(0, 80), buyerContact: v("slContact").slice(0, 120), soldDate: d("slSold"), shippedDate: d("slShipped"), receivedDate: d("slReceived"),
+    tracking: v("slTracking").slice(0, 80), notes: v("slNotes").slice(0, 400), updated: today() };
+  if (next.status === "Not listed" && !next.buyer && !next.price) delete profiles[a].sale;
+  else profiles[a] = { ...(profiles[a] || {}), sale: next };
+  scaleStoreSet("scaleTellProfiles03", JSON.stringify(profiles));
+  stToast(a + " · " + saleStage(next) + " ♡");
+  openPanel("Sales");
+}
+function saleRows() {
+  return animals.filter((a) => saleStage(saleOf(a)) !== "Not listed").map((a) => ({ a, x: saleOf(a), st: saleStage(saleOf(a)) }));
+}
+const salePill = (st) => '<span class="salePill sale' + st.replace(/\W/g, "") + '">' + esc(st) + "</span>";
+BIZ_PANELS["Sale Details"] = () => {
+  const a = saleAnimal, x = saleOf(a);
+  if (!animals.includes(a)) return '<p class="helperLine">Pick an animal first.</p>';
+  const f = (id, label, val, type = "text", ph = "") => '<label>' + label + '<input id="' + id + '" type="' + type + '" value="' + esc(val || "") + '" placeholder="' + ph + '"></label>';
+  const sel = (id, label, opts, val) => '<label>' + label + '<select id="' + id + '">' + opts.map((o) => '<option' + (o === val ? " selected" : "") + ">" + esc(o) + "</option>").join("") + "</select></label>";
+  return '<p class="resourceIntro"><b>' + esc(a) + "</b> · " + esc([species[a], profiles[a]?.morph].filter(Boolean).join(" · ")) + "</p>" +
+    '<div class="saleGrid">' + sel("slStatus", "Status", SALE_STATUSES.slice(0, 4), x.status || "Listed") + sel("slSite", "Listed on", SALE_SITES, x.site || "MorphMarket") +
+    f("slPrice", "Price ($)", x.price, "text", "250") + f("slListed", "Listed date", x.listedDate || (x.status ? "" : today()), "date") + "</div>" +
+    f("slUrl", "Listing link (optional)", x.url, "url", "https://www.morphmarket.com/…") +
+    '<h3 class="sectionTitle">Buyer</h3><div class="saleGrid">' + f("slBuyer", "Buyer name", x.buyer, "text", "Who bought") + f("slContact", "Buyer email or phone", x.buyerContact) +
+    f("slSold", "Sold date", x.soldDate, "date") + "</div>" +
+    '<h3 class="sectionTitle">Shipping</h3><div class="saleGrid">' + f("slShipped", "Shipped date", x.shippedDate, "date") + f("slReceived", "Received date", x.receivedDate, "date") +
+    f("slTracking", "Tracking number", x.tracking) + "</div>" +
+    '<label>Notes<textarea id="slNotes" rows="3" maxlength="400" placeholder="Deposit, payment method, live arrival guarantee…">' + esc(x.notes || "") + "</textarea></label>" +
+    '<p class="lcSmall">Adding a shipped or received date moves the sale along automatically.</p>' +
+    '<div class="inlineActions"><button class="action" onclick="saleSave()">Save</button><button class="action secondary" onclick="openPanel(\'Sales\')">All sales</button><button class="action secondary" onclick="openPanel(saleAnimal)">Back to ' + esc(a) + "</button></div>";
+};
+BIZ_PANELS.Sales = () => {
+  const all = saleRows(), count = (st) => all.filter((r) => r.st === st).length;
+  const groups = { Active: ["Listed", "Pending", "Sold", "Shipped"], Listed: ["Listed"], Pending: ["Pending"], "To ship": ["Sold"], Shipped: ["Shipped"], Done: ["Received"] };
+  const list = all.filter((r) => groups[saleFilter].includes(r.st)).sort((p, q) => SALE_STATUSES.indexOf(q.st) - SALE_STATUSES.indexOf(p.st) || p.a.localeCompare(q.a));
+  const total = all.filter((r) => ["Sold", "Shipped", "Received"].includes(r.st)).reduce((s, r) => s + (Number(r.x.price) || 0), 0);
+  return '<p class="resourceIntro">Track each animal from listing to arrival. Open an animal → More profile options → <b>Listing &amp; sale</b> to add one.</p>' +
+    '<div class="saleStats"><span><b>' + count("Listed") + "</b> listed</span><span><b>" + count("Pending") + "</b> pending</span><span><b>" + count("Sold") + "</b> to ship</span><span><b>" + count("Shipped") + "</b> in transit</span><span><b>$" + total.toFixed(0) + "</b> sold</span></div>" +
+    '<div class="diyTabs">' + Object.keys(groups).map((g) => '<button class="' + (g === saleFilter ? "on" : "") + '" onclick="saleFilter=\'' + g + '\';render()">' + g + "</button>").join("") + "</div>" +
+    (list.length ? list.map(({ a, x, st }) => '<button class="resourceTile saleTile" onclick="saleOpen(\'' + esc(a).replace(/'/g, "\\'") + '\')"><strong>' + esc(a) + " " + salePill(st) + "</strong><small>" +
+      esc([x.price ? "$" + x.price : "", x.site, x.buyer ? "Buyer: " + x.buyer : "", st === "Sold" && x.soldDate ? "sold " + niceDate(x.soldDate) : "", x.shippedDate ? "shipped " + niceDate(x.shippedDate) : "", x.receivedDate ? "received " + niceDate(x.receivedDate) : ""].filter(Boolean).join(" · ")) + "</small></button>").join("")
+      : '<p class="helperLine">Nothing here yet.</p>') +
+    '<label class="logSearchLabel">Add an animal<select id="saleAdd" onchange="if(this.value)saleOpen(this.value)"><option value="">Choose…</option>' + animals.filter((a) => saleStage(saleOf(a)) === "Not listed").map((a) => "<option>" + esc(a) + "</option>").join("") + "</select></label>" +
+    '<button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
+};
