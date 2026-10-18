@@ -784,7 +784,7 @@ function founderCheckoutMarkup() {
   return (
     '<div class="founderCheckout">' +
     '<p class="founderTestNote" id="founderTestNote" hidden>Test mode: use a PayPal sandbox account. No real money is charged.</p>' +
-    '<div id="paypalButtons" aria-label="Pay with PayPal"></div><p id="founderPayStatus" class="studioStatus" role="status"></p></div>'
+    '<div id="paypalButtons" aria-label="Pay with PayPal"></div><p id="founderPayStatus" class="studioStatus" role="status"></p><p class="lcSmall">Any commissions or profit from paid accounts will go into upgrading the app, donations to organizations of Herps &amp; Hers&#39; choice, and/or hosting in-person Herps &amp; Hers events.</p></div>'
   );
 }
 function founderPayStatus(msg) {
@@ -1692,7 +1692,7 @@ const RECOMMENDED = [
 ];
 function recommendedMarkup() {
   return (
-    '<p class="resourceIntro">Gear we recommend for keeping enclosure conditions where they should be.</p>' +
+    '<p class="resourceIntro">Reptile Products we love and recommend for your animals and their enclosures.</p>' +
     RECOMMENDED.map(
       (p) =>
         '<div class="productCard"><span class="productBrand">' +
@@ -1707,7 +1707,7 @@ function recommendedMarkup() {
         esc(p.brand) +
         " ↗</a></div>",
     ).join("") +
-    '<p class="resourceMuted">Some links are affiliate links: Herps &amp; Hers may earn a small commission on purchases, at no extra cost to you.</p><p class="resourceMuted">Coming soon: connect a SensorPush account to see live readings on each animal and rack.</p><button class="action secondary" onclick="openPanel(\'Resources\')">Back to Resources</button>'
+    '<p class="resourceMuted">Some links are affiliate links: Herps &amp; Hers may earn a small commission on purchases, at no extra cost to you. Any commissions or profit from paid accounts will go into upgrading the app, donations to organizations of Herps &amp; Hers&#39; choice, and/or hosting in-person Herps &amp; Hers events.</p><p class="resourceMuted">Coming soon: connect a SensorPush account to see live readings on each animal and rack.</p><button class="action secondary" onclick="openPanel(\'Resources\')">Back to Resources</button>'
   );
 }
 function communityMarkup() {
@@ -3333,7 +3333,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.23";
+const SCALE_LC_VERSION = "3.24";
 const SCALE_SUPPORT_EMAIL = "scaleandtellsupport@gmail.com";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
