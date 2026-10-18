@@ -2974,7 +2974,6 @@ body[data-st-theme="violet"] .modal .resourceMuted { color: var(--t-muted); }
 
 /* V3.27 · Bottom menu pinned to the bottom of the screen; the space above it matches the home background */
 #appShell { min-height: 100vh; min-height: 100dvh; background: #eedeea; padding-bottom: calc(min(100vw, 650px) * 0.1252 + env(safe-area-inset-bottom)); }
-.dashClip { overflow: hidden; aspect-ratio: 1342 / 1004; }
 .homeNav { position: fixed; z-index: 6; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 650px; background: #ebd8ea; padding-bottom: env(safe-area-inset-bottom); }
 .homeNav .art img { display: block; }
 body.authLocked .homeNav { display: none; }
@@ -2995,3 +2994,93 @@ body.authLocked .homeNav { display: none; }
 .homeTodayActions button + button { background: #efe2f1; color: #45205b; }
 .homeTip { background: #f8f1e6; border: 1px solid #eadcc4; border-radius: 14px; padding: 10px 14px; font: 14px/1.45 Arial, sans-serif; color: #4b3d2c; }
 .homeTip span { display: block; font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #44701f; margin-bottom: 2px; }
+
+
+/* ===================== V3.31 · Home screen in real HTML (fits every phone, text scales) ===================== */
+#appShell { background: linear-gradient(#f3e6f2, #eedeea 40%, #ecdcea); }
+.homeMain { display: flex; flex-direction: column; gap: 14px; padding: 0 12px 16px; position: relative; flex: 1 0 auto; }
+.homeHello { margin: 0 -12px; background: linear-gradient(#e8d8e4, #f1e4ee); text-align: center; padding: 6px 10px 12px; }
+.homeHello h1 { margin: 0; font: italic 400 clamp(30px, 8vw, 40px)/1.1 "Snell Roundhand", "Segoe Script", "Brush Script MT", Georgia, cursive; color: #45205b; }
+.homeHello p { margin: 0; font: 600 11px/1.4 Arial, sans-serif; letter-spacing: 3px; color: #4a5a3a; }
+.homeHello p span { color: #79538e; letter-spacing: 0; margin: 0 4px; }
+.homeToday { margin: 0; padding: 0; flex: 0 0 auto; display: block; }
+.homeTodayList li { display: flex; gap: 6px; }
+.homeTodayItem { flex: 1; }
+.homeTodayList .homeDone { width: auto; text-align: center; padding: 0; flex: 0 0 48px; min-height: 44px; border: 0; border-radius: 10px; background: #44701f; color: #fff; font: bold 20px Arial, sans-serif; cursor: pointer; }
+.homeDone:active { transform: scale(.94); }
+.homeSecHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.homeSecHead h2 { margin: 0; font: 700 clamp(24px, 6.4vw, 30px) Georgia, "Times New Roman", serif; color: #45205b; }
+.homeViewAll { border: 0; border-radius: 999px; background: #79538e; color: #fff; font: bold 15px Arial, sans-serif; padding: 9px 16px; min-height: 40px; cursor: pointer; }
+.homeCount { margin: 2px 0 8px; font: 13px Arial, sans-serif; color: #5e4a68; }
+.homeRow { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(118px, 31%); gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 2px 2px 8px; -webkit-overflow-scrolling: touch; }
+.homeCard { scroll-snap-align: start; display: flex; flex-direction: column; padding: 0; border: 1px solid #ecdcea; border-radius: 16px; overflow: hidden; background: #fffaf5; box-shadow: 0 4px 12px #79538e1a; cursor: pointer; text-align: center; font: inherit; color: #45205b; }
+.homeCard img { width: 100%; aspect-ratio: 5 / 4; object-fit: cover; display: block; background: #efe2f1; }
+.homeCardText { display: block; padding: 8px 6px 10px; }
+.homeCardText b { display: block; font: italic 700 19px Georgia, serif; color: #45205b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.homeCardText small { display: block; margin-top: 3px; font: bold 10px Arial, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: #4a6a2c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sexM { color: #3a74c4; font-style: normal; } .sexF { color: #c43a74; font-style: normal; }
+.homeCardAdd { align-items: center; justify-content: center; gap: 6px; min-height: 150px; border-style: dashed; border-color: #c9add2; background: #fbf5fb; }
+.homeCardAdd span { font-size: 30px; color: #79538e; }
+.homeCardAdd small { font: bold 13px Arial, sans-serif; color: #79538e; }
+.homeFirst { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 22px 16px; border: 2px dashed #c9add2; border-radius: 18px; background: #fbf5fb; color: #45205b; font: inherit; cursor: pointer; }
+.homeFirstPlus { font-size: 34px; color: #79538e; line-height: 1; }
+.homeFirst strong { font: italic 700 21px Georgia, serif; }
+.homeFirst small { font: 14px Arial, sans-serif; color: #5e4a68; }
+.homeTip { margin: 0; }
+
+/* Quick Log */
+.qlAnimals { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; }
+.qlAnimal { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 5px 12px 5px 5px; border-radius: 999px; border: 1px solid #d9c5df; background: #fff; color: #45205b; font: bold 14px Arial, sans-serif; min-height: 40px; cursor: pointer; }
+.qlAnimal img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+.qlAnimal.on { background: #79538e; border-color: #79538e; color: #fff; }
+.qlGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 10px; }
+.qlAction { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 76px; border-radius: 14px; border: 1px solid #e3cfe6; background: #fbf5fb; color: #45205b; font: bold 13px/1.15 Arial, sans-serif; cursor: pointer; padding: 6px 4px; }
+.qlAction span { font-size: 24px; line-height: 1; }
+.qlAction:active { transform: scale(.95); background: #efe2f1; }
+.qlDate { display: block; margin-top: 4px; }
+.qlStatus { min-height: 1.3em; color: #44701f; font: bold 14px Arial, sans-serif; margin: 8px 0; }
+@media (max-width: 360px) { .qlGrid { grid-template-columns: repeat(2, 1fr); } }
+.feedEvery { display: flex; align-items: center; gap: 8px; font-weight: normal; }
+.feedEvery input { width: 90px !important; }
+
+/* Weight graph */
+.growth svg { width: 100%; height: auto; display: block; margin: 6px 0; }
+.gGrid { stroke: #e3cfe6; stroke-width: 1; }
+.gLine { fill: none; stroke: #79538e; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.gDot { fill: #fff; stroke: #79538e; stroke-width: 2.5; }
+.gLab { font: 11px Arial, sans-serif; fill: #5e4a68; }
+
+/* Account deletion */
+.lcDanger { border-color: #e6b3c3 !important; }
+.dangerAction { background: #9c2f55 !important; color: #fff !important; }
+
+/* Toast */
+.stToast { position: fixed; z-index: 90; left: 50%; bottom: calc(min(100vw, 650px) * 0.1252 + env(safe-area-inset-bottom) + 12px); transform: translate(-50%, 20px); width: min(92vw, 520px); display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #2c153b; color: #fff; font: 15px/1.35 Arial, sans-serif; box-shadow: 0 8px 26px #0005; opacity: 0; pointer-events: none; transition: .2s; }
+.stToast.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.stToast span { flex: 1; }
+.stToast button { border: 0; background: #d6afea; color: #281532; font: bold 14px Arial, sans-serif; border-radius: 10px; padding: 8px 12px; min-height: 38px; cursor: pointer; }
+
+/* Dark themes: home cards and Quick Log stay readable */
+body[data-st-theme="forest"] #appShell, body[data-st-theme="violet"] #appShell { background: var(--t-page); }
+body[data-st-theme="forest"] :is(.homeTodayCard, .homeCard, .homeFirst, .homeTip), body[data-st-theme="violet"] :is(.homeTodayCard, .homeCard, .homeFirst, .homeTip) { background: var(--t-card); border-color: var(--t-border); color: var(--t-text); }
+body[data-st-theme="forest"] :is(.homeHello h1, .homeTodayCard h2, .homeSecHead h2, .homeCardText b, .homeFirst strong, .homeTodayClear, .homeTodayItem), body[data-st-theme="violet"] :is(.homeHello h1, .homeTodayCard h2, .homeSecHead h2, .homeCardText b, .homeFirst strong, .homeTodayClear, .homeTodayItem) { color: var(--t-text); }
+body[data-st-theme="forest"] :is(.homeCount, .homeTodayClear small, .homeFirst small, .homeTip), body[data-st-theme="violet"] :is(.homeCount, .homeTodayClear small, .homeFirst small, .homeTip) { color: var(--t-muted); }
+body[data-st-theme="forest"] :is(.homeCardText small, .homeTip span), body[data-st-theme="violet"] :is(.homeCardText small, .homeTip span) { color: var(--st-green); }
+body[data-st-theme="forest"] .homeTodayItem, body[data-st-theme="violet"] .homeTodayItem { background: var(--t-soft); }
+body[data-st-theme="forest"] :is(.homeViewAll, .homeTodayActions button:first-child), body[data-st-theme="violet"] :is(.homeViewAll, .homeTodayActions button:first-child) { background: var(--t-action); color: var(--t-action-ink); }
+body[data-st-theme="forest"] .homeTodayActions button + button, body[data-st-theme="violet"] .homeTodayActions button + button { background: var(--t-soft); color: var(--t-text); }
+body[data-st-theme="forest"] .modal :is(.qlAction, .qlAnimal), body[data-st-theme="violet"] .modal :is(.qlAction, .qlAnimal) { background: var(--t-card); color: var(--t-text); border-color: var(--t-border); }
+body[data-st-theme="forest"] .modal .qlAnimal.on, body[data-st-theme="violet"] .modal .qlAnimal.on { background: var(--t-action); color: var(--t-action-ink); }
+body[data-st-theme="forest"] .modal .qlStatus, body[data-st-theme="violet"] .modal .qlStatus { color: var(--st-green); }
+body[data-st-theme="forest"] .modal :is(.gLab), body[data-st-theme="violet"] .modal :is(.gLab) { fill: var(--t-muted); }
+body[data-st-theme="cream"] #appShell { background: var(--t-page); }
+body[data-st-theme="cream"] :is(.homeTodayCard, .homeCard) { background: var(--t-panel); border-color: var(--t-border); }
+
+.homeRow.homeRowEmpty { display: block; overflow: visible; }
+body[data-st-theme="forest"] .homeOverdue, body[data-st-theme="violet"] .homeOverdue { color: #ffb3c8; }
+
+/* V3.32 welcome slides */
+.tourList { margin: 10px 0 14px; padding-left: 20px; }
+.tourList li { margin: 6px 0; }
+.tourOk { color: #44701f; font-weight: bold; }
+body[data-st-theme="forest"] .tourOk, body[data-st-theme="violet"] .tourOk { color: var(--st-green); }

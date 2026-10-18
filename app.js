@@ -473,50 +473,43 @@ const HOME_CARD_SLOTS = [
   [66.169896, 31.520119],
 ];
 function renderHomeCards() {
-  const root = document.getElementById("homeCardOverlays");
-  if (!root) return;
-  // The approved artwork contains real-looking example cards. Always mask the prepainted row
-  // before drawing EITHER three labeled examples (empty account) OR the keeper's own cards.
-  let markup = '<img class="homeCardCleanSlate" src="' + HOME_CLEAN_SLATE + '" alt="">';
-  for (let i = 0; i < 3; i++) {
-    const a = animals[i],
-      slot = HOME_CARD_SLOTS[i],
-      where = "left:" + slot[0] + "%;width:" + slot[1] + "%";
-    const button = document.getElementById("homeAnimal" + i);
-    if (button)
-      button.setAttribute(
-        "aria-label",
-        a ? "Open " + a + " profile" : animals.length ? "Add another animal" : "Example only. Add your first animal",
-      );
-    if (!animals.length) {
-      markup +=
-        '<div class="homeCardOriginal homeExample" style="' +
-        where +
-        '"><img src="' +
-        HOME_DEFAULT_CARDS[i] +
-        '" alt="Illustrated example, not an animal in your account"><span class="homeExampleLabel">EXAMPLE</span></div>';
-    } else if (a) {
-      let picture = portraitForAnimal(a);
-      markup +=
-        '<div class="homeCardReplace" style="' +
-        where +
-        '"><img src="' +
-        picture.src +
-        '" alt="' +
-        esc(a) +
-        ' portrait"><span class="homeHeart" aria-hidden="true">♥</span><div class="homeCardName">' +
-        esc(a) +
-        '</div><div class="homeCardSpecies">' +
-        esc(species[a] || "Reptile") +
-        "</div></div>";
-    } else {
-      markup +=
-        '<div class="homeCardReplace homeAddCard" style="' +
-        where +
-        '"><div class="homeEmptyArt" aria-hidden="true">＋</div><div class="homeCardName">Add yours ♡</div><div class="homeCardSpecies">YOUR REPTILE HERE</div></div>';
-    }
+  const row = document.getElementById("homeReptileRow");
+  if (!row) return;
+  const count = document.getElementById("homeCount");
+  const logs = entries.filter((e) => e.section !== "Calendar").length;
+  if (count)
+    count.textContent = animals.length
+      ? animals.length + (animals.length === 1 ? " reptile" : " reptiles") + " · " + logs + (logs === 1 ? " care log" : " care logs")
+      : "";
+  row.classList.toggle("homeRowEmpty", !animals.length);
+  if (!animals.length) {
+    row.innerHTML =
+      '<button class="homeFirst" onclick="addAnimal()"><span class="homeFirstPlus" aria-hidden="true">＋</span><strong>Add your first reptile</strong><small>Name, species and feeding schedule. Takes about a minute.</small></button>';
+    return;
   }
-  root.innerHTML = markup;
+  const sexMark = (a) => {
+    const x = sexOf(a);
+    return x === "male" ? ' <span class="sexM" aria-label="male">♂</span>' : x === "female" ? ' <span class="sexF" aria-label="female">♀</span>' : "";
+  };
+  row.innerHTML =
+    animals
+      .map(
+        (a, i) =>
+          '<button class="homeCard" onclick="homeAnimalClick(' +
+          i +
+          ')" aria-label="Open ' +
+          esc(a) +
+          ' profile"><img src="' +
+          esc(portraitForAnimal(a).src) +
+          '" alt="" loading="lazy"><span class="homeCardText"><b>' +
+          esc(a) +
+          sexMark(a) +
+          "</b><small>" +
+          esc(species[a] || "Reptile") +
+          "</small></span></button>",
+      )
+      .join("") +
+    '<button class="homeCard homeCardAdd" onclick="addAnimal()" aria-label="Add a reptile"><span aria-hidden="true">＋</span><small>Add reptile</small></button>';
 }
 function homeAnimalClick(i) {
   if (animals[i]) openPanel(animals[i]);
@@ -1148,6 +1141,42 @@ function tourSetDevice(d) {
   tourDevice = d;
   render();
 }
+/* V3.32 · Reminders turn on right inside the welcome slide, with honest guidance per phone. */
+function tourReminderBlock(inApp) {
+  const head = "<h4>" + (inApp ? "" : "2 · ") + "Turn on care reminders 🔔</h4>";
+  if (pushDeviceEnabled)
+    return (
+      head +
+      '<p class="tourOk">✓ Reminders are on for this phone. You&#39;ll get a daily summary of what&#39;s due, plus any timed reminders you set.</p><button class="action secondary" type="button" onclick="pushSendTest()">Send a test notification</button><p class="lcSmall" id="pushMessage" role="status"></p>'
+    );
+  if (pushInstalledIOS())
+    return (
+      head +
+      '<p class="lcSmall">iPhone only sends app notifications to the <b>Home Screen icon</b>. After step 1, open Scale &amp; Tell from the new icon. This slide will then show a <b>Turn on reminders</b> button. (You can also find it later in <b>Calendar</b>.)</p>'
+    );
+  if (!pushCapable())
+    return (
+      head +
+      '<p class="lcSmall">This browser can&#39;t show notifications. On Android, open Scale &amp; Tell in <b>Chrome</b>. On iPhone, open it from the Home Screen icon.</p>'
+    );
+  return (
+    head +
+    '<p class="lcSmall">Get a heads-up when feedings, cleanings and checks are due. Tap the button, then tap <b>Allow</b>.</p><button class="action" type="button" onclick="tourEnableReminders()">🔔 Turn on reminders</button><p class="lcSmall" id="pushMessage" role="status"></p>'
+  );
+}
+async function tourEnableReminders() {
+  pushNote("Connecting…");
+  if (!pushReady) await pushCheckConfig();
+  if (!pushReady) {
+    pushNote(pushConfigError || "Reminders aren’t available right now. You can try again later from Calendar.");
+    return;
+  }
+  await pushEnable();
+  if (pushDeviceEnabled && current === "Welcome Tour") {
+    render();
+    pushNote("✓ Reminders are on. Tap Send a test notification to check.");
+  }
+}
 function tourGetAppMarkup() {
   const link = "https://scaleandtell.app/";
   const tab = (id, label) =>
@@ -1166,9 +1195,7 @@ function tourGetAppMarkup() {
       ? (inApp
           ? ""
           : '<h4>1 · Add it to your Home Screen</h4><ol class="lcSteps"><li>Tap <b>Add to Home Screen</b> below. Your phone&#39;s share menu opens.</li><li>Scroll down the menu and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open Scale &amp; Tell from the new icon on your Home Screen.</li></ol><button class="action" type="button" onclick="installShare()">Add to Home Screen</button><p class="lcSmall">Not in the menu? Tap <b>Copy app link</b>, open <b>Safari</b>, paste the link, then tap Share → Add to Home Screen.</p><button class="action secondary" type="button" onclick="installCopyLink()">Copy app link</button><p class="lcSmall" id="installCopyNoteTour"></p>') +
-        "<h4>" +
-        (inApp ? "" : "2 · ") +
-        'Turn on reminders</h4><ol><li>Go to <b>Care Schedule</b> (the bell at the top).</li><li>Tap <b>Enable Reminders</b>, then <b>Allow</b> when your iPhone asks.</li><li>Tap <b>Send Test Notification</b> to make sure it works.</li></ol><p class="lcSmall">iPhone only allows notifications from the Home Screen app, not from a browser tab.</p>'
+        tourReminderBlock(inApp)
       : (inApp
           ? ""
           : "<h4>1 · Install the app</h4>" +
@@ -1177,9 +1204,7 @@ function tourGetAppMarkup() {
               : '<ol><li>Open <a href="' +
                 link +
                 '" target="_blank" rel="noopener noreferrer">Scale &amp; Tell</a> in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu.</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li><li>Open Scale &amp; Tell from its new icon and sign in.</li></ol><p class="lcSmall">Samsung Internet: tap <b>☰</b> → <b>Add page to</b> → <b>Home screen</b>. Firefox: tap <b>⋮</b> → <b>Add app to Home screen</b>.</p>')) +
-        "<h4>" +
-        (inApp ? "" : "2 · ") +
-        "Turn on reminders</h4><ol><li>Go to <b>Care Schedule</b> (the bell at the top).</li><li>Tap <b>Enable Reminders</b>, then <b>Allow</b>.</li><li>Tap <b>Send Test Notification</b> to make sure it works.</li></ol>";
+        tourReminderBlock(inApp);
   return (
     '<div class="tourSlide"><h3>Get the app &amp; reminders ♡</h3><div class="tourTabs" role="group" aria-label="Choose your phone">' +
     tab("iphone", "🍎 iPhone") +
@@ -1187,11 +1212,10 @@ function tourGetAppMarkup() {
     "</div>" +
     (inApp ? '<p class="lcSmall">✓ You are already using the installed app.</p>' : "") +
     steps +
-    '<div class="tourActions">' +
-    (inApp
-      ? '<button class="action" type="button" onclick="tourDone();openPanel(\'Calendar\')">Turn on reminders now</button>'
-      : '<button class="action secondary" type="button" onclick="installCopyLink()">Copy app link</button>') +
-    '</div><p class="lcSmall" id="installCopyNote"></p></div>'
+    (!inApp && tourDevice !== "iphone"
+      ? '<div class="tourActions"><button class="action secondary" type="button" onclick="installCopyLink()">Copy app link</button></div><p class="lcSmall" id="installCopyNote"></p>'
+      : "") +
+    "</div>"
   );
 }
 function tourMarkup() {
@@ -1207,16 +1231,18 @@ function tourMarkup() {
     " / 3</span>" +
     (tourStep < 2
       ? '<button type="button" class="action" onclick="tourGo(' + (tourStep + 1) + ')">Next →</button>'
-      : '<button type="button" class="action" onclick="tourDone()">Start my journal ♡</button>') +
+      : '<button type="button" class="action" onclick="tourDone(\'start\')">Start my journal ♡</button>') +
     "</div>";
   let page = "";
   if (tourStep === 0)
     page =
-      '<div class="tourSlide"><p>One private place to keep your animals, feeding and shed history, photos, habitat notes, and reminders.</p><p>Core care tracking, backups, and your account journal are free.</p><div class="tourActions"><button class="action secondary" onclick="tourDone(\'add\')">+ Add my first animal</button><button class="action secondary" onclick="tourDone(\'import\')">Import existing records</button></div><p class="lcSmall">You can also explore care guides without entering any personal records.</p></div>';
+      '<div class="tourSlide"><p>One private place for your animals: feedings, sheds, weights, photos, habitat notes and care reminders.</p><ul class="tourList"><li><b>Quick Log</b>: tap once when you feed, weigh or clean.</li><li><b>Today&#39;s Care</b>: see what&#39;s due and check it off with ✓.</li><li><b>Reminders</b>: on your phone, right when care is due.</li></ul><div class="tourActions"><button class="action secondary" onclick="tourDone(\'add\')">+ Add my first animal</button><button class="action secondary" onclick="tourDone(\'import\')">Import existing records</button></div><p class="lcSmall">You can also explore care guides without entering any personal records.</p></div>';
   if (tourStep === 1) page = tourGetAppMarkup();
   if (tourStep === 2)
     page =
-      '<div class="tourSlide"><div class="tourPack"><h4>Here’s what you get as a Founding Keeper ♡</h4><p><b>$14.99 once · optional.</b> Breeder tools (racks, rack feeding, pairings and clutches), four app designs, personalized Care Binder, My Year in Scales, and large printable keeper cards.</p><button class="action secondary" onclick="tourDone(\'founder\')">View the Founding Keeper benefits</button><small>Designs are viewable, but paid features cannot be selected or opened before a verified purchase.</small></div><p>Everything else, your animals, care logs, reminders, photos and backups, is free.</p></div>';
+      stCanUsePack()
+        ? '<div class="tourSlide"><div class="tourPack"><h4>You&#39;re a Founding Keeper ♡</h4><p>Thank you for supporting Scale &amp; Tell! Your extras are unlocked: breeder tools (racks, rack feeding, pairings and clutches), four app designs, your Care Binder, My Year in Scales and printable keeper cards.</p><button class="action secondary" onclick="tourDone(\'founder\')">Open Founding Keeper Studio</button></div></div>'
+        : '<div class="tourSlide"><div class="tourPack"><h4>Want more? Become a Founding Keeper ♡</h4><p><b>$14.99 once · optional.</b> Breeder tools (racks, rack feeding, pairings and clutches), four app designs, a personalized Care Binder, My Year in Scales and printable keeper cards.</p><button class="action secondary" onclick="tourDone(\'founder\')">See the Founding Keeper extras</button></div><p class="lcSmall">Your animals, care logs, reminders, photos and backups are all included already. The extras are just a bonus.</p></div>';
   return '<div class="tourShell" aria-live="polite">' + page + nav + "</div>";
 }
 function tourGo(step) {
@@ -1239,25 +1265,24 @@ function tourDone(action = "") {
   if (action === "add") addAnimal();
   else if (action === "import") openPanel("Import Existing Records");
   else if (action === "founder") openPanel("Founding Keeper Studio");
-  else openPanel("Welcome Setup");
+  else if (action === "start" && !animals.length) addAnimal();
 }
 function menuMarkup() {
+  // Home, My Reptiles, Calendar, Care Logs and Resources live in the bottom bar, so they are not repeated here.
   let main = [
-    ["My Reptiles", "Profiles and individual care"],
-    ["Calendar", "Care Schedule · due dates and reminders"],
-    ["Care Logs", "Search all records"],
     ["Racks & Breeding", "Racks, rack feeding, pairings & clutches ♡"],
-    ["Import Existing Records", "Bring in old care notes"],
-    ["Resources", "Guides, urgent help and community"],
+    ["Photo Journal", "Photos and profile pictures"],
+    ["Import Existing Records", "Bring in old care notes or screenshots"],
+    ["Pet-Sitter Sheet", "Care instructions for a helper"],
+    ["Devices", "Sensors and camera shortcuts"],
+    ["Cloud Account", "Account, reminders & settings"],
   ];
   let tools = [
-    ["Photo Journal", "Photos and profile pictures"],
-    ["Devices", "Sensors and camera shortcuts"],
-    ["Pet-Sitter Sheet", "Care instructions for a helper"],
-    ["Get the App", "Add a shortcut to your phone"],
+    ["Data & Backup", "Download a copy of your records"],
+    ["Get the App", "Add Scale & Tell to your Home Screen"],
     ["Help & Feedback", "Ideas or something not working"],
-    ["Welcome Tour", "Replay your three-page introduction"],
-    ["Cloud Account", "Account & settings"],
+    ["Welcome Tour", "Replay the introduction"],
+    ["Privacy & Account", "Privacy, and deleting your account"],
   ];
   let tiles = (group) =>
     group
@@ -1275,7 +1300,7 @@ function menuMarkup() {
   return (
     '<p class="resourceIntro">Everything your keeper journal needs, in one place.</p><button class="menuTile menuFeature" onclick="openPanel(&quot;Founding Keeper Studio&quot;)"><strong>♡ Founding Keeper</strong><small>See your $14.99 one-time supporter extras and theme designs</small></button>' +
     tiles(main) +
-    '<details class="compactDisclosure"><summary>More tools & settings</summary>' +
+    '<details class="compactDisclosure"><summary>More</summary>' +
     tiles(tools) +
     "</details>"
   );
@@ -2089,10 +2114,14 @@ function save() {
 function updateStats() {
   let t = today(),
     reminders = entries.filter((e) => e.section === "Calendar" && !e.done);
-  document.getElementById("statReptiles").textContent = animals.length;
-  document.getElementById("statDue").textContent = reminders.filter((e) => e.date <= t).length;
-  document.getElementById("statUpcoming").textContent = reminders.filter((e) => e.date > t).length;
-  document.getElementById("statLogs").textContent = entries.filter((e) => e.section !== "Calendar").length;
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v;
+  };
+  set("statReptiles", animals.length);
+  set("statDue", reminders.filter((e) => e.date <= t).length);
+  set("statUpcoming", reminders.filter((e) => e.date > t).length);
+  set("statLogs", entries.filter((e) => e.section !== "Calendar").length);
   renderHomeToday();
 }
 /* V3.30 · Home "Today's Care" card fills the space above the bottom menu on taller phones. */
@@ -2111,40 +2140,241 @@ const HOME_TIPS = [
 function renderHomeToday() {
   const box = document.getElementById("homeToday");
   if (!box) return;
+  const tipBox = document.getElementById("homeTip");
   const t = today(),
     open = entries.filter((e) => e.section === "Calendar" && !e.done),
     due = open.filter((e) => e.date <= t).sort((a, b) => a.date.localeCompare(b.date)),
     next = open.filter((e) => e.date > t).sort((a, b) => a.date.localeCompare(b.date))[0],
     tip = HOME_TIPS[Math.floor(Date.now() / 86400000) % HOME_TIPS.length];
+  if (tipBox) tipBox.innerHTML = "<span>Keeper tip</span>" + esc(tip);
+  if (!animals.length) {
+    box.innerHTML =
+      '<div class="homeTodayCard"><h2>Let&#39;s get started ♡</h2><p class="homeTodayClear">Add your first reptile, then log feedings, sheds and weights in one tap. Reminders can go straight to your phone.</p><div class="homeTodayActions"><button onclick="addAnimal()">＋ Add my first reptile</button><button onclick="openPanel(\'Care Library\')">Care guides</button></div></div>';
+    return;
+  }
   let list;
   if (due.length) {
     list =
       '<ul class="homeTodayList">' +
       due
-        .slice(0, 3)
-        .map(
-          (e) =>
-            '<li><button onclick="openPanel(\'Due Today\')"><b>' +
+        .slice(0, 4)
+        .map((e) => {
+          const i = entries.indexOf(e);
+          return (
+            '<li><button class="homeTodayItem" onclick="openPanel(\'Due Today\')"><b>' +
             esc(e.animal) +
             "</b> · " +
             esc(e.detail) +
             (e.date < t ? '<span class="homeOverdue">overdue</span>' : "") +
-            "</button></li>",
-        )
+            '</button><button class="homeDone" onclick="homeMarkDone(' +
+            i +
+            ')" aria-label="Mark ' +
+            esc(e.animal + " " + e.detail) +
+            ' done">✓</button></li>'
+          );
+        })
         .join("") +
       "</ul>" +
-      (due.length > 3 ? '<button class="homeTodayMore" onclick="openPanel(\'Due Today\')">+ ' + (due.length - 3) + " more due</button>" : "");
+      (due.length > 4
+        ? '<button class="homeTodayMore" onclick="openPanel(\'Due Today\')">+ ' + (due.length - 4) + " more due</button>"
+        : "");
   } else {
     list =
       '<p class="homeTodayClear">All caught up ♡ Nothing due today.' +
-      (next ? "<br><small>Next: <b>" + esc(next.animal) + "</b> · " + esc(next.detail) + " · " + niceDate(next.date) + "</small>" : "") +
+      (next
+        ? "<br><small>Next: <b>" + esc(next.animal) + "</b> · " + esc(next.detail) + " · " + niceDate(next.date) + "</small>"
+        : "") +
       "</p>";
   }
   box.innerHTML =
     '<div class="homeTodayCard"><h2>Today&#39;s Care ♡</h2>' +
     list +
-    '<div class="homeTodayActions"><button onclick="openPanel(\'Log Care\')">＋ Log Care</button><button onclick="openPanel(\'Calendar\')">Calendar</button></div></div>' +
-    '<div class="homeTip"><span>Keeper tip</span>' + esc(tip) + "</div>";
+    '<div class="homeTodayActions"><button onclick="openQuickLog()">＋ Quick Log</button><button onclick="openPanel(\'Calendar\')">Calendar</button></div></div>';
+}
+/* One tap on ✓ finishes a reminder from the home screen. Repeating reminders schedule their next date. */
+function homeMarkDone(i) {
+  const e = entries[i];
+  if (!e || e.section !== "Calendar" || e.done) return;
+  const before = entries.length;
+  completeReminder(i, true);
+  const added = entries.slice(before);
+  stToast("Done ♡ " + e.animal + " · " + e.detail, "Undo", () => {
+    e.done = false;
+    delete e.completedAt;
+    added.forEach((x) => {
+      const k = entries.indexOf(x);
+      if (k >= 0) entries.splice(k, 1);
+    });
+    save();
+    render();
+  });
+}
+
+/* ---------------- V3.31 · Quick Log: one tap for the things keepers log most ---------------- */
+const QUICK_LOG = [
+  { id: "fed", label: "Fed", icon: "🍽", section: "Feeding Tracker", detail: "Ate" },
+  { id: "refused", label: "Refused", icon: "✕", section: "Feeding Tracker", detail: "Refused" },
+  { id: "shed", label: "Shed", icon: "✨", section: "Shed History", detail: "shed" },
+  { id: "weight", label: "Weighed", icon: "⚖", section: "Weight Tracker", detail: "" },
+  { id: "poop", label: "Pooped", icon: "💩", section: "Observations", detail: "Poop / urate" },
+  { id: "clean", label: "Spot cleaned", icon: "🧽", section: "Enclosure Care", detail: "Spot clean" },
+  { id: "water", label: "Fresh water", icon: "💧", section: "Enclosure Care", detail: "Water change" },
+  { id: "handled", label: "Handled", icon: "🤲", section: "Observations", detail: "Handling" },
+];
+let quickLogDate = "";
+function openQuickLog(a) {
+  if (a && animals.includes(a)) selectedAnimal = a;
+  if (!animals.includes(selectedAnimal)) selectedAnimal = animals[0] || "";
+  if (!animals.length) {
+    addAnimal();
+    return;
+  }
+  quickLogDate = today();
+  openPanel("Quick Log", selectedAnimal);
+}
+function quickLogMarkup() {
+  const a = selectedAnimal;
+  return (
+    '<p class="muted">Tap once to log for <b>' +
+    esc(a) +
+    "</b>.</p>" +
+    (animals.length > 1
+      ? '<div class="qlAnimals" role="group" aria-label="Choose a reptile">' +
+        animals
+          .map(
+            (x, i) =>
+              '<button class="qlAnimal' +
+              (x === a ? " on" : "") +
+              '" aria-pressed="' +
+              (x === a) +
+              '" onclick="quickLogPick(' +
+              i +
+              ')"><img src="' +
+              esc(portraitForAnimal(x).src) +
+              '" alt="">' +
+              esc(x) +
+              "</button>",
+          )
+          .join("") +
+        "</div>"
+      : "") +
+    '<div class="qlGrid">' +
+    QUICK_LOG.map(
+      (q) =>
+        '<button class="qlAction" onclick="quickLogDo(\'' +
+        q.id +
+        '\')"><span aria-hidden="true">' +
+        q.icon +
+        "</span>" +
+        esc(q.id === "shed" && animalCareType(a) === "invertebrate" ? "Molted" : q.label) +
+        "</button>",
+    ).join("") +
+    '</div><div class="qlWeigh" id="qlWeigh" hidden><label>Weight in grams<input type="number" id="qlGrams" min="0.1" max="100000" step="0.1" inputmode="decimal" placeholder="e.g. 1450"></label><button class="action" onclick="quickLogWeight()">Save weight</button></div>' +
+    '<label class="qlDate">Date<input type="date" id="qlDate" value="' +
+    esc(quickLogDate || today()) +
+    '" max="' +
+    today() +
+    '" onchange="quickLogDate=this.value"></label>' +
+    '<p class="qlStatus" id="qlStatus" role="status"></p>' +
+    '<button class="action secondary" onclick="openPanel(\'Log Care\',selectedAnimal)">More options (prey, temps, notes…)</button>'
+  );
+}
+function quickLogPick(i) {
+  if (!animals[i]) return;
+  selectedAnimal = animals[i];
+  render();
+}
+function quickLogEntry(q, extra) {
+  const date = validDate(quickLogDate) && quickLogDate <= today() ? quickLogDate : today();
+  let detail = q.detail;
+  if (q.id === "shed") detail = animalCareType(selectedAnimal) === "invertebrate" ? "Complete molt" : "Complete shed";
+  const e = { section: q.section, animal: selectedAnimal, detail, date, notes: "", ...(extra || {}) };
+  if (q.section === "Feeding Tracker") Object.assign(e, { preyType: "", preyWeight: "", response: detail === "Refused" ? "Refused" : "" });
+  entries.push(e);
+  save();
+  let msg = "Logged ♡ " + selectedAnimal + " · " + (q.id === "weight" ? e.detail + " g" : q.label);
+  if (q.section === "Feeding Tracker") {
+    const next = autoNextFeeding(selectedAnimal, date);
+    if (next) msg += ". Next feeding reminder: " + niceDate(next);
+  }
+  render();
+  const st = document.getElementById("qlStatus");
+  if (st) st.textContent = msg;
+  stToast(msg, "Undo", () => {
+    const k = entries.indexOf(e);
+    if (k >= 0) entries.splice(k, 1);
+    save();
+    render();
+  });
+}
+function quickLogDo(id) {
+  const q = QUICK_LOG.find((x) => x.id === id);
+  if (!q || !animals.includes(selectedAnimal)) return;
+  if (id === "weight") {
+    const box = document.getElementById("qlWeigh");
+    if (box) {
+      box.hidden = false;
+      document.getElementById("qlGrams")?.focus();
+    }
+    return;
+  }
+  quickLogEntry(q);
+}
+function quickLogWeight() {
+  const g = parseFloat(document.getElementById("qlGrams")?.value || "");
+  if (!Number.isFinite(g) || g <= 0 || g > 100000) {
+    alert("Enter the weight in grams.");
+    return;
+  }
+  quickLogEntry(QUICK_LOG.find((x) => x.id === "weight"), { detail: String(Number(g.toFixed(1))) });
+}
+
+/* ---------------- V3.31 · Automatic next feeding (only when the keeper set a feeding interval) ---------------- */
+function feedingInterval(a) {
+  const n = Number(carePlans[a]?.feedDays);
+  return Number.isInteger(n) && n >= 1 && n <= 365 ? n : 0;
+}
+function autoNextFeeding(a, fedDate) {
+  const days = feedingInterval(a);
+  if (!days || !validDate(fedDate)) return "";
+  const next = advanceDate(fedDate, days);
+  const open = entries
+    .filter((e) => e.section === "Calendar" && !e.done && e.animal === a && /feed/i.test(e.detail || ""))
+    .sort((x, y) => x.date.localeCompare(y.date));
+  if (open.length) {
+    if (open[0].date < next) open[0].date = next;
+  } else {
+    entries.push({ section: "Calendar", animal: a, detail: "Feeding reminder", date: next, notes: "", repeatDays: 0, done: false, autoFeeding: true });
+  }
+  save();
+  return open.length ? open[0].date : next;
+}
+
+/* ---------------- Small "toast" message with an optional Undo ---------------- */
+let stToastTimer = null;
+function stToast(text, actionLabel, action) {
+  let el = document.getElementById("stToast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "stToast";
+    el.className = "stToast";
+    el.setAttribute("role", "status");
+    document.body.appendChild(el);
+  }
+  el.innerHTML = "<span></span>";
+  el.firstChild.textContent = text;
+  if (actionLabel && action) {
+    const b = document.createElement("button");
+    b.textContent = actionLabel;
+    b.onclick = () => {
+      el.classList.remove("on");
+      action();
+    };
+    el.appendChild(b);
+  }
+  el.classList.add("on");
+  clearTimeout(stToastTimer);
+  stToastTimer = setTimeout(() => el.classList.remove("on"), 6000);
 }
 /* Modal navigation remembers the previous panel, so settings > devices/account has a real Back button. */
 let panelHistory = [];
@@ -3399,7 +3629,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.30";
+const SCALE_LC_VERSION = "3.32";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -3513,11 +3743,60 @@ function privacyAccountMarkup() {
     '<p class="lcLead">Your keeper journal belongs to your account. Here’s how its information is handled.</p>' +
     '<div class="lcPanel"><h3>What stays private?</h3><p>Your animal profiles, care logs, Photo Journal, reminders and saved account email are personal records. They are not published to the Herps & Hers Facebook group or the Messenger Keeper Lounge.</p><p>Those external communities have their own platform rules. Opening their links does not share your journal.</p></div>' +
     '<div class="lcPanel"><h3>Automatic saving</h3><p>When you’re signed in, Scale & Tell saves to your account. If a save fails or two copies need review, the app should tell you rather than erase changes.</p><button class="action secondary" onclick="openPanel(\'Cloud Account\')">My Account</button><button class="action secondary" onclick="openPanel(\'Data & Backup\')">Optional backup</button></div>' +
-    '<div class="lcPanel"><h3>Account deletion</h3><p>If you want your account and its cloud records deleted, you can prepare a private deletion request. This does <b>not</b> instantly erase data or submit a request on its own. Email support@scaleandtell.app so the support team can verify and process the request.</p><p class="lcSmall">Make sure the request is sent privately. Never include your password.</p><button class="action secondary" onclick="prepareDeletionRequest()">Prepare deletion request</button><p id="lcDeleteStatus" class="lcSmall" role="status"></p></div>' +
+    '<div class="lcPanel lcDanger"><h3>Delete my account</h3><p>This permanently deletes your Scale & Tell account, every animal, care log, reminder, photo and setting. It can’t be undone. Download a backup first if you want a copy.</p><button class="action secondary" onclick="openPanel(\'Data & Backup\')">Download a backup first</button><details class="compactDisclosure"><summary>I want to delete my account</summary><label>Type <b>DELETE</b> to confirm<input id="deleteConfirm" autocomplete="off" autocapitalize="characters" placeholder="DELETE"></label><button class="action dangerAction" onclick="deleteMyAccount()">Permanently delete my account</button><p id="lcDeleteStatus" class="lcSmall" role="status"></p><p class="lcSmall">Lifetime purchases aren’t refunded by deleting an account. Questions? <a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a></p></details></div>' +
     '<p class="lcSmall">Signed-in account: ' +
     esc(email) +
     '. Support: <a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a>. See the <a href="./privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a href="./deletion.html" target="_blank" rel="noopener noreferrer">deletion request instructions</a>.</p>'
   );
+}
+/* V3.31 · Keepers delete their own account: photos first (storage), then the account and everything linked to it. */
+async function deleteMyAccount() {
+  const status = document.getElementById("lcDeleteStatus"),
+    say = (t) => {
+      if (status) status.textContent = t;
+    };
+  if ((document.getElementById("deleteConfirm")?.value || "").trim().toUpperCase() !== "DELETE") {
+    say("Type DELETE in the box to confirm.");
+    return;
+  }
+  if (!cloudClient || !cloudSession) {
+    say("Please sign in first.");
+    return;
+  }
+  if (!confirm("Last check: permanently delete your Scale & Tell account and all of its records?")) return;
+  say("Deleting your account…");
+  try {
+    const user = await cloudAuthorizedUser();
+    // Make sure deletion is available before touching any photos.
+    const probe = await cloudClient.rpc("delete_my_account", { p_confirm: "CHECK" });
+    if (!probe.error || !/DELETE/.test(probe.error.message || "")) throw Error("Account deletion is not available yet.");
+    try {
+      await pushDisable(true);
+    } catch (_) {}
+    for (const folder of [user.id + "/photos", user.id]) {
+      for (let round = 0; round < 20; round++) {
+        const { data } = await cloudClient.storage.from(CLOUD_BUCKET).list(folder, { limit: 100 });
+        const files = (data || []).filter((f) => f && f.id).map((f) => folder + "/" + f.name);
+        if (!files.length) break;
+        const { error } = await cloudClient.storage.from(CLOUD_BUCKET).remove(files);
+        if (error) break;
+      }
+    }
+    const { error } = await cloudClient.rpc("delete_my_account", { p_confirm: "DELETE" });
+    if (error) throw error;
+    cloudPauseWrites = true;
+    try {
+      for (const key of Object.keys(CLOUD_LOCAL_KEYS)) localStorage.removeItem(key);
+      ["scaleTellSyncOwner33", "scaleTellSyncRev33", "scaleTellSyncDirty33"].forEach((k) => localStorage.removeItem(k));
+    } catch (_) {}
+    try {
+      await cloudClient.auth.signOut({ scope: "local" });
+    } catch (_) {}
+    alert("Your Scale & Tell account has been deleted. Thank you for being part of Herps & Hers ♡");
+    location.reload();
+  } catch (e) {
+    say("Your account could not be deleted right now. Please try again, or email support@scaleandtell.app and we’ll delete it for you.");
+  }
 }
 function prepareDeletionRequest() {
   const email = cloudSession?.user?.email || "(include account email)";
@@ -3634,7 +3913,8 @@ function render() {
       esc(
         weights
           .map((e) => ({ ...e, _i: entries.indexOf(e) }))
-          .sort((x, y) => y.date.localeCompare(x.date) || y._i - x._i)[0]?.detail ||
+          .sort((x, y) => y.date.localeCompare(x.date) || y._i - x._i)
+          .map((e) => (/^\d+(\.\d+)?$/.test(String(e.detail).trim()) ? String(e.detail).trim() + " g" : e.detail))[0] ||
           p.weight ||
           "Not set",
       ) +
@@ -3642,8 +3922,12 @@ function render() {
       history.length +
       "</b></div><div><small>Next care</small><b>" +
       nextCareLabel(a) +
-      '</b></div></div><button class="action profilePrimaryAction" onclick="openPanel(&quot;Log Care&quot;,selectedAnimal)">+ Log Care</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
+      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
     profileTab("Overview");
+    return;
+  }
+  if (current === "Quick Log") {
+    el.innerHTML = quickLogMarkup();
     return;
   }
   if (current === "Log Care") {
@@ -3813,7 +4097,7 @@ function render() {
         ? reminderExtraFields() +
           "" +
           repeatSelectMarkup("repeatDays", "repeatCustom", "repeatCustomLabel") +
-          '<p class="helperLine">Repeating tasks schedule the next occurrence only when you mark the current one Done. No automatic feeding assumptions.</p>'
+          '<p class="helperLine">Repeating tasks schedule the next occurrence when you mark the current one Done. If you set a feeding schedule for an animal, logging a feeding moves its next feeding reminder automatically.</p>'
         : "") +
       (current === "Feeding Tracker"
         ? '<label id="foodTypeLabel">' +
@@ -3905,7 +4189,7 @@ function render() {
   }
   if (current === "Resources") {
     el.innerHTML =
-      '<p class="resourceIntro">Herps & Hers · Learn ♡ Share ♡ Grow. Choose the help you need without sorting through duplicated screens.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Recommended Products</strong><small>Gear we trust for reliable temperature and humidity readings.</small></button><p class="resourceMuted">Devices can be assigned per animal in Habitat. Camera shortcuts open their official service. Gauges are manually logged until a supported integration is available.</p><button class="action secondary" onclick="openPanel(\'Data & Backup\')">Back up your records</button><button class="action secondary" onclick="openPanel(\'Pet-Sitter Sheet\')">Pet-sitter / emergency care sheet</button>';
+      '<p class="resourceIntro">Herps & Hers · Learn ♡ Share ♡ Grow. Choose the help you need without sorting through duplicated screens.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Reptile Products</strong><small>First Time Keeper Essentials, our Amazon and Chewy picks, and SensorPush.</small></button>';
     return;
   }
   if (current === "Recommended Products") {
@@ -4931,25 +5215,34 @@ function growthChart(a) {
       let n = parseFloat(e.detail);
       if (Number.isFinite(n) && n > 0) byDate.set(e.date, n);
     });
-  let w = [...byDate].map(([date, n]) => ({ date, n })).sort((x, y) => x.date.localeCompare(y.date));
+  let w = [...byDate].map(([date, n]) => ({ date, n })).sort((x, y) => x.date.localeCompare(y.date)).slice(-24);
   if (w.length < 2)
-    return '<p class="muted">Log weights on two different dates to see a growth chart. If you log more than once on a day, the latest entry is plotted.</p>';
+    return '<p class="muted">Log weights on two different dates to see a growth chart. Quick Log → Weighed is the fastest way.</p>';
   let lo = Math.min(...w.map((x) => x.n)),
     hi = Math.max(...w.map((x) => x.n)),
-    range = hi - lo || 1,
-    points = w.map((x, i) => 20 + (i * 280) / (w.length - 1) + "," + (115 - ((x.n - lo) / range) * 90)).join(" ");
+    pad = (hi - lo) * 0.12 || hi * 0.05 || 1;
+  lo = Math.max(0, lo - pad);
+  hi = hi + pad;
+  const X = (i) => 46 + (i * 262) / (w.length - 1),
+    Y = (n) => 120 - ((n - lo) / (hi - lo)) * 100,
+    pts = w.map((x, i) => X(i).toFixed(1) + "," + Y(x.n).toFixed(1)),
+    first = w[0],
+    last = w[w.length - 1],
+    delta = Number((last.n - first.n).toFixed(1)),
+    pct = first.n ? Math.round((delta / first.n) * 100) : 0,
+    fmt = (n) => (n >= 1000 ? (n / 1000).toFixed(2).replace(/\.?0+$/, "") + " kg" : Number(n.toFixed(1)) + " g");
   return (
-    '<div class="growth"><strong>Weight trend</strong><svg viewBox="0 0 320 140" role="img" aria-label="Weight history growth chart"><polyline points="' +
-    points +
-    '" fill="none" stroke="#79538e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><small>' +
-    niceDate(w[0].date) +
-    ": " +
-    w[0].n +
-    " g → " +
-    niceDate(w[w.length - 1].date) +
-    ": " +
-    w[w.length - 1].n +
-    " g</small><small>One point per day, using the latest recorded weight.</small></div>"
+    '<div class="growth"><strong>Weight trend</strong><svg viewBox="0 0 320 150" role="img" aria-label="Weight history for ' +
+    esc(a) +
+    '">' +
+    '<line x1="46" y1="20" x2="308" y2="20" class="gGrid"/><line x1="46" y1="70" x2="308" y2="70" class="gGrid"/><line x1="46" y1="120" x2="308" y2="120" class="gGrid"/>' +
+    '<text x="40" y="24" class="gLab" text-anchor="end">' + esc(fmt(hi)) + '</text><text x="40" y="124" class="gLab" text-anchor="end">' + esc(fmt(lo)) + "</text>" +
+    '<polyline points="' + pts.join(" ") + '" class="gLine"/>' +
+    pts.map((p, i) => '<circle cx="' + p.split(",")[0] + '" cy="' + p.split(",")[1] + '" r="' + (i === pts.length - 1 ? 4.5 : 3) + '" class="gDot"/>').join("") +
+    '<text x="46" y="142" class="gLab">' + esc(niceDate(first.date).replace(/^\w+, /, "")) + '</text><text x="308" y="142" class="gLab" text-anchor="end">' + esc(niceDate(last.date).replace(/^\w+, /, "")) + "</text>" +
+    "</svg><small>" +
+    esc(fmt(first.n)) + " → <b>" + esc(fmt(last.n)) + "</b> (" + (delta >= 0 ? "+" : "") + esc(fmt(Math.abs(delta)).replace(/^/, delta < 0 ? "−" : "")) + ", " + (pct >= 0 ? "+" : "") + pct + "%) across " + w.length + " weigh-ins" +
+    "</small></div>"
   );
 }
 function nextCareLabel(a) {
@@ -5034,6 +5327,7 @@ function profileOverviewMarkup(a) {
   return (
     '<h3 class="sectionTitle">Coming up</h3>' +
     compactUpcomingMarkup(future) +
+    (entries.some((e) => e.animal === a && e.section === "Weight Tracker") ? growthChart(a) : "") +
     '<button class="action secondary" onclick="openPanel(&quot;Calendar&quot;,selectedAnimal)">View full calendar / add reminder</button><details class="profileFold"><summary>Care insights · ' +
     d.recordCount +
     ' documented entries</summary><p class="helperLine">Keeper-recorded trends, not a diagnosis.</p>' +
@@ -5450,7 +5744,7 @@ function saveWeight() {
   save();
   render();
 }
-function completeReminder(i) {
+function completeReminder(i, quiet) {
   let e = entries[i];
   if (!e || e.section !== "Calendar" || e.done) return;
   e.done = true;
@@ -5481,7 +5775,7 @@ function completeReminder(i) {
   }
   save();
   render();
-  reminderOfferLog(e);
+  if (!quiet) reminderOfferLog(e);
 }
 function editProfile(a) {
   let i = animals.indexOf(a);
@@ -5573,8 +5867,10 @@ function saveEntry() {
         }
       : {}),
   });
+  let nextFeed = current === "Feeding Tracker" ? autoNextFeeding(selectedAnimal, date) : "";
   save();
   render();
+  if (nextFeed) stToast("Saved ♡ Next feeding reminder: " + niceDate(nextFeed));
 }
 
 const PET_SPECIES = [
@@ -5664,7 +5960,11 @@ function animalSetupMarkup() {
     (GENERIC_PORTRAITS[speciesPortraitKey(sp)] || GENERIC_PORTRAITS.other) +
     '" alt="Default species portrait"><div><strong id="animalDefaultLabel">' +
     esc(sp) +
-    '</strong><small>Generic image used until a Photo Journal profile picture is selected.</small></div></div><div class="animalFormGrid"><label>Sex<select id="animalSex">' +
+    '</strong><small>Generic image used until a Photo Journal profile picture is selected.</small></div></div><label>Feeding schedule (optional)<span class="feedEvery">Every <input type="number" id="animalFeedDays" min="1" max="365" step="1" inputmode="numeric" placeholder="7" value="' +
+    esc(isEdit ? carePlans[name]?.feedDays ?? "" : "") +
+    '"> days</span></label><p class="helperLine">Set this and every logged feeding schedules the next feeding reminder for you. Leave blank to schedule your own.</p><details class="compactDisclosure animalMore"' +
+    (isEdit ? " open" : "") +
+    '><summary>More details (optional): sex, morph, dates, enclosure, notes</summary><div class="animalFormGrid"><label>Sex<select id="animalSex">' +
     ["Unknown", "Male", "Female", "Unsexed"]
       .map((v) => "<option " + ((p.sex || "Unknown") === v ? "selected" : "") + ">" + v + "</option>")
       .join("") +
@@ -5684,7 +5984,7 @@ function animalSetupMarkup() {
     esc(p.sitterInstructions || "") +
     '</textarea></label><label>Handling precautions for a caregiver (optional)<textarea id="animalHandlingNotes" maxlength="500" placeholder="e.g. No handling unless needed">' +
     esc(p.handlingNotes || "") +
-    '</textarea></label><button class="action" onclick="saveAnimalSetup()">' +
+    '</textarea></label></details><button class="action" onclick="saveAnimalSetup()">' +
     (isEdit ? "Save animal" : "Add animal") +
     '</button><button class="action secondary" onclick="openPanel(&quot;My Reptiles&quot;)">Cancel</button>'
   );
@@ -5715,6 +6015,7 @@ function saveAnimalSetup() {
       "Health & Vet",
       "Pet-Sitter Sheet",
       "Welcome Setup",
+      "Quick Log",
       ...BREEDER_PANELS,
     ].some((x) => x.toLowerCase() === name.toLowerCase())
   ) {
@@ -5733,6 +6034,13 @@ function saveAnimalSetup() {
     alert("Enter valid dates or leave them blank.");
     return;
   }
+  let feedRaw = (document.getElementById("animalFeedDays")?.value || "").trim(),
+    feedDays = feedRaw === "" ? "" : Number(feedRaw);
+  if (feedDays !== "" && !(Number.isInteger(feedDays) && feedDays >= 1 && feedDays <= 365)) {
+    alert("Feeding schedule must be a whole number of days from 1 to 365, or blank.");
+    return;
+  }
+  let wasFirst = !old && !animals.length;
   let nextP = {
     ...(old ? profiles[old] || {} : {}),
     sex: document.getElementById("animalSex").value,
@@ -5780,6 +6088,10 @@ function saveAnimalSetup() {
   }
   species[name] = sp;
   profiles[name] = nextP;
+  if (feedDays !== "" || carePlans[name]?.feedDays !== undefined) {
+    carePlans[name] = { ...(carePlans[name] || {}), feedDays };
+    saveCarePlans();
+  }
   try {
     scaleStoreSet("scaleTellProfiles03", JSON.stringify(profiles));
     saveRoster();
@@ -5789,6 +6101,8 @@ function saveAnimalSetup() {
   }
   selectedAnimal = name;
   openPanel(name);
+  if (wasFirst)
+    stToast("Welcome, " + name + " ♡ Tap Quick Log whenever you feed, weigh or clean.");
 }
 function moveAnimal(i, delta) {
   let j = i + delta;
@@ -6114,6 +6428,7 @@ function careOptions(section, a) {
   }
   if (section === "Observations") {
     let base = [
+      "Poop / urate",
       "Exploration / activity",
       "Hiding more",
       "Behavior change",
