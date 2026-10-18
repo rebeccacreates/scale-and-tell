@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#45205b"><title>Shared report · Scale &amp; Tell</title><link rel="icon" href="icon-192.png">
+<meta name="robots" content="noindex">
+<style>
+:root{--ink:#332239;--brand:#45205b;--accent:#79538e;--bg:#f4eef7;--card:#fff;--line:#e3d4ea}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Arial,sans-serif}
+.bar{position:sticky;top:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left,0px));background:var(--brand);color:#fff;z-index:2}
+.bar b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:Georgia,serif;font-style:italic;font-size:18px}
+.bar button,.bar a{background:#fff;color:var(--brand);border:0;border-radius:10px;padding:8px 12px;font:600 14px Arial,sans-serif;cursor:pointer;text-decoration:none}
+iframe{display:block;width:100%;border:0;background:#fff;min-height:calc(100vh - 60px)}
+.msg{max-width:520px;margin:60px auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;text-align:center}
+</style></head><body>
+<div class="bar"><b id="t">Loading…</b><button id="pr" hidden>Print / Save as PDF</button><a href="./" >Scale &amp; Tell</a></div>
+<div id="out"></div>
+<script>
+const URL_ = "https://fitlubsbesadknkjimqd.supabase.co", KEY = "sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG";
+const id = (new URLSearchParams(location.search).get("id") || "").replace(/[^0-9a-f-]/gi, "");
+const show = (t) => { document.getElementById("t").textContent = "Scale & Tell"; document.getElementById("out").innerHTML = '<div class="msg"><p></p></div>'; document.querySelector(".msg p").textContent = t; };
+(async () => {
+  if (!id) return show("This link isn’t complete. Ask the sender to share it again.");
+  try {
+    const r = await fetch(URL_ + "/functions/v1/scale-hub", { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" }, body: JSON.stringify({ action: "doc_get", id }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.html) return show(j.error || "This report couldn’t be opened.");
+    document.title = j.title + " · Scale & Tell";
+    document.getElementById("t").textContent = j.title;
+    // The report is shown in a sandboxed frame: no scripts run inside it.
+    const f = document.createElement("iframe");
+    f.setAttribute("sandbox", "allow-same-origin allow-modals allow-popups");
+    f.setAttribute("title", j.title);
+    f.srcdoc = j.html;
+    f.onload = () => { try { f.style.height = f.contentDocument.documentElement.scrollHeight + 40 + "px"; } catch (e) {} };
+    document.getElementById("out").appendChild(f);
+    const pr = document.getElementById("pr");
+    pr.hidden = false;
+    pr.onclick = () => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { window.print(); } };
+  } catch (e) { show("This report couldn’t be opened. Check your connection and try again."); }
+})();
+</script>
+</body></html>

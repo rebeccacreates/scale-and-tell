@@ -3224,3 +3224,8 @@ body[data-st-theme] .homePetsLink{background:var(--t-panel,#fffaf5);color:var(--
 .expoCard img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px}.expoCard small{color:#7a6a80}.expoPrice{font:700 22px Georgia,serif;color:#45205b}
 .alertLine{padding:8px 0;border-bottom:1px solid #f0e8f3}
 body[data-st-theme] :is(.rescueStages button,.famBox,.incLog div,.expoCard){background:var(--t-panel,#fff);color:var(--t-text,#45205b)}
+.reportBtns{display:flex;gap:8px;flex-wrap:wrap}.reportBtns .action{flex:1;min-width:140px}
+
+.planChecking{padding:28px 8px;text-align:center;color:var(--muted,#7a6a80);font-weight:600}
+body.planChecking .upgradeCta,body.planChecking .founderCta{visibility:hidden}
+.importDup{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:9px;background:#fff1d6;color:#7a4b00;font-size:12px;font-weight:700}

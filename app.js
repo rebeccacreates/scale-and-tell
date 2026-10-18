@@ -756,7 +756,7 @@ async function founderRefreshEntitlement() {
       try { renderHomeCards(); } catch (e) {}
       setTimeout(bizQueueAuto, 2500);
       if (!window.__stTransferChecked) { window.__stTransferChecked = true; setTimeout(transferCheck, 3500); }
-      if (current === "Founding Keeper Studio") render();
+      if (["Founding Keeper Studio", "Plans", "Upgrade"].includes(current)) render();
     }
   }
 }
@@ -1199,21 +1199,8 @@ function founderDoc(kind) {
 }
 function founderOpenPrint(kind) {
   if (!stCanUsePack() || !["binder", "year", "printables"].includes(kind)) return;
-  /* Open synchronously from the user click for popup protection. */ let tab = window.open("", "_blank");
-  if (!tab) {
-    alert("Allow a pop-up for this printable, or open Scale & Tell directly in Safari or Chrome and try again.");
-    return;
-  }
-  try {
-    tab.document.open();
-    tab.document.write(bizBrandPrint(founderDoc(kind)));
-    tab.document.close();
-  } catch (e) {
-    try {
-      tab.close();
-    } catch (ignored) {}
-    alert("Could not open your printable. Please try again.");
-  }
+  const titles = { binder: "Care Binder", year: "My Year in Scales", printables: "Keeper Printables" };
+  reportShow(titles[kind], bizBrandPrint(founderDoc(kind)));
 }
 
 let tourStep = 0;
@@ -1321,8 +1308,10 @@ function tourMarkup() {
   if (tourStep === 1) page = tourGetAppMarkup();
   if (tourStep === 2)
     page =
-      stCanUsePack()
-        ? '<div class="tourSlide"><div class="tourPack"><h4>You&#39;re a Founding Keeper ♡</h4><p>Thank you for supporting Scale &amp; Tell! Your extras are unlocked: four app designs, your Care Binder, My Year in Scales, printable keeper cards and room for 40 animals.</p><button class="action secondary" onclick="tourDone(\'founder\')">Open Founding Keeper Studio</button></div></div>'
+      stPlanChecking()
+        ? '<div class="tourSlide"><p class="planChecking">Checking your plan…</p></div>'
+        : stCanUsePack()
+        ? '<div class="tourSlide"><div class="tourPack"><h4>You&#39;re a Founding Keeper ♡</h4><p>Thank you for supporting Scale &amp; Tell! Your extras are unlocked: four app designs, your Care Binder, My Year in Scales, printable keeper cards and room for ' + stAnimalLimit() + ' animals on your ' + esc(ST_PLANS[stPlan()]?.name || "plan") + ' plan.</p><button class="action secondary" onclick="tourDone(\'founder\')">Open Founding Keeper Studio</button></div></div>'
         : '<div class="tourSlide"><div class="tourPack"><h4>Want more? Become a Founding Keeper ♡</h4><p><b>$14.99 once · optional.</b> Room for 40 animals, four app designs, a personalized Care Binder, My Year in Scales and printable keeper cards. Breeding? See <b>Founding Breeder</b> for racks, pairings and clutches.</p><button class="action secondary" onclick="tourDone(\'founder\')">See the Founding Keeper extras</button></div><p class="lcSmall">Your animals, care logs, reminders, photos and backups are all included already. The extras are just a bonus.</p></div>';
   return '<div class="tourShell" aria-live="polite">' + page + nav + "</div>";
 }
@@ -3457,7 +3446,7 @@ function compassData(a) {
     obs,
     pending,
     lines,
-    recordCount: entries.filter((e) => e.animal === a).length,
+    recordCount: entries.filter((e) => e.animal === a && !["Calendar", "Ledger", "Breeding"].includes(e.section)).length,
   };
 }
 function insightLabel(v) {
@@ -3474,7 +3463,7 @@ function compassMarkup(a) {
   return (
     '<p class="notice">Care Insights is a transparent summary of entries YOU have logged. It is not a veterinary assessment, prediction or diagnosis. Missing records do not mean a task was completed.</p><p class="muted">Based on ' +
     d.recordCount +
-    " saved entries for " +
+    " care log entries (reminders not counted) for " +
     esc(a) +
     ". Targets are optional and keeper-entered.</p>" +
     d.lines
@@ -3884,7 +3873,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.50";
+const SCALE_LC_VERSION = "3.51";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4094,6 +4083,10 @@ function render() {
     document.getElementById("heading").textContent = breederHeading();
     return;
   }
+  if (current === "Founding Keeper Studio" && stPlanChecking()) {
+    el.innerHTML = '<p class="planChecking">Checking your plan…</p>';
+    return;
+  }
   if (current === "Founding Keeper Studio") {
     el.innerHTML = founderStudioMarkup();
     setTimeout(founderMountPayPal, 0);
@@ -4180,6 +4173,10 @@ function render() {
       nextCareLabel(a) +
       '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button>' + (bizIsBreeder() ? '<button onclick="geneOpen(selectedAnimal)">Genetics &amp; lineage</button>' : '') + (stIsRescue() ? '<button onclick="rescueOf(selectedAnimal) ? rescueOpen(selectedAnimal) : (profiles[selectedAnimal] = { ...(profiles[selectedAnimal] || {}), rescue: { status: \'Intake\', intakeDate: today() } }, bizSaveProfiles(), rescueOpen(selectedAnimal))">Rescue record</button>' : '') + (stIsRescue() || bizIsBreeder() ? '<button onclick="rescueAnimal=selectedAnimal;medEditId=\'\';openPanel(\'Medication\')">Add medication</button>' : '') + (homeBusinessMode() || stIsRescue() ? '<button onclick="saleOpen(selectedAnimal)">' + (stIsRescue() && !stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder") ? "Adoption &amp; placement" : "Listing &amp; sale") + '</button>' : '') + '<button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
     profileTab("Overview");
+    return;
+  }
+  if ((current === "Plans" || current === "Upgrade" || current === "Founding Keeper Studio") && stPlanChecking()) {
+    el.innerHTML = '<p class="planChecking">Checking your plan…</p>';
     return;
   }
   if (current === "Plans") {
@@ -4712,7 +4709,13 @@ function importParseNotes(text) {
   });
 }
 function importNewDraft(rows) {
-  importDraft = rows.map((r, i) => ({ ...r, checked: !!r.date && !!animals.includes(r.animal), line: i + 1 }));
+  const dk = (e) => [e.date, String(e.animal || "").toLowerCase(), e.section, String(e.detail || "").toLowerCase()].join("¦");
+  const seen = new Set(entries.map(dk));
+  importDraft = rows.map((r, i) => {
+    const k = dk(r), dup = seen.has(k);
+    seen.add(k);
+    return { ...r, dup, checked: !dup && !!r.date && !!animals.includes(r.animal), line: i + 1 };
+  });
   importStatus = rows.length
     ? "Review the dates and animals carefully. Nothing has been saved yet."
     : "No entries recognized.";
@@ -4886,22 +4889,30 @@ function importFindDate(line) {
   let m;
   if ((m = /\b(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})\b/.exec(t))) return finish(+m[1], +m[2], +m[3], m[0]);
   // 10/12/2026, 10-12-26, 10.12.26: numeric dates with a year can appear anywhere in the line.
-  if ((m = /\b(\d{1,2})([/.-])(\d{1,2})\2(\d{4}|\d{2})\b/.exec(t)) && +m[1] <= 12 && +m[3] <= 31)
-    return finish(+m[4], +m[1], +m[3], m[0]);
+  if ((m = /\b(\d{1,2})([/.-])(\d{1,2})\2(\d{4}|\d{2})\b/.exec(t))) {
+    if (+m[1] <= 12 && +m[3] <= 31) return finish(+m[4], +m[1], +m[3], m[0]);
+    // 13/10/2026 can only be day-first.
+    if (+m[1] <= 31 && +m[3] <= 12) return finish(+m[4], +m[3], +m[1], m[0]);
+  }
   // 10/12 without a year only counts at the start of a line, so "1/2 rat" or "2-3 crickets" are not dates.
   if ((m = /^[\s•·*\-–—]*(\d{1,2})[/-](\d{1,2})(?![\d/.-])/.exec(t)) && +m[1] <= 12 && +m[2] <= 31)
     return finish(null, +m[1], +m[2], m[0].replace(/^[\s•·*\-–—]+/, ""));
+  // "may" is also an everyday word ("may need 2 rats"), so it only counts as a month when written as one.
   const mon = "(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?";
-  if ((m = new RegExp("\\b" + mon + "\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?", "i").exec(t)))
+  const realMonth = (x, i) => x && (x[i].toLowerCase() !== "may" || x[i] === "May");
+  if ((m = new RegExp("\\b" + mon + "\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?", "i").exec(t)) && realMonth(m, 1))
     return finish(m[3] ? +m[3] : null, IMPORT_MONTHS.indexOf(m[1].toLowerCase().slice(0, 3)) + 1, +m[2], m[0]);
-  if ((m = new RegExp("\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+" + mon + "(?:,?\\s+(\\d{4}))?", "i").exec(t)))
+  if ((m = new RegExp("\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+" + mon + "(?:,?\\s+(\\d{4}))?", "i").exec(t)) && realMonth(m, 2))
     return finish(m[3] ? +m[3] : null, IMPORT_MONTHS.indexOf(m[2].toLowerCase().slice(0, 3)) + 1, +m[1], m[0]);
   return null;
 }
 function importGuessSection(t) {
   const s = t.toLowerCase();
   // A keeper's own rule: grams and prey words mean a feeding, unless the line says weigh/weight.
-  if (/\bweigh|\bweight\b/.test(s)) return "Weight Tracker";
+  // "prey weight 45g" or "rat weighed 60g" describes the meal, not the animal.
+  const preyWord = "(?:prey|feeders?|rats?|mouse|mice|pinky|pinkies|pinkie|fuzzy|fuzzies|hoppers?|chicks?|meal|food|f\\/t|ft)";
+  const animalWeigh = s.replace(new RegExp("\\b" + preyWord + "\\s*(?:weigh\\w*|weight|wt)\\b", "g"), " ").replace(/\b(?:weigh\w*|weight|wt)\s*(?:of\s*)?(?:the\s*)?(?:prey|rat|mouse|feeder)\b/g, " ");
+  if (/\bweigh|\bweight\b/.test(animalWeigh)) return "Weight Tracker";
   if (/uvb|bulb/.test(s)) return "UVB & Lighting";
   if (/supplement|calcium|\bd3\b|multivit|vitamin/.test(s)) return "Supplements";
   if (
@@ -5121,6 +5132,7 @@ function importRecordsMarkup() {
               (r.checked ? "checked" : "") +
               "> Include entry " +
               (i + 1) +
+              (r.dup ? ' <span class="importDup">Possible duplicate: already in your journal or listed above</span>' : "") +
               '</label><label>Date<input id="importDate' +
               i +
               '" type="date" value="' +
@@ -5186,7 +5198,7 @@ function importApprovedRecords() {
   }
   if (!accepted.length) return importSetStatus("Select at least one valid, new entry. Nothing was imported.");
   let key = (e) =>
-    [e.date, e.animal.toLowerCase(), e.section, e.detail.toLowerCase(), (e.notes || "").trim().toLowerCase()].join("¦");
+    [e.date, e.animal.toLowerCase(), e.section, e.detail.toLowerCase()].join("¦");
   let existing = new Set(entries.map(key));
   let unique = [];
   for (const e of accepted) {
@@ -5659,7 +5671,7 @@ function profileOverviewMarkup(a) {
     (entries.some((e) => e.animal === a && e.section === "Weight Tracker") ? growthChart(a) : "") +
     '<button class="action secondary" onclick="openPanel(&quot;Calendar&quot;,selectedAnimal)">View full calendar / add reminder</button><details class="profileFold"><summary>Care insights · ' +
     d.recordCount +
-    ' documented entries</summary><p class="helperLine">Keeper-recorded trends, not a diagnosis.</p>' +
+    ' care log entries</summary><p class="helperLine">Keeper-recorded trends, not a diagnosis.</p>' +
     d.lines
       .slice(0, 4)
       .map((v) => '<div class="compassInsight"><p>' + esc(v) + "</p></div>")
@@ -7293,7 +7305,11 @@ async function accessRedeemCode() {
     say("Could not check the code right now. Please try again.");
   }
 }
+function stPlanChecking() {
+  return !!(cloudSession && !stAccessChecked);
+}
 function updateAuthGate() {
+  document.body.classList.toggle("planChecking", stPlanChecking());
   const gate = document.getElementById("authGate"),
     body = document.getElementById("authGateBody");
   if (!gate || !body) return;
@@ -9856,6 +9872,7 @@ function savePairing() {
   if (!female || !male) return alert("Choose both the female and the male.");
   if (female === male) return alert("Choose two different animals.");
   if (!validDate(date)) return alert("Choose a valid pairing date.");
+  if (!breedSpeciesOk(female, male)) return;
   const events = [...document.querySelectorAll("#pairEvents .evRow")]
     .map((row) => ({ type: row.querySelector(".evType").value, date: row.querySelector(".evDate").value }))
     .filter((x) => validDate(x.date))
@@ -9940,6 +9957,7 @@ function saveClutch() {
     hatched = num("clutchHatched", 200),
     temp = num("clutchTemp", 100);
   if (!dam) return alert("Choose the dam (mother).");
+  if (sire && !breedSpeciesOk(dam, sire)) return;
   if (!validDate(laid)) return alert("Choose the date the clutch was laid.");
   if ((due && !validDate(due)) || (hatch && !validDate(hatch))) return alert("Check the dates.");
   if ([good, slugs, hatched, temp].some((n) => Number.isNaN(n))) return alert("Check the numbers.");
@@ -11550,11 +11568,9 @@ function expoSold(a) {
 /* ---------------- Printables: buyer / adoption packet, tub labels ---------------- */
 function packetOpen(a, kind) {
   if (!animals.includes(a)) return;
-  const tab = window.open("", "_blank");
-  if (!tab) return alert("Allow pop-ups to open the packet.");
-  tab.document.open();
-  tab.document.write(bizBrandPrint(packetDoc(a, kind)));
-  tab.document.close();
+  const sl = profiles[a]?.sale, rs = profiles[a]?.rescue;
+  const to = ((kind === "adoption" ? rs?.adopterContact : sl?.buyerContact) || "").match(/[^@\s]+@[^@\s]+\.[^@\s]+/)?.[0] || "";
+  reportShow(a + " · " + (kind === "adoption" ? "Adoption Packet" : "Welcome Home Packet"), bizBrandPrint(packetDoc(a, kind)), to);
 }
 function packetDoc(a, kind) {
   const p = profiles[a] || {}, r = p.rescue || {}, s = p.sale || {};
@@ -11792,4 +11808,107 @@ function homeRescueStrip() {
 function stCodeWelcome() {
   const p = stPlan();
   return p && p !== "member" ? "Welcome ♡ Your " + ST_PLANS[p].name + " plan is active." : "Welcome, Herps & Hers member ♡";
+}
+
+/* ===================== V3.51 · Reports: view & print, download PDF, email or share a link ===================== */
+let reportCur = null;
+function reportShow(title, html, to) {
+  reportCur = { title, html, to: to || "", url: "" };
+  openPanel("Report");
+}
+BIZ_PANELS.Report = () => {
+  const r = reportCur;
+  if (!r) return '<p class="helperLine">Open a binder or packet first.</p>';
+  return '<p class="resourceIntro"><b>' + esc(r.title) + '</b> is ready. View and print it, save a PDF, or send it as a link anyone can open on their phone or computer.</p>' +
+    '<div class="reportBtns"><button class="action" onclick="reportView()">👁 View &amp; print</button><button class="action" onclick="reportPdf()">⬇ Download PDF</button></div>' +
+    '<h3 class="sectionTitle">Email it</h3>' + bizField("rpTo", "Their email", r.to, "email", "adopter@example.com") +
+    '<label>Note (optional)<textarea id="rpNote" rows="3" maxlength="600" placeholder="Here’s everything about Pip’s care so far ♡"></textarea></label>' +
+    '<div class="reportBtns"><button class="action" onclick="reportSend(true)">✉ Email the link</button><button class="action secondary" onclick="reportSend(false)">🔗 Copy share link</button></div>' +
+    (r.url ? '<p class="lcSmall">Link: <a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.url) + "</a></p>" : "") +
+    '<p class="lcSmall">Shared links open for 6 months. Anyone with the link can view it, so only send it to people you trust.</p><p id="bizMsg" class="helperLine" role="status"></p>';
+};
+function reportView() {
+  const r = reportCur;
+  if (!r) return;
+  const tab = window.open("", "_blank");
+  if (!tab) return stToast("Allow pop-ups to view the report.");
+  tab.document.open();
+  tab.document.write(r.html);
+  tab.document.close();
+}
+let html2pdfLoader = null;
+function reportLoadPdfLib() {
+  if (window.html2pdf) return Promise.resolve(window.html2pdf);
+  if (!html2pdfLoader)
+    html2pdfLoader = new Promise((ok, no) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      s.onload = () => (window.html2pdf ? ok(window.html2pdf) : no(Error("PDF tool did not load")));
+      s.onerror = () => { html2pdfLoader = null; no(Error("PDF tool could not load")); };
+      document.head.appendChild(s);
+    });
+  return html2pdfLoader;
+}
+async function reportPdf() {
+  const r = reportCur, msg = (t) => { const m = document.getElementById("bizMsg"); if (m) m.textContent = t; };
+  if (!r) return;
+  const name = r.title.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "scale-and-tell-report";
+  msg("Making your PDF…");
+  let box;
+  try {
+    const lib = await reportLoadPdfLib();
+    // Render the report in its own scoped box so its styles can't touch the app (and the app's can't touch it).
+    const doc = new DOMParser().parseFromString(r.html, "text/html");
+    const css = Array.from(doc.querySelectorAll("style")).map((x) => x.textContent).join("\n")
+      .replace(/@media\s+print\s*\{[^{}]*(\{[^{}]*\}[^{}]*)*\}/g, "")
+      .replace(/(^|[},;\s])(html|body)(?=[\s{,.:#[])/g, "$1.rptRoot")
+      .replace(/(^|\})\s*\*\s*\{/g, "$1 .rptRoot, .rptRoot *{");
+    doc.querySelectorAll("script,style,.printBar").forEach((x) => x.remove());
+    box = document.createElement("div");
+    box.style.cssText = "position:fixed;left:-12000px;top:0;width:740px;z-index:-1";
+    box.innerHTML = "<style>" + css + " .rptRoot *{max-width:100%;box-sizing:border-box}</style><div class=\"rptRoot\" style=\"width:740px;max-width:740px;margin:0;padding:16px;background:#fff;color:#34263b;box-sizing:border-box\">" + doc.body.innerHTML + "</div>";
+    document.body.appendChild(box);
+    await new Promise((ok) => setTimeout(ok, 500));
+    await lib().set({ margin: [8, 8, 10, 8], filename: name + ".pdf", image: { type: "jpeg", quality: 0.92 }, html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: 760 },
+      jsPDF: { unit: "mm", format: "letter", orientation: "portrait" }, pagebreak: { mode: ["css", "legacy"], avoid: ["tr", "img", ".hero", "section", "figure", ".lb"] } }).from(box.querySelector(".rptRoot")).save();
+    msg("✓ PDF downloaded");
+  } catch (e) {
+    // Fallback: a web page file that opens and prints anywhere.
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([r.html], { type: "text/html" }));
+    a.download = name + ".html";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    msg("Saved as a web page file (opens in any browser, where you can print or save as PDF).");
+  } finally {
+    box?.remove();
+  }
+}
+async function reportSend(byEmail) {
+  const r = reportCur, msg = (t) => { const m = document.getElementById("bizMsg"); if (m) m.textContent = t; };
+  if (!r) return;
+  const to = byEmail ? bizV("rpTo") : "";
+  if (byEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return msg("Enter their email address.");
+  if (!cloudSession) return msg("Sign in to share reports.");
+  msg(byEmail ? "Sending…" : "Making a link…");
+  try {
+    const out = await hubInvoke({ action: "doc_share", title: r.title, html: r.html.replace(/<div class="printBar">[\s\S]*?<\/div>/, ""), to, note: byEmail ? (document.getElementById("rpNote")?.value || "") : "", owner: cloudJournalUid() });
+    r.url = out.url || "";
+    if (!byEmail && r.url) {
+      try { await navigator.clipboard.writeText(r.url); stToast("Link copied ♡"); } catch (e) { if (navigator.share) try { await navigator.share({ title: r.title, url: r.url }); } catch (x) {} }
+    }
+    if (byEmail) { r.to = to; stToast("Sent to " + to + " ♡"); }
+    render();
+  } catch (e) { msg(e.message || "Couldn’t share right now."); }
+}
+
+/* Pairings and clutches: warn when the two parents are different species (a typo or the wrong animal picked). */
+function breedSpeciesKey(a) {
+  return String(species[a] || "").toLowerCase().replace(/\(.*?\)/g, "").replace(/[^a-z ]/g, "").replace(/\s+/g, " ").trim();
+}
+function breedSpeciesOk(a, b) {
+  const x = breedSpeciesKey(a), y = breedSpeciesKey(b);
+  if (!x || !y || x === y || x.includes(y) || y.includes(x)) return true;
+  return confirm(a + " is listed as a " + species[a] + " and " + b + " as a " + species[b] + ". These are different species and can't produce a clutch together.\n\nSave anyway? (Choose Cancel to fix the animals or their species.)");
 }
