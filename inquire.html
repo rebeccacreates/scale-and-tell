@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#45205b"><title>Contact · Scale &amp; Tell</title>
+<meta name="description" content="Send a message to a breeder or rescue on Scale & Tell.">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--ink:#332239;--brand:#45205b;--accent:#79538e;--bg:#fffaf5;--card:#fff;--line:#e3d4ea;--muted:#7a6a80}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--ink:#f1e7f5;--brand:#e7d3f0;--bg:#1d1424;--card:#2b1d33;--line:#4d3a58;--muted:#bba8c4}}
+:root[data-theme="dark"]{--ink:#f1e7f5;--brand:#e7d3f0;--bg:#1d1424;--card:#2b1d33;--line:#4d3a58;--muted:#bba8c4}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Arial,sans-serif}
+main{max-width:560px;margin:auto;padding:24px 16px 48px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:14px}
+h1{font-family:Georgia,serif;font-style:italic;color:var(--brand);margin:.2em 0;font-size:1.8em;line-height:1.2}
+.bar{height:5px;border-radius:5px;background:var(--accent);margin-bottom:12px}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}.links a{border:1px solid var(--line);border-radius:16px;padding:5px 12px;color:var(--brand);text-decoration:none;font-weight:600;font-size:14px}
+.tag{display:inline-block;background:#eef5e6;color:#2f4d16;border-radius:10px;padding:2px 9px;font-size:12px;font-weight:700;margin:2px 4px 2px 0}
+label{display:block;margin:10px 0;font-weight:600;font-size:14px}input,textarea{width:100%;font:inherit;padding:10px 12px;margin-top:4px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+button{width:100%;font:700 16px Arial,sans-serif;padding:12px;border:0;border-radius:12px;background:var(--accent);color:#fff;margin-top:6px;cursor:pointer}button:disabled{opacity:.6}
+.muted{color:var(--muted);font-size:13px}.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+#msg{min-height:1.4em;margin:10px 0 0;font-weight:600}
+footer{text-align:center;margin-top:20px}footer a{color:var(--muted);font-size:13px}
+</style></head><body>
+<main>
+  <div class="card" id="profile"><p class="muted">Loading…</p></div>
+  <form class="card" id="form" hidden>
+    <h2 style="margin:0 0 4px;color:var(--brand)">Send a message</h2>
+    <p class="muted">Your message goes to their Scale &amp; Tell Inbox and email. They’ll reply to the email you give here.</p>
+    <label>Your name<input id="name" maxlength="80" required autocomplete="name"></label>
+    <label>Your email<input id="email" type="email" maxlength="254" required autocomplete="email"></label>
+    <label>Subject (optional)<input id="subject" maxlength="120" placeholder="e.g. Question about a ball python"></label>
+    <label>Message<textarea id="message" rows="6" maxlength="2000" required></textarea></label>
+    <div class="hp" aria-hidden="true"><label>Company<input id="company" tabindex="-1" autocomplete="off"></label></div>
+    <button id="send" type="submit">Send message</button>
+    <p id="msg" role="status"></p>
+  </form>
+  <footer><a href="./">Made with Scale &amp; Tell ♡ the reptile care journal</a></footer>
+</main>
+<script>
+const URL_ = "https://fitlubsbesadknkjimqd.supabase.co", KEY = "sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG";
+const slug = (new URLSearchParams(location.search).get("b") || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+const safe = (u) => { try { const x = new URL(u); return x.protocol === "https:" ? x.href : ""; } catch (e) { return ""; } };
+async function load() {
+  if (!slug) { $("profile").innerHTML = "<p>This link is missing a name.</p>"; return; }
+  try {
+    const r = await fetch(URL_ + "/rest/v1/rpc/public_seller", { method: "POST", headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_slug: slug }) });
+    const rows = await r.json(), p = Array.isArray(rows) ? rows[0] : null;
+    if (!p) { $("profile").innerHTML = "<p>This page isn’t available.</p>"; return; }
+    if (/^#[0-9a-f]{6}$/i.test(p.accent || "")) document.documentElement.style.setProperty("--accent", p.accent);
+    document.title = p.display_name + " · Scale & Tell";
+    const links = [["Facebook", p.facebook], ["Instagram", p.instagram], ["TikTok", p.tiktok], ["Website", p.website], ["MorphMarket", p.morphmarket]]
+      .map(([n, u]) => (safe(u) ? '<a href="' + esc(safe(u)) + '" target="_blank" rel="noopener noreferrer">' + n + " ↗</a>" : "")).join("");
+    $("profile").innerHTML = '<div class="bar"></div><h1>' + esc(p.display_name) + "</h1>" +
+      (p.is_rescue ? '<span class="tag">Reptile rescue</span>' + (p.verified ? '<span class="tag">✓ Verified 501(c)(3)</span>' : "") + '<span class="tag">' + (p.intake_open === false ? "🔴 Intake full" : "🟢 Intake open") + "</span>" : "") +
+      (p.bio ? "<p>" + esc(p.bio) + "</p>" : "") + (links ? '<div class="links">' + links + "</div>" : "");
+    $("form").hidden = !p.inquiries_on;
+  } catch (e) { $("profile").innerHTML = "<p>Couldn’t load this page. Please try again.</p>"; }
+}
+$("form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  $("send").disabled = true; $("msg").textContent = "Sending…";
+  try {
+    const r = await fetch(URL_ + "/functions/v1/scale-hub", { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "inquiry", slug, name: $("name").value, email: $("email").value, subject: $("subject").value, message: $("message").value, company: $("company").value }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Error(j.error || "Couldn’t send. Please try again.");
+    $("form").innerHTML = '<h2 style="color:var(--brand)">Message sent ♡</h2><p>Thanks! They’ll reply to your email.</p>';
+  } catch (e) { $("msg").textContent = e.message; $("send").disabled = false; }
+});
+load();
+</script>
+</body></html>

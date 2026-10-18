@@ -711,7 +711,7 @@ async function founderRefreshEntitlement() {
   if (!requestedId || !cloudClient) return;
   try {
     const user = await cloudAuthorizedUser();
-    if (user.id !== requestedId) return;
+    if ((user.realId || user.id) !== requestedId) return;
     const { data, error } = await cloudClient
       .from("keeper_entitlements")
       .select("sku,status,verified_at,expires_at")
@@ -722,6 +722,12 @@ async function founderRefreshEntitlement() {
     stEntitlementUser = requestedId;
     const live = rows.filter((r) => r.status === "active" && (!r.expires_at || new Date(r.expires_at) > new Date()));
     stSkus = live.map((r) => r.sku);
+    const team = await stSyncTeam();
+    if (request !== stEntitlementRequest) return;
+    if (team?.role === "member") {
+      stSkus = Array.from(new Set([...(team.skus || []), ...stSkus]));
+      live.push({ sku: "team" });
+    }
     stFkSince = String(live.find((r) => r.sku === "founding_keeper")?.verified_at || "").slice(0, 10);
     // Every paid plan includes the Founding Keeper extras (designs, Care Binder, keepsakes).
     stEntitlementActive = live.some((r) => r.sku !== "member");
@@ -1185,7 +1191,7 @@ function founderOpenPrint(kind) {
   }
   try {
     tab.document.open();
-    tab.document.write(founderDoc(kind));
+    tab.document.write(bizBrandPrint(founderDoc(kind)));
     tab.document.close();
   } catch (e) {
     try {
@@ -1375,6 +1381,11 @@ function menuMarkup() {
       : '<button class="menuTile menuFeature" onclick="openPanel(&quot;Founding Keeper Studio&quot;)"><strong>♡ Founding Keeper</strong><small>' +
         (stCanUsePack() ? "Your designs, Care Binder and keepsakes" : "$14.99 once · 40 animals, designs, Care Binder and keepsakes") +
         "</small></button>") +
+    (stCanTeam() || stTeam?.role === "member"
+      ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Business Tools&quot;)"><strong>✦ Business Tools</strong><small>' +
+        (stTeam?.role === "member" ? "Shared journal · Inbox" : "Team logins, Inbox, your public page" + (stCanBrand() ? ", branding, MorphMarket export" : "")) +
+        (bizUnread ? " · " + bizUnread + " new" : "") + "</small></button>"
+      : "") +
     tiles(main) +
     '<details class="compactDisclosure"><summary>More</summary>' +
     tiles(tools) +
@@ -1794,6 +1805,20 @@ const RECOMMENDED = [
     affiliate: true,
   },
   {
+    brand: "Amazon",
+    name: "Budget grow-out & temporary enclosures",
+    tag: "Keeper tested ♡",
+    why: "Verified by a keeper who uses them: affordable, not terribly priced, and easy to put together. Great as grow-out, quarantine or temporary homes.",
+    url: "https://a.co/d/029VGh2t",
+  },
+  {
+    brand: "Amazon",
+    name: "Cordless power screwdriver",
+    tag: "Saves your hands ♡",
+    why: "Keeper tested: a dream for screwing enclosures together and a real hand-saver when you're building or breaking down several at once.",
+    url: "https://a.co/d/03BML3N4",
+  },
+  {
     brand: "SensorPush",
     name: "Temperature & humidity smart sensors",
     why: "Small wireless sensors that sit inside the enclosure and log temperature and humidity around the clock to your phone. Pair one with each tub or tank you want to watch.",
@@ -1802,7 +1827,7 @@ const RECOMMENDED = [
   {
     brand: "SensorPush",
     name: "WiFi Gateway",
-    why: "Sends your sensor readings to the cloud so you can check your animals' enclosures from anywhere, with alerts when readings drift. Needed for live readings in Scale & Tell (coming soon).",
+    why: "Sends your sensor readings to the cloud so you can check your animals' enclosures from anywhere, with alerts when readings drift. Needed for live readings in Scale & Tell (coming soon; we're building it with SensorPush's test equipment).",
     url: "https://www.sensorpush.com/products",
   },
 ];
@@ -1813,7 +1838,7 @@ function recommendedMarkup() {
       (p) =>
         '<div class="productCard"><span class="productBrand">' +
         esc(p.brand) +
-        "</span><h3>" +
+        "</span>" + (p.tag ? '<span class="productTag">' + esc(p.tag) + "</span>" : "") + "<h3>" +
         esc(p.name) +
         "</h3><p>" +
         esc(p.why) +
@@ -2402,9 +2427,9 @@ function plansMarkup() {
       '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>',
     ) +
     '<h3 class="sectionTitle">For breeders &amp; rescues</h3><p class="lcSmall">Breeder plans add racks, rack feeding, pairings, clutches and hatchlings.</p>' +
-    card("founding_breeder", "$14.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches", "3 logins for your team", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
-    card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "Your logo and colors", "MorphMarket export"], soon("premium_breeder")) +
-    card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>300 animals</b>", "Breeder tools for intake and care", "3 logins for your team", "Optional listing in Scale Hub with an intake open / full switch"], soon("rescue")) +
+    card("founding_breeder", "$14.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
+    card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "Your logo and colors on the app and printouts", "MorphMarket export"], soon("premium_breeder")) +
+    card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>300 animals</b>", "Everything in Premium Breeder: 3 logins, your logo and colors, MorphMarket export, public page and Inbox", "Listing in Scale Hub → Reptile Rescues with an intake open / full switch", "Verified 501(c)(3)? Add your EIN under Business Tools → Rescue profile for the $14.99/yr price"], soon("rescue")) +
     '<p class="lcSmall">Yearly plans renew through PayPal. Cancel anytime in <a href="https://www.paypal.com/myaccount/autopay/" target="_blank" rel="noopener">PayPal → Automatic payments</a>; you keep your plan until the end of the year you paid for.</p><p class="lcSmall">Already have more animals than a plan allows? You keep them all; you just can&#39;t add more until you upgrade.</p>'
   );
 }
@@ -3668,9 +3693,11 @@ function deviceCard(d) {
     "</p>" +
     (camera
       ? "<small>Shortcut only. No video is stored or streamed in Scale & Tell. " +
-        esc(d.link ? "Opens your chosen HTTPS service link." : info.note) +
+        esc(d.link ? "Opens your chosen HTTPS service link." : CAMERA_APPS[d.brand] ? "Opens the " + CAMERA_APPS[d.brand].name + " app on your phone. Then pick " + d.nickname + "." : info.note) +
         "</small>" +
-        (url
+        (!d.link && CAMERA_APPS[d.brand]
+          ? '<button class="deviceLink" onclick="openCameraApp(' + i + ')">Open ' + esc(CAMERA_APPS[d.brand].name) + ' app ↗</button>'
+          : url
           ? '<a class="deviceLink" href="' +
             esc(url) +
             '" target="_blank" rel="noopener noreferrer">Open camera service ↗</a>'
@@ -3835,7 +3862,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.42";
+const SCALE_LC_VERSION = "3.43";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -3979,6 +4006,7 @@ async function deleteMyAccount() {
     try {
       await pushDisable(true);
     } catch (_) {}
+    if (user.realId) throw Error("Leave the team first (Menu → Business Tools → Team logins), then delete your account.");
     for (const folder of [user.id + "/photos", user.id]) {
       for (let round = 0; round < 20; round++) {
         const { data } = await cloudClient.storage.from(CLOUD_BUCKET).list(folder, { limit: 100 });
@@ -4128,7 +4156,7 @@ function render() {
       history.length +
       "</b></div><div><small>Next care</small><b>" +
       nextCareLabel(a) +
-      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
+      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button><button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
     profileTab("Overview");
     return;
   }
@@ -4404,7 +4432,12 @@ function render() {
   }
   if (current === "Scale Hub") {
     el.innerHTML =
-      '<p class="resourceIntro">Herps & Hers · Learn ♡ Share ♡ Grow. Choose the help you need without sorting through duplicated screens.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Bioactive & DIY\')"><strong>❦ Bioactive & DIY How-Tos</strong><small>Build a bioactive setup, pick a cleanup crew, and make safe hides, backgrounds and decor.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Reptile Products</strong><small>First Time Keeper Essentials, our Amazon and Chewy picks, and SensorPush.</small></button>';
+      '<p class="resourceIntro">Herps & Hers · Learn ♡ Share ♡ Grow. Choose the help you need without sorting through duplicated screens.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Reptile Rescues\')"><strong>♧ Reptile Rescues</strong><small>Rescues using Scale &amp; Tell, with their intake status.</small></button><button class="resourceTile" onclick="openPanel(\'Bioactive & DIY\')"><strong>❦ Bioactive & DIY How-Tos</strong><small>Build a bioactive setup, pick a cleanup crew, and make safe hides, backgrounds and decor.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Reptile Products</strong><small>First Time Keeper Essentials, our Amazon and Chewy picks, and SensorPush.</small></button>';
+    return;
+  }
+  if (BIZ_PANELS[current]) {
+    el.innerHTML = BIZ_PANELS[current]();
+    bizAfterRender(current);
     return;
   }
   if (current === "Govee Sensors") {
@@ -7242,7 +7275,7 @@ function updateAuthGate() {
     body = document.getElementById("authGateBody");
   if (!gate || !body) return;
   const owner = localStorage.getItem("scaleTellSyncOwner33");
-  const accountMismatch = !!(cloudSession && owner && owner !== cloudSession.user?.id && cloudHasLocal());
+  const accountMismatch = !!(cloudSession && owner && owner !== cloudJournalUid() && cloudHasLocal());
   const needsAccess = !!(
     cloudAuthReady &&
     cloudSession &&
@@ -7541,7 +7574,7 @@ function cloudConfirmRemote(rev) {
   cloudConfirmedAt = Date.now();
 }
 async function cloudTryLosslessAutoMerge(user, remote, mode) {
-  if (!remote || cloudAutoBusy || !cloudSession || user.id !== cloudSession.user?.id) return false;
+  if (!remote || cloudAutoBusy || !cloudSession || user.id !== cloudJournalUid()) return false;
   // Do not re-download all photo galleries every polling tick when human review is required.
   const attempt = [user.id, mode, remote.revision, cloudLocalRev(), cloudAutoGeneration].join(":");
   if (cloudAutoMergeAttempt === attempt) return false;
@@ -7570,7 +7603,7 @@ async function cloudTryLosslessAutoMerge(user, remote, mode) {
       cloudSetStatus("pending");
       return false;
     }
-    const { data, error } = await cloudClient.rpc("save_keeper_state", {
+    const { data, error } = await cloudSaveRpc({
       p_expected_revision: Number(remote.revision),
       p_schema_version: 1,
       p_payload: payload,
@@ -7694,7 +7727,7 @@ async function cloudConfirmMerge() {
     if (!remote || Number(remote.revision) !== draft.revision)
       throw Error("Cloud records changed during review. Reopen the comparison. Nothing was replaced.");
     let payload = await cloudPreparePayload(user.id, plan.payload);
-    let { data, error: saveError } = await cloudClient.rpc("save_keeper_state", {
+    let { data, error: saveError } = await cloudSaveRpc({
       p_expected_revision: draft.revision,
       p_schema_version: 1,
       p_payload: payload,
@@ -7855,7 +7888,9 @@ async function cloudAuthorizedUser() {
   let { data, error } = await cloudClient.auth.getUser();
   if (error || !data?.user) throw error || Error("Your sign-in has expired. Sign in again.");
   if (data.user.id !== cloudSession.user?.id) throw Error("Account changed. Refresh and sign in again.");
-  return data.user;
+  // Team members work in the plan owner's journal: same records, photos and saves.
+  const team = stTeamOwnerId();
+  return team ? { ...data.user, id: team, realId: data.user.id } : data.user;
 }
 async function cloudSignUp() {
   if (cloudWorking) return;
@@ -7985,7 +8020,7 @@ async function cloudSignOut() {
     cloudMsg("Changes must finish syncing or be reviewed before you sign out. Nothing was deleted.");
     return;
   }
-  const userId = cloudSession?.user?.id,
+  const userId = cloudJournalUid(),
     owner = localStorage.getItem("scaleTellSyncOwner33");
   if (owner === userId && cloudHasLocal()) {
     if (!cloudRow || Number(cloudRow.revision) !== cloudLocalRev()) {
@@ -8148,7 +8183,7 @@ async function cloudUpload() {
     cloudMsg("Preparing private cloud copy. Do not close this tab…");
     let expected = cloudRow ? Number(cloudRow.revision) : 0;
     let payload = await cloudPreparePayload(user.id);
-    let { data, error } = await cloudClient.rpc("save_keeper_state", {
+    let { data, error } = await cloudSaveRpc({
       p_expected_revision: expected,
       p_schema_version: 1,
       p_payload: payload,
@@ -8378,7 +8413,7 @@ function cloudMarkDirty() {
   cloudAutoDirty = true;
   cloudAutoGeneration++;
   localStorage.setItem(CLOUD_DIRTY_KEY, "1");
-  if (!cloudSession || cloudSession.user?.id !== owner) {
+  if (!cloudSession || cloudJournalUid() !== owner) {
     cloudSetStatus("pending");
     return;
   }
@@ -8546,7 +8581,7 @@ async function cloudAutoSave() {
     let expected = cloudLocalRev();
     cloudSetStatus("saving");
     let payload = await cloudPreparePayload(user.id);
-    let { data, error } = await cloudClient.rpc("save_keeper_state", {
+    let { data, error } = await cloudSaveRpc({
       p_expected_revision: expected,
       p_schema_version: 1,
       p_payload: payload,
@@ -8616,7 +8651,7 @@ async function cloudBeginMigration() {
     }
     cloudSetStatus("saving", "Importing your animal records and private photos…");
     let payload = await cloudPreparePayload(user.id);
-    let { data, error } = await cloudClient.rpc("save_keeper_state", {
+    let { data, error } = await cloudSaveRpc({
       p_expected_revision: 0,
       p_schema_version: 1,
       p_payload: payload,
@@ -10092,12 +10127,13 @@ async function stStartSub(sku) {
   try {
     const conf = await founderPayPalConfig();
     if (!stPlanIds) stPlanIds = (await founderInvoke({ action: "plans" })).plans || {};
-    if (!stPlanIds[sku]) throw Error("This plan isn't available yet. Please try again soon.");
+    const planKey = sku === "rescue" && stPlanIds.rescue_verified ? "rescue_verified" : sku;
+    if (!stPlanIds[planKey]) throw Error("This plan isn't available yet. Please try again soon.");
     const pp = await stLoadPayPalSub(conf.clientId);
     msg(conf.live ? "Billed yearly. Cancel anytime in PayPal." : "Test mode: no real money is charged.");
     await pp.Buttons({
       style: { shape: "pill", label: "subscribe" },
-      createSubscription: (data, actions) => actions.subscription.create({ plan_id: stPlanIds[sku], custom_id: cloudSession.user.id }),
+      createSubscription: (data, actions) => actions.subscription.create({ plan_id: stPlanIds[planKey], custom_id: cloudSession.user.id }),
       onApprove: async (data) => {
         msg("Confirming with PayPal…");
         const groupName = document.getElementById("subGroup-" + sku)?.value || "";
@@ -10242,4 +10278,421 @@ async function hubSubmit() {
     ["hubTitle", "hubSteps", "hubCredit"].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ""; });
     msg("Thank you ♡ Your how-to was sent for review. Once approved it appears here, tagged Peer reviewed.");
   } catch (e) { msg(e.message); }
+}
+
+/* V3.43 · camera shortcuts open the brand's own app (falls back to the app store if it isn't installed) */
+const CAMERA_APPS = {
+  Wyze: { name: "Wyze", ios: "wyze://", android: "com.hualai" },
+  Ring: { name: "Ring", ios: "ring://", android: "com.ringapp" },
+  Blink: { name: "Blink", ios: "immedia-blink://", android: "com.immediasemi.android.blink" },
+  Tapo: { name: "Tapo", ios: "tapo://", android: "com.tplink.iot" },
+  Kasa: { name: "Kasa", ios: "kasa://", android: "com.tplink.kasa_android" },
+  Eufy: { name: "eufy Security", ios: "eufysecurity://", android: "com.oceanwing.battery.cam" },
+};
+function openCameraApp(i) {
+  const d = devices[i], app = d && CAMERA_APPS[d.brand];
+  if (!app) return;
+  const ua = navigator.userAgent || "";
+  if (/Android/i.test(ua)) {
+    // Android opens the app, or its Play Store page if it isn't installed.
+    location.href = "intent://#Intent;package=" + app.android + ";S.browser_fallback_url=" + encodeURIComponent("https://play.google.com/store/apps/details?id=" + app.android) + ";end";
+    return;
+  }
+  if (/iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) {
+    let left = false;
+    const away = () => { left = true; };
+    document.addEventListener("visibilitychange", away, { once: true });
+    window.addEventListener("pagehide", away, { once: true });
+    location.href = app.ios;
+    // If the app didn't open, show it in the App Store (tap "Open" there if it's installed).
+    setTimeout(() => {
+      if (!left && document.visibilityState === "visible")
+        location.href = "itms-apps://search.itunes.apple.com/WebObjects/MZSearch.woa/wa/search?media=software&term=" + encodeURIComponent(app.name + " camera");
+    }, 1600);
+    return;
+  }
+  stToast("Open the " + app.name + " app on your phone to view " + d.nickname + ".");
+}
+
+/* ===================== V3.43 · Business Tools =====================
+   Team logins (3 per breeder/rescue plan), public page + inquiry Inbox, branding,
+   rescue profile & directory, MorphMarket export, and sharing an animal. */
+function stTeamOwnerId() {
+  try {
+    const me = cloudSession?.user?.id;
+    return (me && localStorage.getItem("scaleTellTeamOwner:" + me)) || null;
+  } catch (e) {
+    return null;
+  }
+}
+function cloudJournalUid() {
+  return stTeamOwnerId() || cloudSession?.user?.id;
+}
+function cloudSaveRpc(args) {
+  const team = stTeamOwnerId();
+  return team ? cloudClient.rpc("save_state_for", { p_owner: team, ...args }) : cloudClient.rpc("save_keeper_state", args);
+}
+let stTeam = null, bizUnread = 0, bizBrand = null, bizSeller = null, bizRescue = null, bizInbox = null, bizMsg = "";
+const BIZ_TEAM_SKUS = ["founding_breeder", "rescue", "premium_breeder"];
+function stCanTeam() {
+  return stOwnsEntitlements() && stTeam?.role !== "member" && stSkus.some((k) => BIZ_TEAM_SKUS.includes(k));
+}
+function stCanBrand() {
+  return stOwnsEntitlements() && stTeam?.role !== "member" && stSkus.some((k) => k === "rescue" || k === "premium_breeder");
+}
+function stIsRescue() {
+  return stOwnsEntitlements() && stTeam?.role !== "member" && stSkus.includes("rescue");
+}
+/** Accept any waiting invite, learn the team role, and switch this browser to the right journal. */
+async function stSyncTeam() {
+  const me = cloudSession?.user?.id;
+  if (!me || !cloudClient) return null;
+  try {
+    await cloudClient.rpc("accept_team_invites");
+  } catch (e) {}
+  let ctx = null;
+  try {
+    const r = await cloudClient.rpc("team_context");
+    if (r.error) return stTeam;
+    ctx = r.data;
+  } catch (e) {
+    return stTeam;
+  }
+  stTeam = ctx;
+  const next = ctx?.role === "member" ? ctx.owner_id : null,
+    prev = stTeamOwnerId();
+  if ((next || null) !== (prev || null)) {
+    const key = "scaleTellTeamOwner:" + me,
+      owner = localStorage.getItem("scaleTellSyncOwner33"),
+      dirty = localStorage.getItem("scaleTellSyncDirty33") === "1";
+    // Only switch journals when this browser's copy is safely saved to its own account.
+    if (dirty || (cloudHasLocal() && owner !== (prev || me))) return ctx;
+    cloudPauseWrites = true;
+    try {
+      for (let k of Object.keys(CLOUD_LOCAL_KEYS)) localStorage.removeItem(k);
+      ["scaleTellSyncOwner33", "scaleTellSyncRev33", "scaleTellSyncDirty33"].forEach((k) => localStorage.removeItem(k));
+      if (next) localStorage.setItem(key, next);
+      else localStorage.removeItem(key);
+    } finally {
+      cloudPauseWrites = false;
+    }
+    stToast(next ? "Opening the shared journal…" : "Opening your own journal…");
+    setTimeout(() => location.reload(), 700);
+  }
+  bizLoadBrand();
+  bizCountUnread();
+  return ctx;
+}
+async function bizCountUnread() {
+  if (!cloudClient || !(stCanTeam() || stTeam?.role === "member")) return;
+  try {
+    const { count } = await cloudClient.from("inquiries").select("id", { count: "exact", head: true }).eq("owner_id", cloudJournalUid()).eq("status", "new");
+    bizUnread = count || 0;
+    if (current === "Menu") render();
+  } catch (e) {}
+}
+
+/* ---------- Branding (Premium Breeder & Rescue; team members see the owner's) ---------- */
+async function bizLoadBrand() {
+  if (!cloudClient || !cloudSession) return;
+  try {
+    const { data } = await cloudClient.from("brand_settings").select("business_name,accent,logo_path").eq("user_id", cloudJournalUid()).maybeSingle();
+    bizBrand = data || null;
+    if (bizBrand?.logo_path) {
+      const r = await cloudClient.storage.from(CLOUD_BUCKET).createSignedUrl(bizBrand.logo_path, 3600 * 12);
+      bizBrand.logoUrl = r.data?.signedUrl || "";
+    }
+  } catch (e) {
+    bizBrand = null;
+  }
+  bizApplyBrand();
+}
+function bizApplyBrand() {
+  let chip = document.getElementById("bizBrandChip");
+  const on = bizBrand && (bizBrand.business_name || bizBrand.logoUrl);
+  if (!on) {
+    chip?.remove();
+    document.body.style.removeProperty("--biz-accent");
+    return;
+  }
+  if (bizBrand.accent) document.body.style.setProperty("--biz-accent", bizBrand.accent);
+  if (!chip) {
+    chip = document.createElement("div");
+    chip.id = "bizBrandChip";
+    document.querySelector(".headerArt")?.appendChild(chip);
+  }
+  chip.innerHTML = (bizBrand.logoUrl ? '<img alt="" src="' + esc(bizBrand.logoUrl) + '">' : "") + (bizBrand.business_name ? "<span>" + esc(bizBrand.business_name) + "</span>" : "");
+}
+function bizBrandPrint(html) {
+  if (!bizBrand || !(bizBrand.business_name || bizBrand.logoUrl)) return html;
+  const bar = '<div style="display:flex;align-items:center;gap:10px;padding:8px 0 10px;margin-bottom:10px;border-bottom:3px solid ' + esc(bizBrand.accent || "#45205b") + ';font-family:Arial,sans-serif">' +
+    (bizBrand.logoUrl ? '<img src="' + esc(bizBrand.logoUrl) + '" style="height:44px;max-width:120px;object-fit:contain">' : "") +
+    '<b style="font-size:18px;color:' + esc(bizBrand.accent || "#45205b") + '">' + esc(bizBrand.business_name || "") + "</b></div>";
+  return html.replace(/<body([^>]*)>/i, (m) => m + bar);
+}
+async function bizSaveBrand() {
+  const v = (id) => document.getElementById(id)?.value || "";
+  const say = (t) => { bizMsg = t; const m = document.getElementById("bizMsg"); if (m) m.textContent = t; };
+  let logo = bizBrand?.logo_path || "";
+  const file = document.getElementById("bizLogo")?.files?.[0];
+  try {
+    if (file) {
+      if (!/^image\/(png|jpeg|webp)$/.test(file.type) || file.size > 1500000) return say("Use a PNG, JPG or WebP logo under 1.5 MB.");
+      logo = cloudSession.user.id + "/brand/logo-" + Date.now() + "." + (file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg");
+      const up = await cloudClient.storage.from(CLOUD_BUCKET).upload(logo, file, { upsert: true, contentType: file.type });
+      if (up.error) throw up.error;
+    }
+    const accent = /^#[0-9a-f]{6}$/i.test(v("bizAccent")) ? v("bizAccent") : null;
+    const { data, error } = await cloudClient.rpc("save_brand", { p_name: v("bizName").trim().slice(0, 60), p_accent: accent, p_logo: logo || null });
+    if (error) throw error;
+    if (data !== "ok") return say(data === "plan" ? "Branding is part of Premium Breeder and Rescue plans." : "Couldn’t save that logo.");
+    await bizLoadBrand();
+    say("Saved ♡ Your logo and color now show in the app and on your Care Binder printouts.");
+  } catch (e) {
+    say(e.message || "Couldn’t save your branding.");
+  }
+}
+
+/* ---------- Share an animal (any app via the phone's share menu) ---------- */
+async function stShareAnimal(a) {
+  if (!animals.includes(a)) return;
+  const p = profiles[a] || {},
+    w = entries.filter((e) => e.animal === a && e.section === "Weight Tracker").sort((x, y) => y.date.localeCompare(x.date))[0];
+  const lines = [
+    a + (p.morph ? " · " + p.morph : ""),
+    [species[a], p.sex].filter(Boolean).join(" · "),
+    p.hatchDate ? "Hatched " + niceDate(p.hatchDate) : "",
+    w ? "Weight " + w.detail : p.weight ? "Weight " + p.weight : "",
+    bizBrand?.business_name ? "From " + bizBrand.business_name : "",
+  ].filter(Boolean);
+  const text = lines.join("\n") + "\n\nTracked with Scale & Tell ♡ scaleandtell.app";
+  try {
+    const ph = typeof chosenProfilePhoto === "function" ? chosenProfilePhoto(a) || (photos[a] || [])[0] : null;
+    let files = [];
+    if (ph?.src && /^data:image\//.test(ph.src)) {
+      const blob = await (await fetch(ph.src)).blob();
+      files = [new File([blob], a.replace(/[^\w-]+/g, "_") + "." + (blob.type.split("/")[1] || "jpg"), { type: blob.type })];
+    }
+    if (navigator.share) {
+      const data = files.length && navigator.canShare?.({ files }) ? { text, files } : { text };
+      await navigator.share(data);
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+    stToast("Copied ♡ Paste it into your post.");
+  } catch (e) {
+    if (e?.name !== "AbortError") stToast("Couldn’t open sharing on this device.");
+  }
+}
+
+/* ---------- MorphMarket bulk-import export ---------- */
+function mmMaturity(hatch) {
+  if (!hatch || !validDate(hatch)) return "";
+  const months = (Date.now() - new Date(hatch + "T12:00:00").getTime()) / (30.44 * 86400000);
+  return months < 4 ? "baby" : months < 12 ? "juvenile" : months < 24 ? "subadult" : "adult";
+}
+function mmCsv() {
+  const pick = Array.from(document.querySelectorAll(".mmPick:checked")).map((x) => x.value);
+  if (!pick.length) return "";
+  const head = ["Category", "Title", "Animal_Id", "Maturity", "Price", "State", "Visibility", "Enabled", "Sex", "Dob", "Weight", "Quantity", "Traits", "Desc", "Origin", "Prey_Food", "Is_Rep_Photo"];
+  const q = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+  const rows = pick.filter((a) => animals.includes(a)).map((a) => {
+    const p = profiles[a] || {},
+      sex = /^m/i.test(p.sex || "") ? "male" : /^f/i.test(p.sex || "") ? "female" : "unknown",
+      w = entries.filter((e) => e.animal === a && e.section === "Weight Tracker").sort((x, y) => y.date.localeCompare(x.date))[0],
+      grams = String((w ? w.detail : p.weight) || "").match(/[\d.]+/)?.[0] || "",
+      dob = p.hatchDate && validDate(p.hatchDate) ? p.hatchDate.slice(8, 10) + "-" + p.hatchDate.slice(5, 7) + "-" + p.hatchDate.slice(0, 4) : "",
+      prey = entries.filter((e) => e.animal === a && e.section === "Feeding Tracker" && e.preyType).sort((x, y) => y.date.localeCompare(x.date))[0]?.preyType || "";
+    return [String(species[a] || "").toLowerCase(), a, a, mmMaturity(p.hatchDate), "", "Not For Sale", "private", "inactive", sex, dob, grams, 1,
+      String(p.morph || "").replace(/[,/]+/g, " ").replace(/\s+/g, " ").trim().toLowerCase(), "", "self produced", prey, "FALSE"].map(q).join(",");
+  });
+  return [head.join(",")].concat(rows).join("\r\n");
+}
+function mmDownload() {
+  const csv = mmCsv();
+  const m = document.getElementById("bizMsg");
+  if (!csv) { if (m) m.textContent = "Pick at least one animal."; return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
+  a.download = "scale-and-tell-morphmarket-" + today() + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  if (m) m.textContent = "Downloaded ♡ On MorphMarket: Seller tools → Import → upload this file. Listings come in as private drafts, so add prices and photos, then publish.";
+}
+
+/* ---------- Panels ---------- */
+const bizBack = () => '<button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
+const BIZ_PANELS = {
+  "Business Tools": () => {
+    if (stTeam?.role === "member")
+      return '<p class="resourceIntro">You’re on <b>' + esc(stTeam.owner_email || "a") + '</b>’s team. You share their journal: animals, racks, logs, reminders and photos.</p>' +
+        '<button class="resourceTile" onclick="openPanel(\'Inbox\')"><strong>✉ Inbox' + (bizUnread ? " · " + bizUnread + " new" : "") + '</strong><small>Inquiries from their public page.</small></button>' +
+        '<button class="action secondary" onclick="bizLeaveTeam()">Leave this team</button><p id="bizMsg" class="helperLine" role="status"></p>';
+    if (!stCanTeam()) return '<p class="resourceIntro">Business Tools come with Founding Breeder, Premium Breeder and Rescue plans.</p><button class="action" onclick="openPanel(\'Plans\')">See plans</button>';
+    const t = (name, title, sub) => '<button class="resourceTile" onclick="openPanel(\'' + name + '\')"><strong>' + title + "</strong><small>" + sub + "</small></button>";
+    return '<p class="resourceIntro">Tools for running your breeding business or rescue.</p>' +
+      t("Team Logins", "♡ Team logins", "Invite up to 2 people to share your journal (3 logins total).") +
+      t("Inbox", "✉ Inbox" + (bizUnread ? " · " + bizUnread + " new" : ""), "Inquiries from your public page and website.") +
+      t("My Public Page", "✦ Public page &amp; social links", "Your inquiry link for your website, Facebook and Instagram bio.") +
+      (stIsRescue() ? t("Rescue Profile", "♧ Rescue profile &amp; intake", "Your Scale Hub listing, intake open/full, and 501(c)(3) verification.") : "") +
+      (stCanBrand() ? t("Branding", "❦ Your logo &amp; colors", "Shows in the app and on Care Binder printouts.") + t("MorphMarket Export", "⇪ MorphMarket export", "Download your animals in MorphMarket’s bulk-import format.")
+        : '<p class="lcSmall">Premium Breeder adds your logo &amp; colors and MorphMarket export.</p>');
+  },
+  "Team Logins": () => {
+    const mem = stTeam?.members || [];
+    return '<p class="resourceIntro">Invite up to 2 people (3 logins total, including you). They sign in with their own email and password and share your journal: animals, racks, logs, reminders and photos.</p>' +
+      (mem.length ? mem.map((m) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(m.email) + "</b><span>" + (m.status === "active" ? "✓ Joined" : "Invite sent") + '</span></div><div class="recordActions"><button onclick="bizRemoveMember(' + Number(m.id) + ')">Remove</button></div></div>').join("") : '<p class="helperLine">No one invited yet.</p>') +
+      (mem.length < 2 ? '<label>Their email<input id="bizInvite" type="email" maxlength="254" placeholder="helper@example.com"></label><button class="action" onclick="bizInviteMember()">Send invite</button>' : '<p class="lcSmall">Your team is full (3 logins).</p>') +
+      '<p class="lcSmall">They’ll get an email. Once they sign in or create an account with that email, your journal opens for them automatically. Your plan covers them; they don’t need their own.</p><p id="bizMsg" class="helperLine" role="status">' + esc(bizMsg) + "</p>" + bizBack();
+  },
+  Inbox: () => '<p class="resourceIntro">Messages sent from your public page. Replies are emailed from Scale &amp; Tell, and their replies come straight to your email.</p><div id="bizInbox"><p class="helperLine">Loading…</p></div><p id="bizMsg" class="helperLine" role="status"></p>' + bizBack(),
+  "My Public Page": () => {
+    const s = bizSeller || {}, link = s.slug ? "https://scaleandtell.app/inquire.html?b=" + s.slug : "";
+    const f = (id, label, val, ph) => '<label>' + label + '<input id="' + id + '" maxlength="200" value="' + esc(val || "") + '" placeholder="' + ph + '"></label>';
+    return '<p class="resourceIntro">Your public page shows your name, social links and a message form. Put the link in your website, Facebook and Instagram bio. Messages land in your Inbox.</p>' +
+      (link ? '<div class="habitatSummary"><strong>Your link</strong><p><a href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(link) + '</a></p><button class="action secondary" onclick="navigator.clipboard.writeText(\'' + esc(link) + '\').then(()=>stToast(\'Link copied ♡\'))">Copy link</button></div>' : "") +
+      f("spName", "Business or rescue name", s.display_name, "Your business name") +
+      f("spSlug", "Link name (letters, numbers, dashes)", s.slug, "e.g. sunny-scales") +
+      '<label>Short bio<textarea id="spBio" maxlength="300" rows="3" placeholder="What you breed or rescue, where you are">' + esc(s.bio || "") + "</textarea></label>" +
+      f("spFacebook", "Facebook link", s.facebook, "https://facebook.com/…") + f("spInstagram", "Instagram link", s.instagram, "https://instagram.com/…") +
+      f("spTiktok", "TikTok link", s.tiktok, "https://tiktok.com/@…") + f("spWebsite", "Website", s.website, "https://…") + f("spMorphmarket", "MorphMarket store", s.morphmarket, "https://morphmarket.com/stores/…") +
+      '<label class="checkLine"><input type="checkbox" id="spInq" ' + (s.inquiries_on === false ? "" : "checked") + "> Accept messages</label>" +
+      '<button class="action" onclick="bizSaveSeller()">Save public page</button><p id="bizMsg" class="helperLine" role="status">' + esc(bizMsg) + "</p>" + bizBack();
+  },
+  Branding: () => {
+    const b = bizBrand || {};
+    return '<p class="resourceIntro">Add your logo and brand color. They show at the top of the app for you and your team, and on your Care Binder and printables.</p>' +
+      (b.logoUrl ? '<img class="bizLogoPreview" alt="Your logo" src="' + esc(b.logoUrl) + '">' : "") +
+      '<label>Business name<input id="bizName" maxlength="60" value="' + esc(b.business_name || "") + '"></label>' +
+      '<label>Logo (PNG, JPG or WebP)<input id="bizLogo" type="file" accept="image/png,image/jpeg,image/webp"></label>' +
+      '<label>Brand color<input id="bizAccent" type="color" value="' + esc(b.accent || "#79538e") + '"></label>' +
+      '<button class="action" onclick="bizSaveBrand()">Save branding</button><p id="bizMsg" class="helperLine" role="status">' + esc(bizMsg) + "</p>" + bizBack();
+  },
+  "Rescue Profile": () => {
+    const r = bizRescue || {}, f = (id, label, val, ph, max = 90) => '<label>' + label + '<input id="' + id + '" maxlength="' + max + '" value="' + esc(val || "") + '" placeholder="' + ph + '"></label>';
+    const ver = { none: "Not verified", pending: "⏳ Verification pending", approved: "✓ Verified 501(c)(3)", declined: "Not approved. Contact support@scaleandtell.app" }[r.verification || "none"];
+    return '<p class="resourceIntro">Your rescue’s listing in Scale Hub → Reptile Rescues. Add your EIN to verify your 501(c)(3): verified rescues pay $14.99/yr instead of $29.99 and get a ✓ Verified mark.</p>' +
+      '<div class="habitatSummary"><strong>Intake</strong><p>' + (r.org_name ? (r.intake_open === false ? "🔴 Intake full" : "🟢 Intake open") : "Save your profile first.") + "</p>" +
+      (r.org_name ? '<button class="action secondary" onclick="bizSetIntake(' + (r.intake_open === false) + ')">' + (r.intake_open === false ? "Mark intake open" : "Mark intake full") + "</button>" : "") + "</div>" +
+      f("rpOrg", "Rescue name", r.org_name, "Your rescue") + f("rpEin", "EIN (for 501(c)(3) verification, optional)", r.ein, "12-3456789", 12) +
+      '<p class="lcSmall">Status: <b>' + esc(ver) + "</b></p>" +
+      f("rpArea", "Area served", r.area, "City, State") + f("rpEmail", "Contact email", r.contact_email, "intake@yourrescue.org", 254) +
+      f("rpPhone", "Phone (optional)", r.phone, "", 30) + f("rpWeb", "Website (https://…)", r.website, "https://", 200) +
+      '<label>About<textarea id="rpAbout" maxlength="400" rows="3">' + esc(r.about || "") + "</textarea></label>" +
+      '<label class="checkLine"><input type="checkbox" id="rpListed" ' + (r.listed === false ? "" : "checked") + "> Show my rescue in Scale Hub</label>" +
+      '<button class="action" onclick="bizSaveRescue()">Save rescue profile</button><p id="bizMsg" class="helperLine" role="status">' + esc(bizMsg) + "</p>" + bizBack();
+  },
+  "MorphMarket Export": () =>
+    '<p class="resourceIntro">Pick animals and download a file in MorphMarket’s bulk-import format. On MorphMarket, go to your seller tools → <b>Import</b> and upload it. Listings arrive as private drafts so you can add prices and photos before publishing.</p>' +
+    '<div class="mmActions"><button class="action secondary" onclick="document.querySelectorAll(\'.mmPick\').forEach(x=>x.checked=true)">Select all</button><button class="action secondary" onclick="document.querySelectorAll(\'.mmPick\').forEach(x=>x.checked=false)">Clear</button></div>' +
+    '<div class="mmList">' + animals.map((a) => '<label class="checkLine"><input type="checkbox" class="mmPick" value="' + esc(a) + '"> ' + esc(a) + ' <small>' + esc([species[a], profiles[a]?.morph].filter(Boolean).join(" · ")) + "</small></label>").join("") + "</div>" +
+    '<button class="action" onclick="mmDownload()">Download MorphMarket file</button><p id="bizMsg" class="helperLine" role="status"></p>' + bizBack(),
+  "Reptile Rescues": () => '<p class="resourceIntro">Reptile rescues using Scale &amp; Tell. Reach out before dropping off an animal: intake changes quickly.</p><div id="bizRescues"><p class="helperLine">Loading…</p></div><button class="action secondary" onclick="openPanel(\'Scale Hub\')">Back to Scale Hub</button>',
+};
+async function bizAfterRender(name) {
+  bizMsg = "";
+  try {
+    if (name === "Inbox") return bizLoadInbox();
+    if (name === "Reptile Rescues") return bizLoadRescues();
+    if (name === "Team Logins" && cloudClient) { const r = await cloudClient.rpc("team_context"); if (!r.error && r.data) { const changed = JSON.stringify(r.data.members) !== JSON.stringify(stTeam?.members); stTeam = r.data; if (changed && current === name) render(); } }
+    if (name === "My Public Page" && bizSeller === null && cloudClient) { const { data } = await cloudClient.from("seller_profiles").select("*").eq("user_id", cloudSession.user.id).maybeSingle(); bizSeller = data || {}; if (current === name) render(); }
+    if (name === "Rescue Profile" && bizRescue === null && cloudClient) { const { data } = await cloudClient.from("rescue_profiles").select("*").eq("user_id", cloudSession.user.id).maybeSingle(); bizRescue = data || {}; if (current === name) render(); }
+  } catch (e) {}
+}
+async function bizInviteMember() {
+  const email = (document.getElementById("bizInvite")?.value || "").trim();
+  try {
+    const { data, error } = await cloudClient.rpc("invite_team_member", { p_email: email });
+    if (error) throw error;
+    const msgs = { plan: "Team logins come with breeder and rescue plans.", invalid: "Enter a valid email.", self: "That’s your own email.", limit: "Your team is full (3 logins)." };
+    if (data !== "ok") { bizMsg = msgs[data] || "Couldn’t invite."; return render(); }
+    try { await hubInvoke({ action: "team_invite_email", email }); } catch (e) {}
+    bizMsg = "Invite sent to " + email + " ♡";
+    const r = await cloudClient.rpc("team_context");
+    if (!r.error) stTeam = r.data;
+  } catch (e) { bizMsg = e.message || "Couldn’t invite."; }
+  render();
+}
+async function bizRemoveMember(id) {
+  if (!confirm("Remove this person from your team? They lose access to your journal right away.")) return;
+  try { await cloudClient.rpc("remove_team_member", { p_id: id }); const r = await cloudClient.rpc("team_context"); if (!r.error) stTeam = r.data; bizMsg = "Removed."; } catch (e) { bizMsg = "Couldn’t remove."; }
+  render();
+}
+async function bizLeaveTeam() {
+  if (!confirm("Leave this team? You’ll go back to your own journal. Their journal stays with them.")) return;
+  try { await cloudClient.rpc("leave_team"); } catch (e) {}
+  await stSyncTeam();
+}
+async function bizLoadInbox() {
+  const box = document.getElementById("bizInbox");
+  if (!box || !cloudClient) return;
+  const { data, error } = await cloudClient.from("inquiries").select("id,from_name,from_email,subject,message,status,created_at,inquiry_replies(body,created_at)").eq("owner_id", cloudJournalUid()).neq("status", "archived").order("created_at", { ascending: false }).limit(100);
+  if (error) { box.innerHTML = '<p class="helperLine">Couldn’t load your Inbox.</p>'; return; }
+  bizInbox = data || [];
+  box.innerHTML = bizInbox.length ? bizInbox.map((m) =>
+    '<details class="diyGuide inboxItem' + (m.status === "new" ? " inboxNew" : "") + '" ontoggle="if(this.open)bizMarkRead(' + m.id + ')"><summary><b>' + esc(m.from_name) + (m.subject ? " · " + esc(m.subject) : "") + "</b><span>" + esc(niceDate(String(m.created_at).slice(0, 10))) + (m.status === "new" ? " · new" : m.status === "replied" ? " · replied" : "") + "</span></summary>" +
+    '<p class="lcSmall">' + esc(m.from_email) + '</p><p class="inboxBody">' + esc(m.message) + "</p>" +
+    (m.inquiry_replies || []).map((r) => '<p class="inboxReply"><b>You:</b> ' + esc(r.body) + "</p>").join("") +
+    '<textarea id="rep' + m.id + '" rows="3" maxlength="2000" placeholder="Write a reply…"></textarea><div class="recordActions"><button onclick="bizReply(' + m.id + ')">Send reply</button><button onclick="bizArchive(' + m.id + ')">Archive</button></div></details>').join("")
+    : '<p class="helperLine">No messages yet. Share your public page link to start getting inquiries.</p>';
+}
+async function bizMarkRead(id) {
+  const m = bizInbox?.find((x) => x.id === id);
+  if (!m || m.status !== "new") return;
+  m.status = "read";
+  try { await cloudClient.rpc("set_inquiry_status", { p_id: id, p_status: "read" }); bizUnread = Math.max(0, bizUnread - 1); } catch (e) {}
+}
+async function bizReply(id) {
+  const body = (document.getElementById("rep" + id)?.value || "").trim();
+  if (!body) return;
+  try { await hubInvoke({ action: "inquiry_reply", id, body }); stToast("Reply sent ♡"); bizLoadInbox(); } catch (e) { stToast(e.message); }
+}
+async function bizArchive(id) {
+  try { await cloudClient.rpc("set_inquiry_status", { p_id: id, p_status: "archived" }); bizLoadInbox(); } catch (e) {}
+}
+async function bizSaveSeller() {
+  const v = (id) => (document.getElementById(id)?.value || "").trim(), url = (x) => (x && !/^https:\/\//i.test(x) ? "https://" + x.replace(/^http:\/\//i, "") : x);
+  try {
+    const { data, error } = await cloudClient.rpc("save_seller_profile", { p_slug: v("spSlug").toLowerCase(), p_name: v("spName"), p_bio: v("spBio"), p_facebook: url(v("spFacebook")), p_instagram: url(v("spInstagram")),
+      p_tiktok: url(v("spTiktok")), p_website: url(v("spWebsite")), p_morphmarket: url(v("spMorphmarket")), p_inquiries: !!document.getElementById("spInq")?.checked });
+    if (error) throw error;
+    const msgs = { plan: "Public pages come with breeder and rescue plans.", slug: "Link name: 3–40 lowercase letters, numbers or dashes.", taken: "That link name is taken. Try another." };
+    if (data !== "ok") { bizMsg = msgs[data] || "Couldn’t save."; return render(); }
+    bizSeller = null;
+    bizMsg = "Saved ♡";
+  } catch (e) { bizMsg = /check/i.test(e.message || "") ? "Check your name (2–60 characters) and links." : e.message || "Couldn’t save."; }
+  render();
+}
+async function bizSaveRescue() {
+  const v = (id) => (document.getElementById(id)?.value || "").trim();
+  try {
+    const web = v("rpWeb") && !/^https:\/\//i.test(v("rpWeb")) ? "https://" + v("rpWeb").replace(/^http:\/\//i, "") : v("rpWeb");
+    const { data, error } = await cloudClient.rpc("save_rescue_profile", { p_org: v("rpOrg"), p_ein: v("rpEin"), p_area: v("rpArea"), p_email: v("rpEmail"), p_website: web, p_phone: v("rpPhone"), p_about: v("rpAbout"), p_listed: !!document.getElementById("rpListed")?.checked });
+    if (error) throw error;
+    if (data === "ein") { bizMsg = "An EIN has 9 digits, like 12-3456789."; return render(); }
+    if (data === "pending") { try { await hubInvoke({ action: "rescue_submitted" }); } catch (e) {} bizMsg = "Saved ♡ We’re verifying your 501(c)(3). You’ll see the verified price once it’s approved."; }
+    else bizMsg = "Saved ♡";
+    bizRescue = null;
+  } catch (e) { bizMsg = /check/i.test(e.message || "") ? "Check the rescue name (2–90 characters) and website (https://…)." : e.message || "Couldn’t save."; }
+  render();
+}
+async function bizSetIntake(open) {
+  try { await cloudClient.rpc("set_rescue_intake", { p_open: open }); bizRescue = null; stToast(open ? "Intake open 🟢" : "Intake full 🔴"); } catch (e) {}
+  render();
+}
+async function bizLoadRescues() {
+  const box = document.getElementById("bizRescues");
+  if (!box) return;
+  try {
+    const client = cloudClient || window.supabase?.createClient(CLOUD_URL, CLOUD_PUBLIC_KEY);
+    const { data, error } = await client.rpc("rescue_directory");
+    if (error) throw error;
+    box.innerHTML = (data || []).length ? data.map((r) =>
+      '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(r.org_name) + (r.verified ? ' <span class="peerTag">✓ Verified 501(c)(3)</span>' : "") + "</b><span>" + (r.intake_open ? "🟢 Intake open" : "🔴 Intake full") + "</span></div>" +
+      (r.area ? "<p>" + esc(r.area) + "</p>" : "") + (r.about ? '<p class="lcSmall">' + esc(r.about) + "</p>" : "") +
+      '<div class="recordActions">' + (r.contact_email ? '<a class="deviceLink" href="mailto:' + esc(r.contact_email) + '">Email</a>' : "") + (r.phone ? '<a class="deviceLink" href="tel:' + esc(r.phone.replace(/[^\d+]/g, "")) + '">Call</a>' : "") +
+      (r.website ? '<a class="deviceLink" href="' + esc(r.website) + '" target="_blank" rel="noopener noreferrer">Website ↗</a>' : "") + "</div></div>").join("")
+      : '<p class="helperLine">No rescues listed yet. Run a reptile rescue? The Rescue plan includes a free listing here.</p>';
+  } catch (e) { box.innerHTML = '<p class="helperLine">Couldn’t load rescues right now.</p>'; }
 }
