@@ -3340,7 +3340,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.25";
+const SCALE_LC_VERSION = "3.26";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */

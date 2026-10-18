@@ -2959,3 +2959,15 @@ body[data-st-theme="cream"] .modal :is(.breedCard, .tub, .rfRow) { background: v
 .productBrand { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--st-green); }
 body[data-st-theme="forest"] .modal .productCard, body[data-st-theme="violet"] .modal .productCard { background: var(--t-card); color: var(--t-text); border-color: var(--t-border); }
 body[data-st-theme="cream"] .modal .productCard { background: var(--t-panel); border-color: var(--t-border); }
+
+/* V3.25 · Community cards readable on the dark themes */
+body[data-st-theme="forest"] .modal .communityChoice,
+body[data-st-theme="violet"] .modal .communityChoice { background: var(--t-card); color: var(--t-text); border-color: var(--t-border); }
+body[data-st-theme="forest"] .modal .communityChoice strong,
+body[data-st-theme="violet"] .modal .communityChoice strong { color: var(--t-accent); }
+body[data-st-theme="forest"] .modal .communityChoice p,
+body[data-st-theme="violet"] .modal .communityChoice p { color: var(--t-text); }
+body[data-st-theme="forest"] .modal .communityChoice .socialLink,
+body[data-st-theme="violet"] .modal .communityChoice .socialLink { background: var(--t-action); color: var(--t-action-ink); border-color: var(--t-action); }
+body[data-st-theme="forest"] .modal .resourceMuted,
+body[data-st-theme="violet"] .modal .resourceMuted { color: var(--t-muted); }
