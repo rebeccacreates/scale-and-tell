@@ -3340,7 +3340,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.26";
+const SCALE_LC_VERSION = "3.27";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -3457,7 +3457,7 @@ function privacyAccountMarkup() {
     '<div class="lcPanel"><h3>Account deletion</h3><p>If you want your account and its cloud records deleted, you can prepare a private deletion request. This does <b>not</b> instantly erase data or submit a request on its own. Email support@scaleandtell.app so the support team can verify and process the request.</p><p class="lcSmall">Make sure the request is sent privately. Never include your password.</p><button class="action secondary" onclick="prepareDeletionRequest()">Prepare deletion request</button><p id="lcDeleteStatus" class="lcSmall" role="status"></p></div>' +
     '<p class="lcSmall">Signed-in account: ' +
     esc(email) +
-    '. Support: <a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a>. See the <a href="./privacy.html" target="_blank" rel="noopener noreferrer">staging privacy information</a> and <a href="./deletion.html" target="_blank" rel="noopener noreferrer">deletion request instructions</a>. The final policies must be approved before public launch.</p>'
+    '. Support: <a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a>. See the <a href="./privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a href="./deletion.html" target="_blank" rel="noopener noreferrer">deletion request instructions</a>.</p>'
   );
 }
 function prepareDeletionRequest() {
