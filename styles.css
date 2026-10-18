@@ -2971,3 +2971,10 @@ body[data-st-theme="forest"] .modal .communityChoice .socialLink,
 body[data-st-theme="violet"] .modal .communityChoice .socialLink { background: var(--t-action); color: var(--t-action-ink); border-color: var(--t-action); }
 body[data-st-theme="forest"] .modal .resourceMuted,
 body[data-st-theme="violet"] .modal .resourceMuted { color: var(--t-muted); }
+
+/* V3.27 · Bottom menu pinned to the bottom of the screen; the space above it matches the home background */
+#appShell { min-height: 100vh; min-height: 100dvh; background: #eedeea; padding-bottom: calc(min(100vw, 650px) * 0.1252 + env(safe-area-inset-bottom)); }
+.dashClip { overflow: hidden; aspect-ratio: 1342 / 1004; }
+.homeNav { position: fixed; z-index: 6; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 650px; background: #ebd8ea; padding-bottom: env(safe-area-inset-bottom); }
+.homeNav .art img { display: block; }
+body.authLocked .homeNav { display: none; }
