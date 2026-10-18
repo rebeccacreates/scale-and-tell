@@ -3084,3 +3084,7 @@ body[data-st-theme="forest"] .homeOverdue, body[data-st-theme="violet"] .homeOve
 .tourList li { margin: 6px 0; }
 .tourOk { color: #44701f; font-weight: bold; }
 body[data-st-theme="forest"] .tourOk, body[data-st-theme="violet"] .tourOk { color: var(--st-green); }
+
+/* V3.33 · finish the painted Welcome card with its matching artwork */
+.homeHello { margin: 0 -12px; padding: 0; background: none; line-height: 0; }
+.homeHello img { width: 100%; height: auto; display: block; }
