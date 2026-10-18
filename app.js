@@ -1672,8 +1672,15 @@ function loadAffiliateLinks() {
 const RECOMMENDED = [
   {
     brand: "Amazon",
-    name: "Herps & Hers Amazon picks",
-    why: "Our list of reptile products on Amazon: heat and UVB, thermometers and hygrometers, hides, substrate, supplements and feeding supplies. Shopping through this link supports Herps & Hers and Scale & Tell at no extra cost to you.",
+    name: "First Time Keeper Essentials",
+    why: "New to reptiles? Start here. The basics for a safe, ready setup before your animal comes home: heat with a thermostat, a thermometer and hygrometer, hides, water bowl, substrate and feeding supplies.",
+    url: "https://amzn.to/4efIVOu",
+    affiliate: true,
+  },
+  {
+    brand: "Amazon",
+    name: "Reptile Recommendations",
+    why: "Products we love and use: heat and UVB, monitoring, hides and décor, substrate, supplements and feeding supplies. Shopping through these links supports Herps & Hers and Scale & Tell at no extra cost to you.",
     url: "https://amzn.to/4yQVGY9",
     affiliate: true,
   },
@@ -3340,7 +3347,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.28";
+const SCALE_LC_VERSION = "3.29";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
