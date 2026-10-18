@@ -2978,3 +2978,20 @@ body[data-st-theme="violet"] .modal .resourceMuted { color: var(--t-muted); }
 .homeNav { position: fixed; z-index: 6; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 650px; background: #ebd8ea; padding-bottom: env(safe-area-inset-bottom); }
 .homeNav .art img { display: block; }
 body.authLocked .homeNav { display: none; }
+
+/* V3.30 · Today's Care card on the home screen */
+#appShell { display: flex; flex-direction: column; }
+.homeToday { margin: 2px 12px 0; display: flex; flex-direction: column; gap: 10px; flex: 1 0 auto; justify-content: center; padding: 8px 0 14px; }
+.homeTodayCard { background: #fffaf5; border: 1px solid #e3cfe6; border-radius: 18px; padding: 14px 16px; box-shadow: 0 4px 14px #79538e1f; color: #45205b; }
+.homeTodayCard h2 { margin: 0 0 8px; font: italic 700 22px Georgia, "Times New Roman", serif; color: #45205b; }
+.homeTodayList { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.homeTodayList button { width: 100%; text-align: left; background: #f6ecf7; border: 0; border-radius: 10px; padding: 10px 12px; font: 15px/1.35 Arial, sans-serif; color: #45205b; cursor: pointer; }
+.homeOverdue { margin-left: 6px; font-size: 11px; font-weight: bold; letter-spacing: .5px; text-transform: uppercase; color: #9c2f55; }
+.homeTodayMore { margin-top: 6px; background: none; border: 0; color: #79538e; font: bold 14px Arial, sans-serif; padding: 4px 0; cursor: pointer; }
+.homeTodayClear { margin: 0; font: 15px/1.5 Arial, sans-serif; color: #45205b; }
+.homeTodayClear small { color: #5e4a68; font-size: 13px; }
+.homeTodayActions { display: flex; gap: 8px; margin-top: 12px; }
+.homeTodayActions button { flex: 1; min-height: 44px; border-radius: 12px; border: 0; font: bold 15px Arial, sans-serif; cursor: pointer; background: #79538e; color: #fff; }
+.homeTodayActions button + button { background: #efe2f1; color: #45205b; }
+.homeTip { background: #f8f1e6; border: 1px solid #eadcc4; border-radius: 14px; padding: 10px 14px; font: 14px/1.45 Arial, sans-serif; color: #4b3d2c; }
+.homeTip span { display: block; font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #44701f; margin-bottom: 2px; }

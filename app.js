@@ -2093,6 +2093,58 @@ function updateStats() {
   document.getElementById("statDue").textContent = reminders.filter((e) => e.date <= t).length;
   document.getElementById("statUpcoming").textContent = reminders.filter((e) => e.date > t).length;
   document.getElementById("statLogs").textContent = entries.filter((e) => e.section !== "Calendar").length;
+  renderHomeToday();
+}
+/* V3.30 · Home "Today's Care" card fills the space above the bottom menu on taller phones. */
+const HOME_TIPS = [
+  "Check warm and cool side temperatures with a probe thermometer, not just the dial on the heat source.",
+  "Fresh water every day, and scrub the bowl weekly.",
+  "Log every shed. Stuck shed is often the first sign humidity is off.",
+  "Weigh monthly at the same time of day to spot trends early.",
+  "Replace UVB bulbs on schedule. They stop making UVB long before they stop glowing.",
+  "Every heat source needs a thermostat.",
+  "A refused meal is common during shed or seasonal changes. Watch weight, not one missed feeding.",
+  "Offer at least two hides: one on the warm side, one on the cool side.",
+  "Quarantine new animals for at least 30 to 90 days before they share a room routine with others.",
+  "Spot clean daily, deep clean on a schedule. Add both as reminders in Calendar.",
+];
+function renderHomeToday() {
+  const box = document.getElementById("homeToday");
+  if (!box) return;
+  const t = today(),
+    open = entries.filter((e) => e.section === "Calendar" && !e.done),
+    due = open.filter((e) => e.date <= t).sort((a, b) => a.date.localeCompare(b.date)),
+    next = open.filter((e) => e.date > t).sort((a, b) => a.date.localeCompare(b.date))[0],
+    tip = HOME_TIPS[Math.floor(Date.now() / 86400000) % HOME_TIPS.length];
+  let list;
+  if (due.length) {
+    list =
+      '<ul class="homeTodayList">' +
+      due
+        .slice(0, 3)
+        .map(
+          (e) =>
+            '<li><button onclick="openPanel(\'Due Today\')"><b>' +
+            esc(e.animal) +
+            "</b> · " +
+            esc(e.detail) +
+            (e.date < t ? '<span class="homeOverdue">overdue</span>' : "") +
+            "</button></li>",
+        )
+        .join("") +
+      "</ul>" +
+      (due.length > 3 ? '<button class="homeTodayMore" onclick="openPanel(\'Due Today\')">+ ' + (due.length - 3) + " more due</button>" : "");
+  } else {
+    list =
+      '<p class="homeTodayClear">All caught up ♡ Nothing due today.' +
+      (next ? "<br><small>Next: <b>" + esc(next.animal) + "</b> · " + esc(next.detail) + " · " + niceDate(next.date) + "</small>" : "") +
+      "</p>";
+  }
+  box.innerHTML =
+    '<div class="homeTodayCard"><h2>Today&#39;s Care ♡</h2>' +
+    list +
+    '<div class="homeTodayActions"><button onclick="openPanel(\'Log Care\')">＋ Log Care</button><button onclick="openPanel(\'Calendar\')">Calendar</button></div></div>' +
+    '<div class="homeTip"><span>Keeper tip</span>' + esc(tip) + "</div>";
 }
 /* Modal navigation remembers the previous panel, so settings > devices/account has a real Back button. */
 let panelHistory = [];
@@ -3347,7 +3399,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.29";
+const SCALE_LC_VERSION = "3.30";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
