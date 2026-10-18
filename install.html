@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Get Scale &amp; Tell</title>
+<meta name="theme-color" content="#45205b">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Scale &amp; Tell">
+<style>
+  :root { --ink:#431955; --soft:#6c4f7a; --bg:#f4e5f3; --card:#fffaf5; --btn:#79538e; --line:#e3cfe6; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:calc(100% + 1px); background:var(--bg); color:var(--ink); font:17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  main { max-width:480px; margin:0 auto; padding:28px 16px 40px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:24px 20px; box-shadow:0 10px 30px #4319551a; }
+  .head { display:flex; gap:14px; align-items:center; margin-bottom:14px; }
+  .head img { width:72px; height:72px; border-radius:16px; box-shadow:0 4px 12px #0003; }
+  h1 { font:italic 600 28px/1.15 Georgia, serif; margin:0; }
+  .sub { margin:2px 0 0; color:var(--soft); font-size:15px; }
+  .btn { display:block; width:100%; border:0; border-radius:14px; padding:15px; margin:14px 0 6px; font-family:inherit; font-size:18px; font-weight:600; text-align:center; text-decoration:none; background:var(--btn); color:#fff; cursor:pointer; }
+  .btn.alt { background:#ead9ef; color:var(--ink); }
+  ol { margin:8px 0 4px 20px; padding:0; }
+  li { margin-bottom:6px; }
+  .note { font-size:14px; color:var(--soft); margin:8px 0 0; }
+  .done { font-weight:600; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="head">
+      <img src="icon-180.png" alt="">
+      <div><h1>Scale &amp; Tell ♡</h1><p class="sub">Your reptile care journal, one tap away.</p></div>
+    </div>
+
+    <!-- Android Chrome / Samsung Internet / Edge: real one-tap install -->
+    <section id="oneTap" hidden>
+      <button class="btn" id="installBtn" type="button">Install Scale &amp; Tell</button>
+      <p class="note">Your phone will ask to confirm. The app icon then appears on your Home screen.</p>
+    </section>
+
+    <section id="installed" hidden>
+      <p class="done">✓ Scale &amp; Tell is installed.</p>
+      <p>Open it from your Home screen, sign in, then go to <b>Care Schedule → Enable Reminders</b>.</p>
+    </section>
+
+    <!-- Manual steps per phone/browser -->
+    <section id="iphone" hidden>
+      <ol>
+        <li>Tap <b>Add to Home Screen</b> below. Your phone&#39;s share menu opens.</li>
+        <li>Scroll down the menu, tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+        <li>Open Scale &amp; Tell from the new icon and sign in.</li>
+      </ol>
+      <button class="btn" id="shareBtn" type="button">Add to Home Screen</button>
+      <p class="note">Not in the menu? Tap <b>Copy link</b>, open <b>Safari</b>, paste it, then tap Share → Add to Home Screen.</p>
+      <button class="btn alt" id="copyBtn" type="button">Copy link</button>
+      <p class="note" id="copyNote" role="status"></p>
+      <p class="note">On iPhone, reminders only work from the Home Screen icon.</p>
+    </section>
+
+    <section id="samsung" hidden>
+      <ol>
+        <li>Tap the <b>☰ menu</b> (bottom right).</li>
+        <li>Tap <b>Add page to</b>, then <b>Home screen</b>.</li>
+        <li>Open Scale &amp; Tell from the new icon and sign in.</li>
+      </ol>
+    </section>
+
+    <section id="android" hidden>
+      <ol>
+        <li>Tap the <b>⋮ menu</b> (top right in Chrome).</li>
+        <li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li>
+        <li>Open Scale &amp; Tell from the new icon and sign in.</li>
+      </ol>
+      <p class="note">Using Samsung Internet? Tap <b>☰</b> → <b>Add page to</b> → <b>Home screen</b>. Using Firefox? Tap <b>⋮</b> → <b>Add app to Home screen</b>.</p>
+    </section>
+
+    <section id="desktop" hidden>
+      <p>Open this page on your phone to install the app. On a computer you can use Scale &amp; Tell right in your browser.</p>
+    </section>
+
+    <a class="btn alt" href="./">Open Scale &amp; Tell in the browser</a>
+    <p class="note">Free to use. Your journal syncs across every device you sign in on.</p>
+  </div>
+</main>
+<script>
+(function () {
+  var ua = navigator.userAgent || "";
+  var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/i.test(ua);
+  var isSamsung = /SamsungBrowser/i.test(ua);
+  var standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  var deferred = null;
+  function show(id) { document.getElementById(id).hidden = false; }
+  function hide(id) { document.getElementById(id).hidden = true; }
+
+  if (standalone) { show("installed"); }
+  else if (isIOS) { show("iphone"); }
+  else if (isSamsung) { show("samsung"); }
+  else if (isAndroid) { show("android"); }
+  else { show("desktop"); }
+
+  // Lets Chrome/Samsung/Edge offer the one-tap install.
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(function () {});
+
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferred = e;
+    show("oneTap");
+    hide("android"); hide("samsung"); hide("desktop");
+  });
+  window.addEventListener("appinstalled", function () {
+    deferred = null; hide("oneTap"); hide("android"); hide("samsung"); show("installed");
+  });
+  document.getElementById("installBtn").addEventListener("click", function () {
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function (c) {
+      deferred = null;
+      if (c && c.outcome === "accepted") { hide("oneTap"); show("installed"); }
+    }).catch(function () {});
+  });
+
+  var appUrl = new URL("./", location.href).href;
+  function copy() {
+    var note = document.getElementById("copyNote");
+    (navigator.clipboard ? navigator.clipboard.writeText(appUrl) : Promise.reject())
+      .then(function () { note.textContent = "✓ Link copied. Paste it into Safari."; })
+      .catch(function () { note.textContent = appUrl; });
+  }
+  document.getElementById("copyBtn").addEventListener("click", copy);
+  document.getElementById("shareBtn").addEventListener("click", function () {
+    if (navigator.share) navigator.share({ title: "Scale & Tell", url: appUrl }).catch(function (e) { if (!e || e.name !== "AbortError") copy(); });
+    else copy();
+  });
+})();
+</script>
+</body>
+</html>
