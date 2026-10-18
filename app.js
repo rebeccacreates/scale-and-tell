@@ -1671,6 +1671,13 @@ function loadAffiliateLinks() {
 }
 const RECOMMENDED = [
   {
+    brand: "Amazon",
+    name: "Herps & Hers Amazon picks",
+    why: "Our list of reptile products on Amazon: heat and UVB, thermometers and hygrometers, hides, substrate, supplements and feeding supplies. Shopping through this link supports Herps & Hers and Scale & Tell at no extra cost to you.",
+    url: "https://amzn.to/4yQVGY9",
+    affiliate: true,
+  },
+  {
     brand: "Chewy",
     name: "Herps & Hers Chewy picks",
     why: "Substrate, heat and UVB, hides, décor, feeding supplies and more, with autoship on the things you buy every month. Shopping through this link supports Herps & Hers and Scale & Tell at no extra cost to you.",
@@ -1707,7 +1714,7 @@ function recommendedMarkup() {
         esc(p.brand) +
         " ↗</a></div>",
     ).join("") +
-    '<p class="resourceMuted">Some links are affiliate links: Herps &amp; Hers may earn a small commission on purchases, at no extra cost to you. Any commissions or profit from paid accounts will go into upgrading the app, donations to organizations of Herps &amp; Hers&#39; choice, and/or hosting in-person Herps &amp; Hers events.</p><p class="resourceMuted">Coming soon: connect a SensorPush account to see live readings on each animal and rack.</p><button class="action secondary" onclick="openPanel(\'Resources\')">Back to Resources</button>'
+    '<p class="resourceMuted">Some links are affiliate links: Herps &amp; Hers may earn a small commission on purchases, at no extra cost to you. As an Amazon Associate I earn from qualifying purchases. Any commissions or profit from paid accounts will go into upgrading the app, donations to organizations of Herps &amp; Hers&#39; choice, and/or hosting in-person Herps &amp; Hers events.</p><p class="resourceMuted">Coming soon: connect a SensorPush account to see live readings on each animal and rack.</p><button class="action secondary" onclick="openPanel(\'Resources\')">Back to Resources</button>'
   );
 }
 function communityMarkup() {
@@ -3333,8 +3340,8 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.24";
-const SCALE_SUPPORT_EMAIL = "scaleandtellsupport@gmail.com";
+const SCALE_LC_VERSION = "3.25";
+const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
 let installPromptEvent = null;
@@ -3411,11 +3418,11 @@ function installGuideMarkup() {
       : "") +
     '<p class="lcSmall">You will still need internet access for sign-in and cloud saving. This shortcut is not an offline app.</p></div>' +
     '<div class="lcPanel"><h3>Care reminders are optional</h3><p>After installation, open the Home Screen app, sign in and choose <b>Care Schedule → Enable Reminders</b>. Notification permission is only requested there when you tap Enable.</p><button class="action secondary" onclick="openPanel(&quot;Calendar&quot;)">Open Care Schedule</button></div>' +
-    '<div class="lcPanel"><h3>Need help?</h3><p>Reach us at <a href="mailto:scaleandtellsupport@gmail.com?subject=Scale%20%26%20Tell%20Support">scaleandtellsupport@gmail.com</a>.</p></div><div class="lcPanel"><h3>Already added it?</h3><p>Open the icon on your Home Screen and sign into the same Scale & Tell account to access your journal.</p></div>'
+    '<div class="lcPanel"><h3>Need help?</h3><p>Reach us at <a href="mailto:support@scaleandtell.app?subject=Scale%20%26%20Tell%20Support">support@scaleandtell.app</a>.</p></div><div class="lcPanel"><h3>Already added it?</h3><p>Open the icon on your Home Screen and sign into the same Scale & Tell account to access your journal.</p></div>'
   );
 }
 function feedbackMarkup() {
-  return '<p class="lcLead">Something confusing, a bug, or a feature idea? Tell us in your own words. Send an email to <a href="mailto:scaleandtellsupport@gmail.com">scaleandtellsupport@gmail.com</a>. You choose whether to send it.</p><div class="lcPanel"><label for="lcFeedbackKind"><b>What is this about?</b></label><select class="lcEntry" id="lcFeedbackKind"><option>Something isn’t working</option><option>Something is confusing</option><option>Feature idea</option><option>Other feedback</option></select><label for="lcFeedbackBody"><b>Tell us what happened</b></label><textarea class="lcEntry lcEntryArea" id="lcFeedbackBody" maxlength="1600" placeholder="What were you trying to do? What happened instead?"></textarea><button class="action" onclick="sendScaleFeedback()">Email support</button><p id="lcFeedbackStatus" class="lcSmall" role="status"></p><p class="lcSmall">We won’t include your email, animal photos, care logs or other private data automatically. Your email app opens with a prepared message. Review it and tap Send yourself.</p></div>';
+  return '<p class="lcLead">Something confusing, a bug, or a feature idea? Tell us in your own words. Send an email to <a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a>. You choose whether to send it.</p><div class="lcPanel"><label for="lcFeedbackKind"><b>What is this about?</b></label><select class="lcEntry" id="lcFeedbackKind"><option>Something isn’t working</option><option>Something is confusing</option><option>Feature idea</option><option>Other feedback</option></select><label for="lcFeedbackBody"><b>Tell us what happened</b></label><textarea class="lcEntry lcEntryArea" id="lcFeedbackBody" maxlength="1600" placeholder="What were you trying to do? What happened instead?"></textarea><button class="action" onclick="sendScaleFeedback()">Email support</button><p id="lcFeedbackStatus" class="lcSmall" role="status"></p><p class="lcSmall">We won’t include your email, animal photos, care logs or other private data automatically. Your email app opens with a prepared message. Review it and tap Send yourself.</p></div>';
 }
 function scaleSupportMail(subject, message) {
   const url =
@@ -3447,10 +3454,10 @@ function privacyAccountMarkup() {
     '<p class="lcLead">Your keeper journal belongs to your account. Here’s how its information is handled.</p>' +
     '<div class="lcPanel"><h3>What stays private?</h3><p>Your animal profiles, care logs, Photo Journal, reminders and saved account email are personal records. They are not published to the Herps & Hers Facebook group or the Messenger Keeper Lounge.</p><p>Those external communities have their own platform rules. Opening their links does not share your journal.</p></div>' +
     '<div class="lcPanel"><h3>Automatic saving</h3><p>When you’re signed in, Scale & Tell saves to your account. If a save fails or two copies need review, the app should tell you rather than erase changes.</p><button class="action secondary" onclick="openPanel(\'Cloud Account\')">My Account</button><button class="action secondary" onclick="openPanel(\'Data & Backup\')">Optional backup</button></div>' +
-    '<div class="lcPanel"><h3>Account deletion</h3><p>If you want your account and its cloud records deleted, you can prepare a private deletion request. This does <b>not</b> instantly erase data or submit a request on its own. Email scaleandtellsupport@gmail.com so the support team can verify and process the request.</p><p class="lcSmall">Make sure the request is sent privately. Never include your password.</p><button class="action secondary" onclick="prepareDeletionRequest()">Prepare deletion request</button><p id="lcDeleteStatus" class="lcSmall" role="status"></p></div>' +
+    '<div class="lcPanel"><h3>Account deletion</h3><p>If you want your account and its cloud records deleted, you can prepare a private deletion request. This does <b>not</b> instantly erase data or submit a request on its own. Email support@scaleandtell.app so the support team can verify and process the request.</p><p class="lcSmall">Make sure the request is sent privately. Never include your password.</p><button class="action secondary" onclick="prepareDeletionRequest()">Prepare deletion request</button><p id="lcDeleteStatus" class="lcSmall" role="status"></p></div>' +
     '<p class="lcSmall">Signed-in account: ' +
     esc(email) +
-    '. Support: <a href="mailto:scaleandtellsupport@gmail.com">scaleandtellsupport@gmail.com</a>. See the <a href="./privacy.html" target="_blank" rel="noopener noreferrer">staging privacy information</a> and <a href="./deletion.html" target="_blank" rel="noopener noreferrer">deletion request instructions</a>. The final policies must be approved before public launch.</p>'
+    '. Support: <a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a>. See the <a href="./privacy.html" target="_blank" rel="noopener noreferrer">staging privacy information</a> and <a href="./deletion.html" target="_blank" rel="noopener noreferrer">deletion request instructions</a>. The final policies must be approved before public launch.</p>'
   );
 }
 function prepareDeletionRequest() {
