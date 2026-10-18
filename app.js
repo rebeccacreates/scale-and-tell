@@ -476,6 +476,7 @@ function renderHomeCards() {
   const row = document.getElementById("homeReptileRow");
   if (!row) return;
   homeNavApply();
+  try { homeRescueStrip(); } catch (e) {}
   if (homeBusinessMode()) return renderHomeBusiness(row);
   homeResetPersonal();
   const count = document.getElementById("homeCount");
@@ -753,6 +754,8 @@ async function founderRefreshEntitlement() {
       setTimeout(stMaybeShowUpgrade, 1500);
       setTimeout(rescueMaybeAskLayout, 1800);
       try { renderHomeCards(); } catch (e) {}
+      setTimeout(bizQueueAuto, 2500);
+      if (!window.__stTransferChecked) { window.__stTransferChecked = true; setTimeout(transferCheck, 3500); }
       if (current === "Founding Keeper Studio") render();
     }
   }
@@ -842,7 +845,7 @@ function founderCheckoutMarkup() {
     (stOwnsEntitlements() && stSkus.includes("member")
       ? '<label class="authField" for="founderGroupName">Your name in the Herps &amp; Hers group (optional)</label><input id="founderGroupName" maxlength="80" autocomplete="name" placeholder="So we can add your badge in the group ♡">'
       : "") +
-    '<div id="paypalButtons" aria-label="Pay with PayPal"></div><p id="founderPayStatus" class="studioStatus" role="status"></p><p class="lcSmall">Any commissions or profit from paid accounts will go into upgrading the app, donations to organizations of Herps &amp; Hers&#39; choice, and/or hosting in-person Herps &amp; Hers events.</p></div>'
+    '<div id="paypalButtons" aria-label="Pay with PayPal"></div><p id="founderPayStatus" class="studioStatus" role="status"></p><p class="lcSmall">Every paid plan supports the Herps &amp; Hers community&#39;s growth and future projects, and Scale &amp; Tell&#39;s growth. 10% of paid-plan profits are donated to a nonprofit reptile rescue.</p></div>'
   );
 }
 function founderPayStatus(msg) {
@@ -1103,8 +1106,15 @@ function founderDoc(kind) {
       founderPrintRow("Phone", savedVet?.phone) +
       "</table></section>";
     for (let a of animals) {
+      const rr = profiles[a]?.rescue, md = (profiles[a]?.meds || []).filter((m) => !m.end || m.end >= today());
       output +=
         founderAnimalCard(a) +
+        (rr ? '<section class="careBlock"><h3>♡ Rescue record</h3><table>' + founderPrintRow("Status", rr.status) + founderPrintRow("Intake", rr.intakeDate ? niceDate(rr.intakeDate) + (rr.source ? " · " + rr.source : "") : "") +
+          founderPrintRow("Brought in by", [rr.surrenderedBy, rr.contact].filter(Boolean).join(" · ")) + founderPrintRow("On arrival", [rr.condition, rr.issues].filter(Boolean).join(" · ")) +
+          founderPrintRow("Quarantine", rescueQuarantine(a) ? "Day " + rescueQuarantine(a).day + " of " + rescueQuarantine(a).total + " (ends " + niceDate(rescueQuarantine(a).end) + ")" : "") +
+          founderPrintRow("Next vet check", rr.vetDue ? niceDate(rr.vetDue) : "") + founderPrintRow("Foster", [rr.foster, rr.fosterContact].filter(Boolean).join(" · ")) +
+          founderPrintRow("Adopter", [rr.adopter, rr.adopterContact, rr.adoptedDate ? niceDate(rr.adoptedDate) : ""].filter(Boolean).join(" · ")) + "</table></section>" : "") +
+        (md.length ? '<section class="careBlock"><h3>♡ Medications</h3><table>' + md.map((m) => founderPrintRow(m.drug, [m.dose, "every " + (m.everyDays > 1 ? m.everyDays + " days" : "day") + " at " + (m.times || []).join(", "), m.end ? "until " + niceDate(m.end) : "", m.notes].filter(Boolean).join(" · "))).join("") + "</table></section>" : "") +
         '<section class="careBlock"><h3>♡ Upcoming care</h3>' +
         founderUpcoming(a) +
         "<h3>♡ Recent care history</h3>" +
@@ -1856,7 +1866,7 @@ function recommendedMarkup() {
         esc(p.brand) +
         " ↗</a></div>",
     ).join("") +
-    '<p class="resourceMuted">Some links are affiliate links: Herps &amp; Hers may earn a small commission on purchases, at no extra cost to you. As an Amazon Associate I earn from qualifying purchases. Any commissions or profit from paid accounts will go into upgrading the app, donations to organizations of Herps &amp; Hers&#39; choice, and/or hosting in-person Herps &amp; Hers events.</p><p class="resourceMuted">Coming soon: connect a SensorPush account to see live readings on each animal and rack.</p><button class="action secondary" onclick="openPanel(\'Scale Hub\')">Back to Scale Hub</button>'
+    '<p class="resourceMuted">Some links are affiliate links: Herps &amp; Hers may earn a small commission on purchases, at no extra cost to you. As an Amazon Associate I earn from qualifying purchases. Every paid plan supports the Herps &amp; Hers community&#39;s growth and future projects, and Scale &amp; Tell&#39;s growth. 10% of paid-plan profits are donated to a nonprofit reptile rescue.</p><p class="resourceMuted">Coming soon: connect a SensorPush account to see live readings on each animal and rack.</p><button class="action secondary" onclick="openPanel(\'Scale Hub\')">Back to Scale Hub</button>'
   );
 }
 function communityMarkup() {
@@ -2220,6 +2230,7 @@ function today() {
 function save() {
   syncStampEntries();
   scaleStoreSet("scaleTellApprovedPreview", JSON.stringify(entries));
+  if (typeof bizQueueAuto === "function") bizQueueAuto();
 }
 function updateStats() {
   let t = today(),
@@ -2523,6 +2534,7 @@ function quickLogEntry(q, extra) {
   if (q.section === "Feeding Tracker") Object.assign(e, { preyType: "", preyWeight: "", response: detail === "Refused" ? "Refused" : "" });
   entries.push(e);
   save();
+  if (e.section === "Feeding Tracker" && e.detail !== "Refused" && e.preyType) feederUse(e.preyType, 1);
   let msg = "Logged ♡ " + selectedAnimal + " · " + (q.id === "weight" ? e.detail + " g" : q.label);
   if (q.section === "Feeding Tracker") {
     const next = autoNextFeeding(selectedAnimal, date);
@@ -2902,6 +2914,8 @@ function reminderCarryOver(e) {
   const out = {};
   if (e.kind) out.kind = e.kind;
   if (e.logSection) out.logSection = e.logSection;
+  if (e.autoKey) out.autoKey = e.autoKey;
+  if (e.category) out.category = e.category;
   if (Array.isArray(e.times) && e.times.length) out.times = [...e.times];
   if (Array.isArray(e.checklist)) out.checklist = e.checklist.map((x) => ({ t: x.t, done: false }));
   return out;
@@ -3870,7 +3884,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.48";
+const SCALE_LC_VERSION = "3.50";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4164,7 +4178,7 @@ function render() {
       history.length +
       "</b></div><div><small>Next care</small><b>" +
       nextCareLabel(a) +
-      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button>' + (homeBusinessMode() || stIsRescue() ? '<button onclick="saleOpen(selectedAnimal)">' + (stIsRescue() && !stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder") ? "Adoption &amp; placement" : "Listing &amp; sale") + '</button>' : '') + '<button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
+      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button>' + (bizIsBreeder() ? '<button onclick="geneOpen(selectedAnimal)">Genetics &amp; lineage</button>' : '') + (stIsRescue() ? '<button onclick="rescueOf(selectedAnimal) ? rescueOpen(selectedAnimal) : (profiles[selectedAnimal] = { ...(profiles[selectedAnimal] || {}), rescue: { status: \'Intake\', intakeDate: today() } }, bizSaveProfiles(), rescueOpen(selectedAnimal))">Rescue record</button>' : '') + (stIsRescue() || bizIsBreeder() ? '<button onclick="rescueAnimal=selectedAnimal;medEditId=\'\';openPanel(\'Medication\')">Add medication</button>' : '') + (homeBusinessMode() || stIsRescue() ? '<button onclick="saleOpen(selectedAnimal)">' + (stIsRescue() && !stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder") ? "Adoption &amp; placement" : "Listing &amp; sale") + '</button>' : '') + '<button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
     profileTab("Overview");
     return;
   }
@@ -7227,10 +7241,10 @@ async function stRedeemPendingCode() {
     if (!error && data === "ok") {
       await founderRefreshEntitlement();
       cloudSetStatus(cloudAutoStatus);
-      stToast("Welcome, Herps & Hers member ♡");
-    } else if (!error && data === "invalid") {
+      stToast(stCodeWelcome());
+    } else if (!error && (data === "invalid" || data === "used")) {
       const st = document.getElementById("memberCodeStatus");
-      if (st) st.textContent = "That group code didn't work. Check the latest code in the group, or choose a plan.";
+      if (st) st.textContent = data === "used" ? "That code has already been used up. Choose a plan below." : "That code didn't work. Check it and try again, or choose a plan.";
       const d = document.getElementById("memberCodeBox");
       if (d) d.open = true;
     }
@@ -7253,7 +7267,7 @@ function accessGateMarkup() {
     '<div><b>Premium Breeder</b><span>$29.99 / year</span><small>400 animals · your logo &amp; colors · MorphMarket export · 3 logins</small></div>' +
     '<div><b>Rescue</b><span>$29.99 / year · $14.99 verified 501(c)(3)</span><small>300 animals · intake tools · listing in Scale Hub · 3 logins</small></div>' +
     '</div><button class="authButton" type="button" onclick="openPanel(\'Plans\')">See breeder &amp; rescue plans</button></div>' +
-    '<details class="accessCode" id="memberCodeBox"><summary>Have a group member code?</summary><label class="authField" for="memberCode">Group member code</label><input id="memberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Member code" onkeydown="if(event.key===\'Enter\')accessRedeemCode()"><button class="authButton" type="button" onclick="accessRedeemCode()">Use code</button><p id="memberCodeStatus" class="authMessage" role="status"></p></details>' +
+    '<details class="accessCode" id="memberCodeBox"><summary>Have a member or promo code?</summary><label class="authField" for="memberCode">Member or promo code</label><input id="memberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Member code" onkeydown="if(event.key===\'Enter\')accessRedeemCode()"><button class="authButton" type="button" onclick="accessRedeemCode()">Use code</button><p id="memberCodeStatus" class="authMessage" role="status"></p></details>' +
     '<button class="authLink" type="button" onclick="cloudSignOut()">Sign out</button></div>'
   );
 }
@@ -7269,11 +7283,12 @@ async function accessRedeemCode() {
     const { data, error } = await cloudClient.rpc("redeem_member_code", { p_code: code });
     if (error) throw error;
     if (data === "ok") {
-      say("✓ Welcome, Herps & Hers member ♡");
       await founderRefreshEntitlement();
       cloudSetStatus(cloudAutoStatus);
+      say("✓ " + stCodeWelcome());
     } else if (data === "limit") say("Too many tries. Please wait an hour and try again.");
-    else say("That code didn't work. Check the latest code in the Herps & Hers group.");
+    else if (data === "used") say("That code has already been used up.");
+    else say("That code didn't work. Check it and try again.");
   } catch (e) {
     say("Could not check the code right now. Please try again.");
   }
@@ -7357,7 +7372,7 @@ function updateAuthGate() {
         (authStayEnabled() ? "checked" : "") +
         "><span>Keep me signed in on this device</span></label>" +
         (signup
-          ? '<label class="authField" for="signupMemberCode">Group member code (optional)</label><input id="signupMemberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Leave blank if you don&#39;t have one">'
+          ? '<label class="authField" for="signupMemberCode">Member or promo code (optional)</label><input id="signupMemberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Leave blank if you don&#39;t have one">'
           : "")) +
     (reset
       ? '<button class="authButton" onclick="cloudResetEmail()">Send reset link</button><button class="authButton light" onclick="authChooseMode(\'signin\')">Back to Sign In</button>'
@@ -8142,6 +8157,7 @@ async function cloudPreparePayload(userId, source = cloudMakeLocalSnapshot()) {
       if (!item.src?.startsWith("data:image/"))
         throw Error("Local gallery photo is missing or invalid. Please save a backup before syncing.");
       item.cloudPath = await cloudEnsurePhoto(userId, item.src, cached);
+      item.key = photoKey(item);
       delete item.src;
       complete++;
       cloudMsg("Uploading private photos: " + complete + " / " + total);
@@ -8156,7 +8172,7 @@ async function cloudPreparePayload(userId, source = cloudMakeLocalSnapshot()) {
     }
   }
   let size = new TextEncoder().encode(JSON.stringify(p)).length;
-  if (size > 4900000) throw Error("This cloud snapshot is too large. Your browser records remain unchanged.");
+  if (size > (homeBusinessMode() || stIsRescue() ? 24500000 : 4900000)) throw Error("This cloud snapshot is too large. Your browser records remain unchanged.");
   return p;
 }
 async function cloudUpload() {
@@ -9665,7 +9681,7 @@ function rackViewMarkup() {
     grid +
     editor +
     '<div class="inlineActions">' +
-    (filled ? '<button class="action" onclick="breederOpen(&quot;Rack Feeding&quot;,&quot;' + esc(r.id) + '&quot;)">🍽 Feed this rack</button>' : "") +
+    (filled ? '<button class="action" onclick="breederOpen(&quot;Rack Feeding&quot;,&quot;' + esc(r.id) + '&quot;)">🍽 Feed this rack</button><div class="inlineActions"><button class="action secondary" onclick="breederRackId=&quot;' + esc(r.id) + '&quot;;openPanel(&quot;Rack Weigh&quot;)">⚖ Weigh this rack</button><button class="action secondary" onclick="tubLabelsOpen(&quot;' + esc(r.id) + '&quot;)">▦ Print tub labels (QR)</button></div>' : "") +
     '<button class="action secondary" onclick="breederOpen(&quot;Rack Setup&quot;,&quot;' +
     esc(r.id) +
     '&quot;)">Edit rack</button><button class="action secondary" onclick="openPanel(&quot;Racks & Breeding&quot;)">All racks</button></div>'
@@ -9778,6 +9794,9 @@ function saveRackFeeding(n) {
     entries = before;
     return alert("Could not save these feedings. Nothing was added.");
   }
+  const used = {};
+  add.filter((e) => e.detail === "Ate" && e.preyType).forEach((e) => (used[e.preyType] = (used[e.preyType] || 0) + 1));
+  Object.entries(used).forEach(([p, n]) => feederUse(p, n));
   breederOpen("Rack View", r.id);
   alert("✓ Logged " + add.length + " feeding" + (add.length === 1 ? "" : "s") + " for " + r.name + ".");
 }
@@ -9892,6 +9911,7 @@ function clutchMarkup() {
     '"></label><label>Notes<textarea id="clutchNotes" maxlength="600">' +
     esc(c?.notes || "") +
     '</textarea></label><div class="inlineActions"><button class="action" onclick="saveClutch()">Save clutch</button><button class="action secondary" onclick="openPanel(&quot;Racks & Breeding&quot;)">Cancel</button></div>' +
+    (c ? '<button class="action secondary" onclick="incClutchId=\'' + esc(c.id) + '\';openPanel(\'Incubation\')">🌡 Incubation log' + (c.incLog?.length ? " (" + c.incLog.length + ")" : "") + "</button>" : "") +
     (c
       ? '<div class="tubEditor"><h4>Hatchlings</h4>' +
         (Array.isArray(c.hatchlings) && c.hatchlings.length
@@ -9992,7 +10012,9 @@ function addHatchlings() {
   for (const name of made) {
     animals.push(name);
     species[name] = species[c.animal] || "Reptile";
+    const ini = (x) => String(x || "").replace(/[^A-Za-z]/g, "").slice(0, 1).toUpperCase() || "X";
     profiles[name] = {
+      code: year.slice(2) + "-" + ini(c.animal) + ini(c.partner) + "-" + String(k - 1).padStart(2, "0"),
       sex: "Unknown",
       hatchDate: c.hatchDate || today(),
       dam: c.animal,
@@ -10453,6 +10475,8 @@ function bizApplyBrand() {
     ".homeCard,.resourceTile,.menuTile,.deviceCard,.diyGuide{border-color:" + light + "!important}" +
     ".homeCardAdd,.homePetsLink{border-color:" + a + "!important;color:" + dark + "!important}" +
     "a{color:" + dark + "}" +
+    // The bottom bar is artwork, so it is re-tinted from the app's purple to the brand hue.
+    ".homeNav img{filter:hue-rotate(" + bizHueShift(a) + "deg) saturate(" + bizSatScale(a) + ")}" +
     // Text sitting on a filled brand color stays white so it is always readable.
     ".menuFeature strong,.menuFeature small,.action:not(.secondary) *,#bizBanner b,#bizBanner small{color:#fff!important}";
 }
@@ -10569,7 +10593,13 @@ const BIZ_PANELS = {
     return '<p class="resourceIntro">Tools for running your breeding business or rescue.</p>' +
       t("Team Logins", "♡ Team logins", "Invite up to 2 people to share your journal (3 logins total).") +
       t("Inbox", "✉ Inbox" + (bizUnread ? " · " + bizUnread + " new" : ""), "Inquiries from your public page and website.") +
-      t("Sales", "$ Listings &amp; sales", "Listed, pending, sold, buyer, shipped and received dates.") +
+      (stIsRescue() ? t("Rescue Animals", "♧ Rescue animals", "Intake, quarantine, medical, available, adopted. New intakes start here.") : "") +
+      t("Sales", "$ Listings &amp; sales", "Listed, holds and deposits, sold, shipped and received. Expo mode for shows.") +
+      (bizIsBreeder() ? t("Hatchlings", "🐣 Hatchlings", "Every baby with its first shed, first meal and ready-to-sell checklist.") : "") +
+      t("Money", "◎ Income &amp; expenses", "Track money in and out, profit per clutch, and a spreadsheet for taxes.") +
+      t("Feeders", "🐁 Feeder stock", "Counts go down as you feed. Get a reminder before you run out.") +
+      t("Customers", "♡ Customers", "Buyers and adopters, repeat customers and what they took home.") +
+      t("Alerts", "🔔 Alerts", "Choose which business notifications reach your phone.") +
       t("My Public Page", "✦ Public page &amp; social links", "Your inquiry link for your website, Facebook and Instagram bio.") +
       (stIsRescue() ? t("Rescue Layout", "⚙ Racks or enclosures", "Currently: " + (accountPrefs?.rescueLayout === "racks" ? "racks layout" : "enclosures layout") + ". Change how your home screen is set up.") : "") +
       (stIsRescue() ? t("Rescue Profile", "♧ Rescue profile &amp; intake", "Your Scale Hub listing, intake open/full, and 501(c)(3) verification.") : "") +
@@ -10664,12 +10694,14 @@ async function bizLeaveTeam() {
 async function bizLoadInbox() {
   const box = document.getElementById("bizInbox");
   if (!box || !cloudClient) return;
-  const { data, error } = await cloudClient.from("inquiries").select("id,from_name,from_email,subject,message,status,created_at,inquiry_replies(body,created_at)").eq("owner_id", cloudJournalUid()).neq("status", "archived").order("created_at", { ascending: false }).limit(100);
+  const { data, error } = await cloudClient.from("inquiries").select("id,from_name,from_email,subject,message,status,created_at,kind,animal,details,inquiry_replies(body,created_at)").eq("owner_id", cloudJournalUid()).neq("status", "archived").order("created_at", { ascending: false }).limit(100);
   if (error) { box.innerHTML = '<p class="helperLine">Couldn’t load your Inbox.</p>'; return; }
   bizInbox = data || [];
   box.innerHTML = bizInbox.length ? bizInbox.map((m) =>
-    '<details class="diyGuide inboxItem' + (m.status === "new" ? " inboxNew" : "") + '" ontoggle="if(this.open)bizMarkRead(' + m.id + ')"><summary><b>' + esc(m.from_name) + (m.subject ? " · " + esc(m.subject) : "") + "</b><span>" + esc(niceDate(String(m.created_at).slice(0, 10))) + (m.status === "new" ? " · new" : m.status === "replied" ? " · replied" : "") + "</span></summary>" +
-    '<p class="lcSmall">' + esc(m.from_email) + '</p><p class="inboxBody">' + esc(m.message) + "</p>" +
+    '<details class="diyGuide inboxItem' + (m.status === "new" ? " inboxNew" : "") + '" ontoggle="if(this.open)bizMarkRead(' + m.id + ')"><summary><b>' + (m.kind && m.kind !== "message" ? '<span class="salePill sale' + (m.kind === "adoption" ? "Listed" : m.kind === "surrender" ? "Pending" : "Shipped") + '">' + { adoption: "Adoption application", surrender: "Surrender request", purchase: "Buyer" }[m.kind] + "</span> " : "") + esc(m.from_name) + (m.animal ? " · " + esc(m.animal) : m.subject ? " · " + esc(m.subject) : "") + "</b><span>" + esc(niceDate(String(m.created_at).slice(0, 10))) + (m.status === "new" ? " · new" : m.status === "replied" ? " · replied" : "") + "</span></summary>" +
+    '<p class="lcSmall">' + esc(m.from_email) + '</p>' + (m.details && typeof m.details === "object" ? '<div class="incLog">' + Object.entries(m.details).map(([k, v]) => "<div><b>" + esc(k) + "</b><span>" + esc(v) + "</span></div>").join("") + "</div>" : "") + '<p class="inboxBody">' + esc(m.message) + "</p>" +
+    (m.kind === "surrender" && stIsRescue() ? '<button class="action secondary" onclick="inboxToIntake(' + m.id + ')">Start intake from this request</button>' : "") +
+    (m.kind === "adoption" && m.animal && animals.includes(m.animal) ? '<button class="action secondary" onclick="rescueOpen(\'' + esc(m.animal).replace(/'/g, "\\'") + '\')">Open ' + esc(m.animal) + "</button>" : "") +
     (m.inquiry_replies || []).map((r) => '<p class="inboxReply"><b>You:</b> ' + esc(r.body) + "</p>").join("") +
     '<textarea id="rep' + m.id + '" rows="3" maxlength="2000" placeholder="Write a reply…"></textarea><div class="recordActions"><button onclick="bizReply(' + m.id + ')">Send reply</button><button onclick="bizArchive(' + m.id + ')">Archive</button></div></details>').join("")
     : '<p class="helperLine">No messages yet. Share your public page link to start getting inquiries.</p>';
@@ -10841,10 +10873,12 @@ function saleSave() {
   if (url && !/^https:\/\//i.test(url)) url = "https://" + url.replace(/^http:\/\//i, "");
   const next = { status: v("slStatus"), site: v("slSite"), price: v("slPrice").replace(/[^\d.]/g, "").slice(0, 10), url: url.slice(0, 300), listedDate: d("slListed"),
     buyer: v("slBuyer").slice(0, 80), buyerContact: v("slContact").slice(0, 120), soldDate: d("slSold"), shippedDate: d("slShipped"), receivedDate: d("slReceived"),
-    tracking: v("slTracking").slice(0, 80), notes: v("slNotes").slice(0, 400), updated: today() };
+    tracking: v("slTracking").slice(0, 80), notes: v("slNotes").slice(0, 400), updated: today(),
+    public: !!document.getElementById("slPublic")?.checked, publicNote: v("slPublicNote").slice(0, 300), holdFor: v("slHoldFor").slice(0, 80),
+    deposit: v("slDeposit").replace(/[^\d.]/g, "").slice(0, 10), depositDate: d("slDepositDate"), balanceDue: d("slBalanceDue"), holdUntil: d("slHoldUntil"), shipDate: d("slShipDate") };
   if (next.status === "Not listed" && !next.buyer && !next.price) delete profiles[a].sale;
   else profiles[a] = { ...(profiles[a] || {}), sale: next };
-  scaleStoreSet("scaleTellProfiles03", JSON.stringify(profiles));
+  bizSaveProfiles();
   stToast(a + " · " + saleStage(next) + " ♡");
   openPanel("Sales");
 }
@@ -10861,13 +10895,17 @@ BIZ_PANELS["Sale Details"] = () => {
     '<div class="saleGrid">' + sel("slStatus", "Status", SALE_STATUSES.slice(0, 4), x.status || "Listed") + sel("slSite", "Listed on", SALE_SITES, x.site || "MorphMarket") +
     f("slPrice", "Price ($)", x.price, "text", "250") + f("slListed", "Listed date", x.listedDate || (x.status ? "" : today()), "date") + "</div>" +
     f("slUrl", "Listing link (optional)", x.url, "url", "https://www.morphmarket.com/…") +
+    '<label class="checkLine"><input type="checkbox" id="slPublic" ' + (x.public === false ? "" : "checked") + '> Show on my public page while listed</label>' +
+    f("slPublicNote", "Public note (optional)", x.publicNote, "text", "Eating f/t hoppers, great feeder") +
+    '<h3 class="sectionTitle">Hold &amp; deposit</h3><div class="saleGrid">' + f("slHoldFor", "On hold for", x.holdFor, "text", "Name") + f("slDeposit", "Deposit ($)", x.deposit) +
+    f("slDepositDate", "Deposit received", x.depositDate, "date") + f("slBalanceDue", "Balance due", x.balanceDue, "date") + f("slHoldUntil", "Hold expires", x.holdUntil, "date") + "</div>" +
     '<h3 class="sectionTitle">Buyer</h3><div class="saleGrid">' + f("slBuyer", "Buyer name", x.buyer, "text", "Who bought") + f("slContact", "Buyer email or phone", x.buyerContact) +
     f("slSold", "Sold date", x.soldDate, "date") + "</div>" +
-    '<h3 class="sectionTitle">Shipping</h3><div class="saleGrid">' + f("slShipped", "Shipped date", x.shippedDate, "date") + f("slReceived", "Received date", x.receivedDate, "date") +
+    '<h3 class="sectionTitle">Shipping</h3><div class="saleGrid">' + f("slShipDate", "Planned ship date", x.shipDate, "date") + f("slShipped", "Shipped date", x.shippedDate, "date") + f("slReceived", "Received date", x.receivedDate, "date") +
     f("slTracking", "Tracking number", x.tracking) + "</div>" +
     '<label>Notes<textarea id="slNotes" rows="3" maxlength="400" placeholder="Deposit, payment method, live arrival guarantee…">' + esc(x.notes || "") + "</textarea></label>" +
     '<p class="lcSmall">Adding a shipped or received date moves the sale along automatically.</p>' +
-    '<div class="inlineActions"><button class="action" onclick="saleSave()">Save</button><button class="action secondary" onclick="openPanel(\'Sales\')">All sales</button><button class="action secondary" onclick="openPanel(saleAnimal)">Back to ' + esc(a) + "</button></div>";
+    '<div class="inlineActions"><button class="action" onclick="saleSave()">Save</button><button class="action secondary" onclick="packetOpen(saleAnimal,\'buyer\')">Buyer packet</button><button class="action secondary" onclick="transferAsk(saleAnimal)">Send records to buyer</button><button class="action secondary" onclick="openPanel(\'Sales\')">All sales</button><button class="action secondary" onclick="openPanel(saleAnimal)">Back to ' + esc(a) + "</button></div>";
 };
 BIZ_PANELS.Sales = () => {
   const all = saleRows(), count = (st) => all.filter((r) => r.st === st).length;
@@ -10880,6 +10918,7 @@ BIZ_PANELS.Sales = () => {
     (list.length ? list.map(({ a, x, st }) => '<button class="resourceTile saleTile" onclick="saleOpen(\'' + esc(a).replace(/'/g, "\\'") + '\')"><strong>' + esc(a) + " " + salePill(st) + "</strong><small>" +
       esc([x.price ? "$" + x.price : "", x.site, x.buyer ? "Buyer: " + x.buyer : "", st === "Sold" && x.soldDate ? "sold " + niceDate(x.soldDate) : "", x.shippedDate ? "shipped " + niceDate(x.shippedDate) : "", x.receivedDate ? "received " + niceDate(x.receivedDate) : ""].filter(Boolean).join(" · ")) + "</small></button>").join("")
       : '<p class="helperLine">Nothing here yet.</p>') +
+    '<button class="action secondary" onclick="openPanel(\'Expo Mode\')">🏷 Expo mode</button>' +
     '<label class="logSearchLabel">Add an animal<select id="saleAdd" onchange="if(this.value)saleOpen(this.value)"><option value="">Choose…</option>' + animals.filter((a) => saleStage(saleOf(a)) === "Not listed").map((a) => "<option>" + esc(a) + "</option>").join("") + "</select></label>" +
     '<button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
 };
@@ -11073,3 +11112,684 @@ BIZ_PANELS["Rescue Layout"] = () => {
     '<button class="resourceTile' + (cur === "enclosures" ? " pickOn" : "") + '" onclick="rescueSetLayout(\'enclosures\')"><strong>⌂ Enclosures</strong><small>Your home screen shows each animal with its photo, like a keeper’s journal.</small></button>' +
     '<p class="lcSmall">Either way you keep every rescue tool: intake status, your listing, team logins, Inbox and adoption tracking. You can change this anytime in Business Tools.</p>';
 };
+
+function bizHsl(hex) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  let h = 0, s = 0;
+  if (d) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return { h, s, l };
+}
+function bizHueShift(hex) {
+  return Math.round(bizHsl(hex).h - bizHsl("#79538e").h);
+}
+function bizSatScale(hex) {
+  const s = bizHsl(hex).s, base = bizHsl("#79538e").s;
+  return Math.max(0.15, Math.min(2, s / base)).toFixed(2);
+}
+
+/* ===================== V3.49 · Rescue & breeder toolkit + business alerts ===================== */
+const bizUid = (p) => p + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function bizSaveProfiles() {
+  scaleStoreSet("scaleTellProfiles03", JSON.stringify(profiles));
+  bizQueueAuto();
+}
+function bizIsBreeder() {
+  return stOwnsEntitlements() && stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder");
+}
+function bizDays(a, b) {
+  return Math.round((new Date(b + "T12:00") - new Date(a + "T12:00")) / 864e5);
+}
+const bizMoney = (n) => "$" + (Number(n) || 0).toFixed(2).replace(/\.00$/, "");
+function bizField(id, label, val, type = "text", ph = "", extra = "") {
+  return '<label>' + label + '<input id="' + id + '" type="' + type + '" value="' + esc(val ?? "") + '" placeholder="' + esc(ph) + '" ' + extra + "></label>";
+}
+function bizSelect(id, label, opts, val) {
+  return '<label>' + label + '<select id="' + id + '">' + opts.map((o) => '<option' + (o === val ? " selected" : "") + ">" + esc(o) + "</option>").join("") + "</select></label>";
+}
+const bizV = (id) => (document.getElementById(id)?.value || "").trim();
+const bizD = (id) => (validDate(bizV(id)) ? bizV(id) : "");
+
+/* ---------------- Rescue: statuses, intake, record, medications ---------------- */
+const RESCUE_STATUSES = ["Intake", "Quarantine", "Medical hold", "Available", "Adoption pending", "Adopted", "Fostered", "Returned", "Passed"];
+const RESCUE_SOURCES = ["Owner surrender", "Stray / found", "Seized / confiscated", "Transfer from another rescue", "Returned adoption", "Other"];
+function rescueOf(a) {
+  return (profiles[a] && profiles[a].rescue) || null;
+}
+function rescueStatus(a) {
+  return rescueOf(a)?.status || "";
+}
+function rescueQuarantine(a) {
+  const r = rescueOf(a);
+  if (!r?.quarantineStart) return null;
+  const total = Number(r.quarantineDays) || 90, day = bizDays(r.quarantineStart, today()) + 1;
+  return { day: Math.max(1, day), total, end: advanceDate(r.quarantineStart, total), done: day > total };
+}
+let rescueAnimal = "", rescueFilter = "Active", medEditId = "";
+function rescueOpen(a) {
+  rescueAnimal = a;
+  openPanel("Rescue Record");
+}
+BIZ_PANELS["Rescue Animals"] = () => {
+  const list = animals.filter((a) => rescueOf(a));
+  const count = (st) => list.filter((a) => rescueStatus(a) === st).length;
+  const active = ["Intake", "Quarantine", "Medical hold", "Available", "Adoption pending", "Fostered"];
+  const groups = { Active: active, Intake: ["Intake"], Quarantine: ["Quarantine"], Medical: ["Medical hold"], Available: ["Available", "Adoption pending"], Fostered: ["Fostered"], Adopted: ["Adopted"], Other: ["Returned", "Passed"] };
+  const shown = list.filter((a) => groups[rescueFilter].includes(rescueStatus(a)));
+  return '<div class="inlineActions"><button class="action" onclick="openPanel(\'Intake\')">＋ New intake</button><button class="action secondary" onclick="openPanel(\'Inbox\')">Applications &amp; surrenders</button></div>' +
+    '<div class="rescueStages">' + active.concat(["Adopted"]).map((st) => '<button onclick="rescueFilter=\'' + (st === "Adoption pending" ? "Available" : st === "Medical hold" ? "Medical" : st) + '\';render()"><b>' + count(st) + "</b><span>" + st + "</span></button>").join("") + "</div>" +
+    '<div class="diyTabs">' + Object.keys(groups).map((g) => '<button class="' + (g === rescueFilter ? "on" : "") + '" onclick="rescueFilter=\'' + g + '\';render()">' + g + "</button>").join("") + "</div>" +
+    (shown.length ? shown.map((a) => {
+      const r = rescueOf(a), q = rescueQuarantine(a), meds = (profiles[a]?.meds || []).filter((m) => !m.end || m.end >= today());
+      return '<button class="resourceTile saleTile" onclick="rescueOpen(\'' + esc(a).replace(/'/g, "\\'") + '\')"><strong>' + esc(a) + ' <span class="salePill">' + esc(r.status) + "</span></strong><small>" +
+        esc([species[a], r.intakeDate ? "in " + bizDays(r.intakeDate, today()) + " days" : "", q && !q.done && r.status === "Quarantine" ? "quarantine day " + q.day + "/" + q.total : "", meds.length ? meds.length + " active med" + (meds.length > 1 ? "s" : "") : "", r.foster ? "foster: " + r.foster : ""].filter(Boolean).join(" · ")) + "</small></button>";
+    }).join("") : '<p class="helperLine">No animals here. Tap New intake to add one.</p>') +
+    '<button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
+};
+BIZ_PANELS.Intake = () =>
+  '<p class="resourceIntro">Everything about a new arrival on one screen. Quarantine starts automatically and the animal joins your Intake list.</p>' +
+  '<div class="saleGrid">' + bizField("inName", "Name or ID", "", "text", "e.g. Rescue 26-014") + bizField("inSpecies", "Species", "", "text", "Ball Python") +
+  bizSelect("inSex", "Sex", ["Unknown", "Male", "Female"], "Unknown") + bizField("inDate", "Intake date", today(), "date") + "</div>" +
+  '<div class="saleGrid">' + bizSelect("inSource", "How they came in", RESCUE_SOURCES, "Owner surrender") + bizField("inFrom", "Surrendered / brought by", "", "text", "Name") +
+  bizField("inContact", "Their phone or email", "") + bizField("inWeight", "Intake weight (g)", "", "number", "", 'min="0" step="1"') + "</div>" +
+  bizSelect("inCondition", "Body condition", ["Healthy", "Underweight", "Very thin", "Overweight", "Injured", "Unknown"], "Unknown") +
+  '<label>Health problems on arrival<textarea id="inIssues" rows="3" maxlength="600" placeholder="Mites, stuck shed, burns, respiratory signs…"></textarea></label>' +
+  '<div class="saleGrid">' + bizField("inQDays", "Quarantine length (days)", 90, "number", "", 'min="0" max="365"') + bizField("inVet", "Vet check due", advanceDate(today(), 7), "date") + "</div>" +
+  '<label>Before photo (optional)<input type="file" id="inPhoto" accept="image/*"></label>' +
+  '<div class="inlineActions"><button class="action" onclick="rescueSaveIntake()">Save intake</button><button class="action secondary" onclick="openPanel(\'Rescue Animals\')">Cancel</button></div><p id="bizMsg" class="helperLine" role="status"></p>';
+async function rescueSaveIntake(fromInquiry) {
+  const name = bizV("inName").slice(0, 50), sp = bizV("inSpecies").slice(0, 80) || "Reptile", date = bizD("inDate") || today();
+  const msg = (t) => { const m = document.getElementById("bizMsg"); if (m) m.textContent = t; };
+  if (!name) return msg("Give the animal a name or ID.");
+  if (animals.some((a) => a.toLowerCase() === name.toLowerCase())) return msg("That name is already used. Add a number, like " + name + " 2.");
+  if (cloudSession && stOwnsEntitlements() && animals.length >= stAnimalLimit()) return stCanAddAnimal();
+  const qd = Math.max(0, Math.min(365, Number(bizV("inQDays")) || 0));
+  animals.push(name);
+  species[name] = sp;
+  profiles[name] = { sex: bizV("inSex") || "Unknown", rescue: { status: qd ? "Quarantine" : "Intake", intakeDate: date, source: bizV("inSource"), surrenderedBy: bizV("inFrom").slice(0, 80),
+    contact: bizV("inContact").slice(0, 120), condition: bizV("inCondition"), issues: (document.getElementById("inIssues")?.value || "").trim().slice(0, 600),
+    quarantineStart: qd ? date : "", quarantineDays: qd, vetDue: bizD("inVet"), fromInquiry: fromInquiry || "" } };
+  const w = Number(bizV("inWeight"));
+  entries.push({ section: "Observations", animal: name, detail: "Intake", date, notes: [bizV("inSource"), bizV("inCondition") !== "Unknown" ? "Condition: " + bizV("inCondition") : "", profiles[name].rescue.issues].filter(Boolean).join(" · ") });
+  if (w > 0) entries.push({ section: "Weight Tracker", animal: name, detail: w + " g", date, notes: "Intake weight" });
+  const file = document.getElementById("inPhoto")?.files?.[0];
+  if (file) {
+    try {
+      const src = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(file); });
+      if (typeof src === "string" && /^data:image\//.test(src)) { photos[name] = [...(photos[name] || []), { src, caption: "Intake", date }]; savePhotos(); }
+    } catch (e) {}
+  }
+  saveRoster();
+  bizSaveProfiles();
+  save();
+  stToast(name + " checked in ♡" + (qd ? " Quarantine: " + qd + " days" : ""));
+  rescueOpen(name);
+}
+BIZ_PANELS["Rescue Record"] = () => {
+  const a = rescueAnimal;
+  if (!animals.includes(a)) return '<p class="helperLine">Pick an animal first.</p>';
+  const r = rescueOf(a) || {}, q = rescueQuarantine(a), meds = profiles[a]?.meds || [];
+  return '<p class="resourceIntro"><b>' + esc(a) + "</b> · " + esc(species[a] || "") + (r.intakeDate ? " · in rescue " + bizDays(r.intakeDate, today()) + " days" : "") + "</p>" +
+    (q ? '<div class="habitatSummary"><strong>Quarantine ' + (q.done ? "complete ✓" : "day " + q.day + " of " + q.total) + "</strong><p>" + (q.done ? "Finished " + niceDate(q.end) : "Ends " + niceDate(q.end)) + "</p></div>" : "") +
+    '<div class="saleGrid">' + bizSelect("rrStatus", "Status", RESCUE_STATUSES, r.status || "Intake") + bizField("rrQStart", "Quarantine start", r.quarantineStart, "date") +
+    bizField("rrQDays", "Quarantine days", r.quarantineDays ?? 90, "number", "", 'min="0" max="365"') + bizField("rrVet", "Next vet check / follow-up", r.vetDue, "date") + "</div>" +
+    '<h3 class="sectionTitle">Foster</h3><div class="saleGrid">' + bizField("rrFoster", "Foster home", r.foster, "text", "Name") + bizField("rrFosterContact", "Foster contact", r.fosterContact) + "</div>" +
+    '<h3 class="sectionTitle">Adoption</h3><div class="saleGrid">' + bizField("rrFee", "Adoption fee ($)", r.fee) + bizField("rrAdopter", "Adopter", r.adopter) +
+    bizField("rrAdopterContact", "Adopter email or phone", r.adopterContact) + bizField("rrAdopted", "Adoption date", r.adoptedDate, "date") + "</div>" +
+    '<label>Public note for your page<input id="rrPublic" maxlength="300" value="' + esc(r.publicNote || "") + '" placeholder="Shy at first, eating f/t weekly, great beginner snake"></label>' +
+    '<h3 class="sectionTitle">Intake details</h3><p class="lcSmall">' + esc([r.source, r.surrenderedBy ? "from " + r.surrenderedBy : "", r.contact, r.condition ? "condition: " + r.condition : ""].filter(Boolean).join(" · ") || "Not recorded") + "</p>" +
+    (r.issues ? '<p class="lcSmall">' + esc(r.issues) + "</p>" : "") +
+    '<h3 class="sectionTitle">Medications</h3>' + (meds.length ? meds.map((m) => '<div class="deviceCard"><div class="deviceHeading"><b>💊 ' + esc(m.drug) + " " + esc(m.dose || "") + "</b><span>" + (m.end && m.end < today() ? "finished" : "every " + (m.everyDays > 1 ? m.everyDays + " days" : "day") + " · " + esc((m.times || []).join(", "))) + '</span></div><div class="recordActions"><button onclick="medGiven(\'' + esc(m.id) + '\')">Dose given</button><button onclick="medEditId=\'' + esc(m.id) + '\';openPanel(\'Medication\')">Edit</button></div></div>').join("") : '<p class="helperLine">No medications.</p>') +
+    '<button class="action secondary" onclick="medEditId=\'\';openPanel(\'Medication\')">＋ Add medication</button>' +
+    '<div class="inlineActions"><button class="action" onclick="rescueSaveRecord()">Save</button><button class="action secondary" onclick="packetOpen(rescueAnimal,\'adoption\')">Adoption packet</button><button class="action secondary" onclick="transferAsk(rescueAnimal)">Send records to adopter</button><button class="action secondary" onclick="openPanel(rescueAnimal)">Open ' + esc(a) + "</button></div>" +
+    '<button class="action secondary" onclick="openPanel(\'Rescue Animals\')">← All rescue animals</button><p id="bizMsg" class="helperLine" role="status"></p>';
+};
+function rescueSaveRecord() {
+  const a = rescueAnimal;
+  if (!animals.includes(a)) return;
+  const old = rescueOf(a) || {}, st = bizV("rrStatus");
+  const r = { ...old, status: st, quarantineStart: bizD("rrQStart"), quarantineDays: Math.max(0, Math.min(365, Number(bizV("rrQDays")) || 0)), vetDue: bizD("rrVet"),
+    foster: bizV("rrFoster").slice(0, 80), fosterContact: bizV("rrFosterContact").slice(0, 120), fee: bizV("rrFee").replace(/[^\d.]/g, "").slice(0, 10),
+    adopter: bizV("rrAdopter").slice(0, 80), adopterContact: bizV("rrAdopterContact").slice(0, 120), adoptedDate: bizD("rrAdopted") || (st === "Adopted" && !old.adoptedDate ? today() : old.adoptedDate || ""),
+    publicNote: bizV("rrPublic").slice(0, 300) };
+  if (st !== old.status) entries.push({ section: "Observations", animal: a, detail: "Status: " + st, date: today(), notes: "" });
+  if (st === "Adopted" && r.fee && !entries.some((e) => e.section === "Ledger" && e.animal === a && e.ref === "adoption")) entries.push({ section: "Ledger", animal: a, detail: "Adoption fee", type: "income", amount: Number(r.fee) || 0, category: "Adoption fees", date: r.adoptedDate || today(), ref: "adoption" });
+  profiles[a] = { ...(profiles[a] || {}), rescue: r };
+  bizSaveProfiles();
+  save();
+  stToast(a + " · " + st + " ♡");
+  render();
+}
+BIZ_PANELS.Medication = () => {
+  const a = rescueAnimal || selectedAnimal, m = (profiles[a]?.meds || []).find((x) => x.id === medEditId) || {};
+  return '<p class="resourceIntro">Medication for <b>' + esc(a) + "</b>. Each dose time sends a phone reminder, and one tap logs the dose.</p>" +
+    '<div class="saleGrid">' + bizField("mdDrug", "Medication", m.drug, "text", "e.g. Panacur") + bizField("mdDose", "Dose", m.dose, "text", "0.2 ml") +
+    bizField("mdEvery", "Every how many days", m.everyDays || 1, "number", "", 'min="1" max="30"') + bizField("mdTimes", "Times (24h, comma separated)", (m.times || ["08:00"]).join(", "), "text", "08:00, 20:00") +
+    bizField("mdStart", "Start", m.start || today(), "date") + bizField("mdEnd", "Last day", m.end, "date") + "</div>" +
+    '<label>Notes<input id="mdNotes" maxlength="200" value="' + esc(m.notes || "") + '" placeholder="Given orally, with food, prescribed by Dr. …"></label>' +
+    '<div class="inlineActions"><button class="action" onclick="medSave()">Save medication</button>' + (m.id ? '<button class="action secondary" onclick="medDelete()">Remove</button>' : "") + '<button class="action secondary" onclick="rescueOf(rescueAnimal)?rescueOpen(rescueAnimal):openPanel(rescueAnimal)">Back</button></div><p id="bizMsg" class="helperLine" role="status"></p>';
+};
+function medSave() {
+  const a = rescueAnimal || selectedAnimal;
+  if (!animals.includes(a)) return;
+  const times = bizV("mdTimes").split(/[,\s]+/).map((t) => t.replace(/^(\d):/, "0$1:")).filter((t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t)).slice(0, 6);
+  if (!bizV("mdDrug")) { document.getElementById("bizMsg").textContent = "Name the medication."; return; }
+  const m = { id: medEditId || bizUid("med"), drug: bizV("mdDrug").slice(0, 60), dose: bizV("mdDose").slice(0, 40), everyDays: Math.max(1, Math.min(30, Number(bizV("mdEvery")) || 1)),
+    times: times.length ? times : ["08:00"], start: bizD("mdStart") || today(), end: bizD("mdEnd"), notes: bizV("mdNotes").slice(0, 200) };
+  const list = (profiles[a]?.meds || []).filter((x) => x.id !== m.id);
+  profiles[a] = { ...(profiles[a] || {}), meds: [...list, m] };
+  bizSaveProfiles();
+  stToast("💊 " + m.drug + " saved. Dose reminders are on.");
+  rescueOf(a) ? rescueOpen(a) : openPanel(a);
+}
+function medDelete() {
+  const a = rescueAnimal || selectedAnimal;
+  profiles[a] = { ...(profiles[a] || {}), meds: (profiles[a]?.meds || []).filter((x) => x.id !== medEditId) };
+  bizSaveProfiles();
+  rescueOf(a) ? rescueOpen(a) : openPanel(a);
+}
+function medGiven(id) {
+  const a = rescueAnimal || selectedAnimal, m = (profiles[a]?.meds || []).find((x) => x.id === id);
+  if (!m) return;
+  entries.push({ section: "Health & Vet", animal: a, detail: "Medication given: " + m.drug + (m.dose ? " " + m.dose : ""), date: today(), notes: "Dose logged " + new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) });
+  save();
+  stToast("💊 Logged " + m.drug + " for " + a);
+}
+
+/* ---------------- Breeder: hatchlings, genetics & lineage, incubation ---------------- */
+function hatchlingInfo(a) {
+  const p = profiles[a] || {};
+  if (!p.dam && !p.sire) return null;
+  const mine = entries.filter((e) => e.animal === a);
+  const meals = mine.filter((e) => e.section === "Feeding Tracker").sort((x, y) => x.date.localeCompare(y.date));
+  let streak = 0, best = 0;
+  meals.forEach((e) => { streak = e.detail === "Ate" || (e.detail !== "Refused" && e.detail !== "Skipped feeding") ? streak + 1 : 0; best = Math.max(best, streak); });
+  const shed = mine.filter((e) => e.section === "Shed History").sort((x, y) => x.date.localeCompare(y.date))[0];
+  const first = meals.find((e) => e.detail !== "Refused" && e.detail !== "Skipped feeding");
+  const sexed = !!p.sex && !/unknown/i.test(p.sex);
+  const steps = { "First shed": shed?.date || "", "First meal": first?.date || "", "3 meals in a row": best >= 3 ? "✓" : "", Sexed: sexed ? "✓" : "" };
+  return { steps, ready: !!(first && best >= 3), age: p.hatchDate ? bizDays(p.hatchDate, today()) : null };
+}
+BIZ_PANELS.Hatchlings = () => {
+  const list = animals.filter((a) => { const p = profiles[a] || {}; return (p.dam || p.sire) && p.hatchDate && bizDays(p.hatchDate, today()) <= 400; })
+    .sort((x, y) => String(profiles[y].hatchDate).localeCompare(String(profiles[x].hatchDate)));
+  return '<p class="resourceIntro">Every baby from your clutches, with its checklist. A hatchling is <b>Ready to sell</b> once it has eaten 3 meals in a row.</p>' +
+    (list.length ? list.map((a) => {
+      const h = hatchlingInfo(a), p = profiles[a];
+      return '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(a) + (p.code ? ' <small class="lcSmall">' + esc(p.code) + "</small>" : "") + "</b><span>" + (h.ready ? '<span class="salePill saleReceived">Ready to sell</span>' : h.age + " days old") + "</span></div>" +
+        '<div class="hatchSteps">' + Object.entries(h.steps).map(([k, v]) => '<span class="' + (v ? "on" : "") + '">' + (v ? "✓ " : "○ ") + k + (v && v !== "✓" ? " · " + niceDate(v) : "") + "</span>").join("") + "</div>" +
+        '<div class="recordActions"><button onclick="selectedAnimal=\'' + esc(a).replace(/'/g, "\\'") + '\';openQuickLog(selectedAnimal)">Quick log</button><button onclick="saleOpen(\'' + esc(a).replace(/'/g, "\\'") + '\')">Listing &amp; sale</button><button onclick="geneOpen(\'' + esc(a).replace(/'/g, "\\'") + '\')">Genetics</button></div></div>';
+    }).join("") : '<p class="helperLine">No hatchlings yet. Open a clutch and tap Add hatchlings when they hatch.</p>') +
+    '<button class="action secondary" onclick="openPanel(\'Racks & Breeding\')">← Racks &amp; Breeding</button>';
+};
+let geneAnimal = "";
+function geneOpen(a) {
+  geneAnimal = a;
+  openPanel("Genetics");
+}
+function lineageOf(a, depth = 0) {
+  const p = profiles[a] || {};
+  return { a, dam: depth < 2 && p.dam ? lineageOf(p.dam, depth + 1) : p.dam ? { a: p.dam } : null, sire: depth < 2 && p.sire ? lineageOf(p.sire, depth + 1) : p.sire ? { a: p.sire } : null };
+}
+function lineageBox(n, role) {
+  if (!n) return '<div class="famBox famEmpty"><small>' + role + "</small>Unknown</div>";
+  const g = profiles[n.a]?.genes || profiles[n.a]?.morph || "";
+  return '<div class="famBox"><small>' + role + "</small><b>" + esc(n.a) + "</b>" + (g ? "<span>" + esc(g) + "</span>" : "") + "</div>";
+}
+BIZ_PANELS.Genetics = () => {
+  const a = geneAnimal;
+  if (!animals.includes(a)) return '<p class="helperLine">Pick an animal first.</p>';
+  const p = profiles[a] || {}, t = lineageOf(a), kids = animals.filter((x) => profiles[x]?.dam === a || profiles[x]?.sire === a);
+  const others = animals.filter((x) => x !== a);
+  const opt = (id, label, val) => '<label>' + label + '<select id="' + id + '"><option value="">Unknown / not in my collection</option>' + others.map((x) => '<option' + (x === val ? " selected" : "") + ">" + esc(x) + "</option>").join("") + "</select></label>";
+  return '<p class="resourceIntro"><b>' + esc(a) + "</b> · " + esc(species[a] || "") + "</p>" +
+    '<label>Genes<input id="gnGenes" maxlength="200" value="' + esc(p.genes || "") + '" placeholder="Pastel, Enchi, het Clown, 66% het Pied"></label>' +
+    '<p class="lcSmall">List visual genes first, then hets (het Clown) and possible hets with their percentage (50% het Pied).</p>' +
+    '<div class="saleGrid">' + opt("gnDam", "Dam (mother)", p.dam) + opt("gnSire", "Sire (father)", p.sire) + bizField("gnCode", "ID code", p.code, "text", "26-OK-01") + "</div>" +
+    '<button class="action" onclick="geneSave()">Save genetics</button>' +
+    '<h3 class="sectionTitle">Family tree</h3><div class="famTree"><div class="famCol">' + lineageBox(t.dam?.dam, "Grand-dam") + lineageBox(t.dam?.sire, "Grand-sire") + lineageBox(t.sire?.dam, "Grand-dam") + lineageBox(t.sire?.sire, "Grand-sire") +
+    '</div><div class="famCol">' + lineageBox(t.dam, "Dam") + lineageBox(t.sire, "Sire") + '</div><div class="famCol famMe">' + lineageBox({ a }, "This animal") + "</div></div>" +
+    (kids.length ? '<h3 class="sectionTitle">Offspring (' + kids.length + ')</h3><p class="lcSmall">' + kids.map(esc).join(", ") + "</p>" : "") +
+    '<p class="lcSmall">Planning a pairing? <a href="https://www.morphmarket.com/us/search?q=' + encodeURIComponent((p.genes || p.morph || species[a] || "").split(",")[0]) + '" target="_blank" rel="noopener noreferrer">Open MorphMarket’s genetic calculator ↗</a></p>' +
+    '<button class="action secondary" onclick="openPanel(geneAnimal)">Back to ' + esc(a) + "</button>";
+};
+function geneSave() {
+  const a = geneAnimal;
+  if (!animals.includes(a)) return;
+  profiles[a] = { ...(profiles[a] || {}), genes: bizV("gnGenes").slice(0, 200), dam: bizV("gnDam"), sire: bizV("gnSire"), code: bizV("gnCode").slice(0, 30) };
+  bizSaveProfiles();
+  stToast("Genetics saved ♡");
+  render();
+}
+let incClutchId = "";
+BIZ_PANELS.Incubation = () => {
+  const c = entries.find((e) => e.section === "Breeding" && String(e.id) === incClutchId);
+  if (!c) return '<p class="helperLine">Clutch not found.</p>';
+  const log = (c.incLog || []).slice().sort((x, y) => y.date.localeCompare(x.date));
+  const day = bizDays(c.date, today()) + 1, left = c.dueDate ? bizDays(today(), c.dueDate) : null;
+  return '<p class="resourceIntro"><b>' + esc(c.animal) + (c.partner ? " × " + esc(c.partner) : "") + "</b> · laid " + niceDate(c.date) + "</p>" +
+    '<div class="habitatSummary"><strong>Day ' + day + " of incubation</strong><p>" + (c.hatchDate ? "Hatched " + niceDate(c.hatchDate) : left === null ? "Add an expected hatch date on the clutch." : left > 0 ? "Hatch window in " + left + " days (" + niceDate(c.dueDate) + ")" : "In the hatch window now") + "</p></div>" +
+    '<div class="saleGrid">' + bizField("icDate", "Date", today(), "date") + bizField("icTemp", "Incubator temp (°F)", "", "number", "88.5", 'step="0.1"') + bizField("icHum", "Humidity (%)", "", "number", "", 'step="1"') + "</div>" +
+    '<label>Candling / notes<input id="icNote" maxlength="200" placeholder="All 6 veined, 1 yellowing"></label><button class="action" onclick="incAdd()">Add to log</button>' +
+    (log.length ? '<div class="incLog">' + log.map((x) => "<div><b>" + niceDate(x.date) + "</b><span>" + [x.temp ? x.temp + "°F" : "", x.hum ? x.hum + "%" : "", esc(x.note || "")].filter(Boolean).join(" · ") + "</span></div>").join("") + "</div>" : "") +
+    '<button class="action secondary" onclick="breederOpen(\'Clutch\',incClutchId)">Back to clutch</button>';
+};
+function incAdd() {
+  const c = entries.find((e) => e.section === "Breeding" && String(e.id) === incClutchId);
+  if (!c) return;
+  const rec = { date: bizD("icDate") || today(), temp: bizV("icTemp").slice(0, 6), hum: bizV("icHum").slice(0, 5), note: bizV("icNote").slice(0, 200) };
+  if (!rec.temp && !rec.hum && !rec.note) return;
+  const updated = { ...c, incLog: [...(c.incLog || []), rec].slice(-200) };
+  entries = entries.map((e) => (e === c ? updated : e));
+  save();
+  render();
+}
+
+/* ---------------- Money: income & expenses, profit per clutch ---------------- */
+const LEDGER_CATS = { income: ["Animal sales", "Adoption fees", "Deposits", "Donations", "Other income"], expense: ["Feeders", "Supplies & enclosures", "Vet & medical", "Shipping", "Shows & expos", "Marketing", "Other expense"] };
+let ledgerYear = String(new Date().getFullYear());
+function ledgerRows() {
+  const rows = entries.filter((e) => e.section === "Ledger").map((e) => ({ ...e, _auto: false }));
+  // Sales recorded on animals count as income automatically.
+  animals.forEach((a) => {
+    const s = profiles[a]?.sale;
+    if (s && ["Sold", "Shipped", "Received"].includes(s.status) && Number(s.price) > 0 && !rows.some((r) => r.animal === a && r.ref === "sale"))
+      rows.push({ section: "Ledger", animal: a, type: "income", amount: Number(s.price), category: "Animal sales", detail: "Sale: " + a + (s.buyer ? " to " + s.buyer : ""), date: s.soldDate || s.updated || today(), ref: "sale", _auto: true });
+    if (s && Number(s.deposit) > 0 && !["Sold", "Shipped", "Received"].includes(s.status))
+      rows.push({ section: "Ledger", animal: a, type: "income", amount: Number(s.deposit), category: "Deposits", detail: "Deposit: " + a + (s.holdFor ? " from " + s.holdFor : ""), date: s.depositDate || s.updated || today(), ref: "deposit", _auto: true });
+  });
+  return rows;
+}
+function clutchOfAnimal(a) {
+  return entries.find((e) => e.section === "Breeding" && e.kind === "clutch" && Array.isArray(e.hatchlings) && e.hatchlings.includes(a)) || null;
+}
+BIZ_PANELS.Money = () => {
+  const rows = ledgerRows().filter((r) => String(r.date).startsWith(ledgerYear)).sort((x, y) => y.date.localeCompare(x.date));
+  const sum = (t) => rows.filter((r) => r.type === t).reduce((n, r) => n + (Number(r.amount) || 0), 0);
+  const clutches = entries.filter((e) => e.section === "Breeding" && e.kind === "clutch");
+  const per = clutches.map((c) => {
+    const inc = ledgerRows().filter((r) => r.type === "income" && ((r.animal && clutchOfAnimal(r.animal) === c) || r.clutchId === c.id)).reduce((n, r) => n + (Number(r.amount) || 0), 0);
+    const exp = ledgerRows().filter((r) => r.type === "expense" && r.clutchId === c.id).reduce((n, r) => n + (Number(r.amount) || 0), 0);
+    return { c, inc, exp };
+  }).filter((x) => x.inc || x.exp);
+  const years = Array.from(new Set(ledgerRows().map((r) => String(r.date).slice(0, 4)).concat([String(new Date().getFullYear())]))).sort().reverse();
+  const cats = (t) => LEDGER_CATS[t].map((c) => "<option>" + c + "</option>").join("");
+  return '<div class="diyTabs">' + years.map((y) => '<button class="' + (y === ledgerYear ? "on" : "") + '" onclick="ledgerYear=\'' + y + '\';render()">' + y + "</button>").join("") + "</div>" +
+    '<div class="yisTrio moneyTrio"><div><b>' + bizMoney(sum("income")) + "</b>income</div><div><b>" + bizMoney(sum("expense")) + "</b>expenses</div><div><b>" + bizMoney(sum("income") - sum("expense")) + "</b>profit</div></div>" +
+    '<h3 class="sectionTitle">Add income or expense</h3><div class="saleGrid">' + bizSelect("lgType", "Type", ["expense", "income"], "expense") +
+    '<label>Category<select id="lgCat"><optgroup label="Expenses">' + cats("expense") + '</optgroup><optgroup label="Income">' + cats("income") + "</optgroup></select></label>" +
+    bizField("lgAmount", "Amount ($)", "", "number", "", 'min="0" step="0.01"') + bizField("lgDate", "Date", today(), "date") + "</div>" +
+    '<div class="saleGrid">' + bizField("lgNote", "What for", "", "text", "Rat order, 3 boxes") +
+    '<label>Clutch (optional)<select id="lgClutch"><option value="">None</option>' + clutches.map((c) => '<option value="' + esc(c.id) + '">' + esc(c.animal + (c.partner ? " × " + c.partner : "") + " · " + c.date) + "</option>").join("") + "</select></label></div>" +
+    '<button class="action" onclick="ledgerAdd()">Add</button>' +
+    (per.length ? '<h3 class="sectionTitle">Profit per clutch</h3>' + per.map((x) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(x.c.animal + (x.c.partner ? " × " + x.c.partner : "")) + "</b><span>" + bizMoney(x.inc - x.exp) + "</span></div><p class=\"lcSmall\">" + bizMoney(x.inc) + " sales · " + bizMoney(x.exp) + " costs</p></div>").join("") : "") +
+    '<h3 class="sectionTitle">' + ledgerYear + " entries</h3>" +
+    (rows.length ? '<div class="incLog">' + rows.map((r) => "<div><b>" + niceDate(r.date) + "</b><span>" + (r.type === "income" ? "+" : "−") + bizMoney(r.amount) + " · " + esc(r.category || "") + " · " + esc(r.detail || "") + (r._auto ? " (from sale)" : "") + "</span></div>").join("") + "</div>" : '<p class="helperLine">Nothing yet.</p>') +
+    '<button class="action secondary" onclick="ledgerCsv()">Download ' + ledgerYear + ' spreadsheet (CSV)</button><button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
+};
+function ledgerAdd() {
+  const amt = Number(bizV("lgAmount"));
+  if (!(amt > 0)) return stToast("Enter an amount.");
+  const cat = bizV("lgCat"), type = LEDGER_CATS.income.includes(cat) ? "income" : LEDGER_CATS.expense.includes(cat) ? "expense" : bizV("lgType");
+  entries.push({ section: "Ledger", animal: "", type, amount: Math.round(amt * 100) / 100, category: cat, detail: bizV("lgNote").slice(0, 120) || cat, date: bizD("lgDate") || today(), clutchId: bizV("lgClutch") });
+  save();
+  stToast((type === "income" ? "+" : "−") + bizMoney(amt) + " added");
+  render();
+}
+function ledgerCsv() {
+  const rows = ledgerRows().filter((r) => String(r.date).startsWith(ledgerYear)).sort((x, y) => x.date.localeCompare(y.date));
+  const q = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+  const csv = ["Date,Type,Category,Amount,Description,Animal"].concat(rows.map((r) => [r.date, r.type, r.category, (Number(r.amount) || 0).toFixed(2), r.detail, r.animal].map(q).join(","))).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
+  a.download = "scale-and-tell-money-" + ledgerYear + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* ---------------- Feeder stock (goes down with rack feeding and quick logs) ---------------- */
+function feederList() {
+  return Array.isArray(accountPrefs?.feeders) ? accountPrefs.feeders : [];
+}
+function feederUse(prey, n) {
+  if (!prey || !n) return;
+  const list = feederList().map((f) => ({ ...f }));
+  const f = list.find((x) => x.name && (prey.toLowerCase().includes(x.name.toLowerCase()) || x.name.toLowerCase().includes(prey.toLowerCase())));
+  if (!f) return;
+  f.count = Math.max(0, (Number(f.count) || 0) - n);
+  accountPrefsSet("feeders", list);
+}
+BIZ_PANELS.Feeders = () => {
+  const list = feederList();
+  return '<p class="resourceIntro">Your frozen feeder stock. Counts go down automatically when you log a feeding with that prey (rack feeding or quick log), and you get a reminder when one runs low.</p>' +
+    (list.length ? list.map((f, i) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(f.name) + "</b><span>" + (Number(f.count) <= Number(f.low) ? '<span class="salePill saleSold">Low</span> ' : "") + Number(f.count) + " left</span></div>" +
+      '<div class="recordActions"><button onclick="feederAdj(' + i + ',-1)">−1</button><button onclick="feederAdj(' + i + ',1)">+1</button><button onclick="feederAdj(' + i + ',25)">+25 (new box)</button><button onclick="feederAdj(' + i + ',\'x\')">Remove</button></div></div>').join("") : '<p class="helperLine">No feeders tracked yet.</p>') +
+    '<h3 class="sectionTitle">Add a feeder</h3><div class="saleGrid">' + bizField("fdName", "Prey (as you log it)", "", "text", "Small rat") + bizField("fdCount", "How many you have", "", "number", "", 'min="0"') + bizField("fdLow", "Remind me at", 10, "number", "", 'min="0"') + "</div>" +
+    '<button class="action" onclick="feederAddNew()">Add feeder</button><button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
+};
+function feederAddNew() {
+  const name = bizV("fdName").slice(0, 60);
+  if (!name) return;
+  accountPrefsSet("feeders", [...feederList(), { name, count: Math.max(0, Number(bizV("fdCount")) || 0), low: Math.max(0, Number(bizV("fdLow")) || 0) }]);
+  bizQueueAuto();
+  render();
+}
+function feederAdj(i, d) {
+  const list = feederList().map((f) => ({ ...f }));
+  if (d === "x") list.splice(i, 1);
+  else if (list[i]) list[i].count = Math.max(0, (Number(list[i].count) || 0) + d);
+  accountPrefsSet("feeders", list);
+  bizQueueAuto();
+  render();
+}
+
+/* ---------------- Rack weigh session ---------------- */
+BIZ_PANELS["Rack Weigh"] = () => {
+  const r = racks[breederRackId];
+  if (!r) return '<p class="helperLine">Pick a rack first.</p>';
+  const rows = [];
+  for (let i = 0; i < r.rows; i++) for (let j = 0; j < r.cols; j++) { const a = r.slots?.[i + "-" + j]; if (a) rows.push({ a, label: tubLabel(i, j) }); }
+  return '<p class="resourceIntro">Weigh ' + esc(r.name) + ' tub by tub. Leave a box empty to skip it.</p>' + bizField("rwDate", "Date", today(), "date") +
+    rows.map((x, n) => { const last = entries.filter((e) => e.animal === x.a && e.section === "Weight Tracker").sort((p, q) => q.date.localeCompare(p.date))[0];
+      return '<div class="rfRow"><div class="rfName"><span class="tubId">' + x.label + "</span><b>" + esc(x.a) + "</b>" + (last ? "<small>last: " + esc(last.detail) + " " + agoText(last.date) + "</small>" : "") + '</div><input class="rfPrey" id="rw' + n + '" type="number" min="0" step="1" inputmode="numeric" placeholder="grams" data-animal="' + esc(x.a) + '"></div>'; }).join("") +
+    '<div class="inlineActions"><button class="action" onclick="rackWeighSave(' + rows.length + ')">Save weights</button><button class="action secondary" onclick="breederOpen(\'Rack View\',breederRackId)">Cancel</button></div>';
+};
+function rackWeighSave(n) {
+  const date = bizD("rwDate") || today();
+  let k = 0;
+  for (let i = 0; i < n; i++) { const el = document.getElementById("rw" + i), g = Number(el?.value); if (g > 0) { entries.push({ section: "Weight Tracker", animal: el.dataset.animal, detail: Math.round(g) + " g", date, notes: "Rack weigh session" }); k++; } }
+  if (!k) return stToast("Enter at least one weight.");
+  save();
+  stToast("⚖ Logged " + k + " weights");
+  breederOpen("Rack View", breederRackId);
+}
+
+/* ---------------- Customers & expo mode ---------------- */
+BIZ_PANELS.Customers = () => {
+  const map = {};
+  animals.forEach((a) => {
+    const s = profiles[a]?.sale, r = profiles[a]?.rescue;
+    const who = s?.buyer || r?.adopter;
+    if (!who) return;
+    const k = who.toLowerCase();
+    map[k] = map[k] || { name: who, contact: s?.buyerContact || r?.adopterContact || "", items: [] };
+    map[k].items.push({ a, price: s?.price || r?.fee || "", date: s?.soldDate || r?.adoptedDate || "", kind: s?.buyer ? "bought" : "adopted" });
+  });
+  const list = Object.values(map).sort((x, y) => y.items.length - x.items.length);
+  return '<p class="resourceIntro">Everyone who has bought or adopted from you, from your sales and adoption records.</p>' +
+    (list.length ? list.map((c) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(c.name) + "</b><span>" + c.items.length + (c.items.length > 1 ? " animals · repeat ♡" : " animal") + "</span></div>" +
+      (c.contact ? '<p class="lcSmall">' + esc(c.contact) + "</p>" : "") + '<p class="lcSmall">' + c.items.map((x) => esc(x.a) + " (" + x.kind + (x.price ? " " + bizMoney(x.price) : "") + (x.date ? ", " + niceDate(x.date) : "") + ")").join(" · ") + "</p></div>").join("")
+      : '<p class="helperLine">Add a buyer on a sale (or an adopter on a rescue record) and they show up here.</p>') +
+    '<button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
+};
+BIZ_PANELS["Expo Mode"] = () => {
+  const list = animals.filter((a) => ["Listed", "Pending"].includes(profiles[a]?.sale?.status));
+  return '<p class="resourceIntro">Your table at a show. Works without signal. Tap <b>Sold</b> when one goes home.</p>' +
+    (list.length ? '<div class="expoGrid">' + list.map((a) => { const s = profiles[a].sale;
+      return '<div class="expoCard"><img alt="" src="' + esc(portraitForAnimal(a).src) + '"><b>' + esc(a) + "</b><small>" + esc([profiles[a]?.genes || profiles[a]?.morph, profiles[a]?.sex].filter(Boolean).join(" · ")) + '</small><div class="expoPrice">' + (s.price ? bizMoney(s.price) : "Ask") + "</div>" +
+        (s.status === "Pending" ? '<span class="salePill salePending">On hold' + (s.holdFor ? ": " + esc(s.holdFor) : "") + "</span>" : "") + '<button class="action" onclick="expoSold(\'' + esc(a).replace(/'/g, "\\'") + '\')">Sold</button></div>'; }).join("") + "</div>"
+      : '<p class="helperLine">Nothing listed. Mark animals as Listed in Listings &amp; sales first.</p>') +
+    '<button class="action secondary" onclick="openPanel(\'Sales\')">← Listings &amp; sales</button>';
+};
+function expoSold(a) {
+  const s = profiles[a]?.sale;
+  if (!s) return;
+  const buyer = prompt("Buyer name (optional)") || "";
+  profiles[a] = { ...profiles[a], sale: { ...s, status: "Sold", soldDate: today(), buyer: buyer.slice(0, 80) || s.buyer || "", site: s.site || "Expo / in person", updated: today() } };
+  bizSaveProfiles();
+  stToast("Sold ♡ " + a);
+  render();
+}
+
+/* ---------------- Printables: buyer / adoption packet, tub labels ---------------- */
+function packetOpen(a, kind) {
+  if (!animals.includes(a)) return;
+  const tab = window.open("", "_blank");
+  if (!tab) return alert("Allow pop-ups to open the packet.");
+  tab.document.open();
+  tab.document.write(bizBrandPrint(packetDoc(a, kind)));
+  tab.document.close();
+}
+function packetDoc(a, kind) {
+  const p = profiles[a] || {}, r = p.rescue || {}, s = p.sale || {};
+  const recs = entries.filter((e) => e.animal === a && e.section !== "Calendar" && e.section !== "Ledger").sort((x, y) => y.date.localeCompare(x.date));
+  const w = recs.filter((e) => e.section === "Weight Tracker").slice(0, 12).reverse();
+  const feeds = recs.filter((e) => e.section === "Feeding Tracker").slice(0, 15);
+  const sheds = recs.filter((e) => e.section === "Shed History").slice(0, 8);
+  const vet = recs.filter((e) => e.section === "Health & Vet").slice(0, 15);
+  const photo = portraitForAnimal(a).src, who = bizBrand?.business_name || "";
+  const rows = (list, f) => list.length ? "<table>" + list.map(f).join("") + "</table>" : '<p class="muted">None recorded.</p>';
+  const plan = carePlans[a] || {};
+  const title = kind === "adoption" ? "Adoption Packet" : "Welcome Home Packet";
+  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(a) + " · " + title + "</title><style>body{font:14px/1.5 Arial,sans-serif;color:#34263b;max-width:800px;margin:0 auto;padding:24px;background:#fff}h1{font:italic 32px Georgia,serif;color:#45205b;margin:0}h2{color:#45205b;border-bottom:2px solid #e3d4ea;padding-bottom:4px;margin-top:26px}.hero{display:flex;gap:18px;align-items:center}.hero img{width:170px;height:170px;object-fit:cover;border-radius:16px}table{width:100%;border-collapse:collapse}td{padding:5px 8px;border-bottom:1px solid #eee;vertical-align:top}td:first-child{width:120px;color:#7a6a80}.muted{color:#888}.note{background:#f6f0f8;border-radius:10px;padding:12px 14px}@media print{body{padding:0}}</style></head><body>" +
+    '<div class="hero"><img src="' + esc(photo) + '" alt=""><div><small>' + esc(title.toUpperCase()) + "</small><h1>" + esc(a) + "</h1><p>" + esc([species[a], p.sex, p.genes || p.morph, p.hatchDate ? "hatched " + niceDate(p.hatchDate) : ""].filter(Boolean).join(" · ")) + "</p>" +
+    (p.dam || p.sire ? "<p>Parents: " + esc([p.dam, p.sire].filter(Boolean).join(" × ")) + "</p>" : "") + "</div></div>" +
+    '<p class="note">' + (kind === "adoption" ? "Thank you for adopting " + esc(a) + (who ? " from " + esc(who) : "") + "! Everything we know about " + esc(a) + "'s care is below. Keep this packet, and reach out anytime with questions."
+      : "Congratulations on your new " + esc(species[a] || "reptile") + "! This packet has " + esc(a) + "'s care history so far" + (who ? " from " + esc(who) : "") + ". Give them about a week to settle in before the first meal and handling.") + "</p>" +
+    "<h2>Care at a glance</h2><table>" + [["Feeding", plan.feedDays ? "Every " + plan.feedDays + " days" : ""], ["Last prey", feeds.find((f) => f.preyType)?.preyType || ""], ["Warm side", plan.warmMin || plan.warmMax ? (plan.warmMin || "…") + "–" + (plan.warmMax || "…") + "°F" : ""],
+      ["Cool side", plan.coolMin || plan.coolMax ? (plan.coolMin || "…") + "–" + (plan.coolMax || "…") + "°F" : ""], ["Humidity", plan.humidityMin || plan.humidityMax ? (plan.humidityMin || "…") + "–" + (plan.humidityMax || "…") + "%" : ""],
+      ["Handling", p.handlingNotes || ""], ["Notes", p.sitterInstructions || p.notes || ""]].filter((x) => x[1]).map((x) => "<tr><td>" + x[0] + "</td><td>" + esc(x[1]) + "</td></tr>").join("") + "</table>" +
+    "<h2>Weights</h2>" + rows(w, (e) => "<tr><td>" + niceDate(e.date) + "</td><td>" + esc(e.detail) + "</td></tr>") +
+    "<h2>Recent feedings</h2>" + rows(feeds, (e) => "<tr><td>" + niceDate(e.date) + "</td><td>" + esc(e.detail + (e.preyType ? " · " + e.preyType : "")) + "</td></tr>") +
+    "<h2>Sheds</h2>" + rows(sheds, (e) => "<tr><td>" + niceDate(e.date) + "</td><td>" + esc(e.detail) + "</td></tr>") +
+    "<h2>Health &amp; vet</h2>" + rows(vet, (e) => "<tr><td>" + niceDate(e.date) + "</td><td>" + esc(e.detail + (e.notes ? " · " + e.notes : "")) + "</td></tr>") +
+    (kind === "adoption" && (r.intakeDate || r.issues) ? "<h2>Rescue history</h2><table>" + [["Came to us", r.intakeDate ? niceDate(r.intakeDate) + (r.source ? " · " + r.source : "") : ""], ["On arrival", [r.condition, r.issues].filter(Boolean).join(" · ")], ["Quarantine", r.quarantineStart ? (r.quarantineDays || 90) + " days from " + niceDate(r.quarantineStart) : ""]].filter((x) => x[1]).map((x) => "<tr><td>" + x[0] + "</td><td>" + esc(x[1]) + "</td></tr>").join("") + "</table>" : "") +
+    (kind !== "adoption" && s.price ? "<h2>Purchase</h2><table><tr><td>Price</td><td>" + bizMoney(s.price) + "</td></tr>" + (s.soldDate ? "<tr><td>Date</td><td>" + niceDate(s.soldDate) + "</td></tr>" : "") + (s.notes ? "<tr><td>Notes</td><td>" + esc(s.notes) + "</td></tr>" : "") + "</table>" : "") +
+    '<p class="muted" style="margin-top:28px">Keep tracking ' + esc(a) + "’s care free at scaleandtell.app ♡ Generated " + niceDate(today()) + "</p></body></html>";
+}
+function tubLabelsOpen(id) {
+  const r = racks[id];
+  if (!r) return;
+  const tubs = [];
+  for (let i = 0; i < r.rows; i++) for (let j = 0; j < r.cols; j++) { const a = r.slots?.[i + "-" + j]; if (a) tubs.push({ a, label: tubLabel(i, j) }); }
+  const tab = window.open("", "_blank");
+  if (!tab) return alert("Allow pop-ups to open the labels.");
+  const base = location.origin + location.pathname;
+  tab.document.open();
+  tab.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + esc(r.name) + ' · Tub labels</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><style>body{font:12px Arial,sans-serif;margin:12px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.lb{display:flex;gap:8px;align-items:center;border:1px dashed #aaa;border-radius:8px;padding:8px;break-inside:avoid}.lb b{display:block;font-size:15px}.q{width:72px;height:72px;flex:none}.q img,.q canvas{width:72px!important;height:72px!important}h1{font:italic 20px Georgia,serif}</style></head><body><h1>' + esc(r.name) + ' · tub labels</h1><p>Print, cut and tape to each tub. Scanning a label with your phone camera opens that animal in Scale &amp; Tell.</p><div class="grid">' +
+    tubs.map((t, k) => '<div class="lb"><div class="q" id="q' + k + '"></div><div><small>' + esc(r.name) + " · " + t.label + "</small><b>" + esc(t.a) + "</b>" + esc([species[t.a], profiles[t.a]?.genes || profiles[t.a]?.morph, profiles[t.a]?.sex].filter(Boolean).join(" · ")) + (profiles[t.a]?.code ? "<br>" + esc(profiles[t.a].code) : "") + "</div></div>").join("") +
+    "</div><script>window.onload=function(){" + JSON.stringify(tubs.map((t) => base + "?animal=" + encodeURIComponent(t.a))) + ".forEach(function(u,k){new QRCode(document.getElementById('q'+k),{text:u,width:144,height:144,correctLevel:QRCode.CorrectLevel.M})})}<\/script></body></html>");
+  tab.document.close();
+}
+// Opening the app from a tub label's QR code jumps to that animal.
+(function bizDeepLink() {
+  const want = new URLSearchParams(location.search).get("animal");
+  if (!want) return;
+  let tries = 0;
+  const t = setInterval(() => {
+    tries++;
+    if (animals.includes(want) && typeof cloudAuthReady !== "undefined" && cloudAuthReady && !document.body.classList.contains("authLocked")) {
+      clearInterval(t);
+      history.replaceState(null, "", location.pathname);
+      openPanel(want);
+    }
+    if (tries > 60) clearInterval(t);
+  }, 500);
+})();
+
+/* ---------------- Send records to a new owner / receive them ---------------- */
+function transferAsk(a) {
+  if (!animals.includes(a)) return;
+  const sl = profiles[a]?.sale, rs = profiles[a]?.rescue;
+  const guess = (sl?.buyerContact || rs?.adopterContact || "").match(/[^@\s]+@[^@\s]+\.[^@\s]+/)?.[0] || "";
+  const email = prompt("New owner's email. They'll get " + a + "'s care history, photos and notes in their own free Scale & Tell account.", guess);
+  if (email) transferSend(a, email.trim());
+}
+async function transferSend(a, email) {
+  try {
+    const paths = (cloudRow?.payload?.photos?.[a] || []).filter((x) => x?.cloudPath).slice(-30).map((x) => ({ cloudPath: x.cloudPath, caption: x.caption || "", date: x.date || "" }));
+    const p = { ...(profiles[a] || {}) };
+    delete p.sale; delete p.rescue; delete p.meds;
+    const bundle = { species: species[a] || "", profile: p, carePlan: carePlans[a] || null, photos: paths,
+      entries: entries.filter((e) => e.animal === a && !["Calendar", "Ledger", "Breeding"].includes(e.section)).slice(-1500).map((e) => { const x = { ...e }; delete x.id; delete x.attachment; delete x.attachmentPath; return x; }) };
+    await hubInvoke({ action: "transfer_send", animal: a, email, bundle, owner: cloudJournalUid() });
+    stToast("Sent ♡ " + email + " will get " + a + "'s records.");
+  } catch (e) { stToast(e.message || "Couldn’t send the records."); }
+}
+let transfersWaiting = [];
+async function transferCheck() {
+  if (!cloudSession || !cloudClient) return;
+  try {
+    transfersWaiting = (await hubInvoke({ action: "transfer_list" })).items || [];
+    if (transfersWaiting.length && !document.getElementById("sheet")?.classList.contains("on")) openPanel("Records For You");
+  } catch (e) {}
+}
+BIZ_PANELS["Records For You"] = () =>
+  '<p class="resourceIntro">Someone sent you an animal’s care history ♡ Accept to add the animal, with its feedings, sheds, weights, notes and photos, to your journal.</p>' +
+  (transfersWaiting.length ? transfersWaiting.map((t) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(t.animal) + "</b><span>from " + esc(t.from_name || "a keeper") + '</span></div><div class="recordActions"><button onclick="transferAccept(\'' + esc(t.id) + '\')">Accept</button><button onclick="transferDecline(\'' + esc(t.id) + '\')">No thanks</button></div></div>').join("") : '<p class="helperLine">Nothing waiting.</p>');
+async function transferAccept(id) {
+  try {
+    stToast("Bringing them home…");
+    const r = await hubInvoke({ action: "transfer_accept", id, owner: cloudJournalUid() }), b = r.bundle || {};
+    let name = String(r.animal || "New animal").slice(0, 50), k = 2;
+    while (animals.some((x) => x.toLowerCase() === name.toLowerCase())) name = String(r.animal).slice(0, 46) + " " + k++;
+    if (cloudSession && stOwnsEntitlements() && animals.length >= stAnimalLimit()) return stCanAddAnimal();
+    animals.push(name);
+    species[name] = String(b.species || "Reptile").slice(0, 80);
+    const pr = b.profile && typeof b.profile === "object" ? b.profile : {};
+    profiles[name] = { ...pr, notes: ((pr.notes ? pr.notes + " " : "") + "Records from " + (r.from || "previous keeper") + ".").slice(0, 400) };
+    if (b.carePlan && typeof b.carePlan === "object") { carePlans[name] = b.carePlan; saveCarePlans(); }
+    (Array.isArray(b.entries) ? b.entries : []).forEach((e) => { if (e && typeof e === "object" && validDate(e.date)) entries.push({ ...e, animal: name }); });
+    const gallery = [];
+    for (const ph of Array.isArray(b.photos) ? b.photos : []) {
+      if (!ph?.cloudPath) continue;
+      try { const { data } = await cloudClient.storage.from(CLOUD_BUCKET).download(ph.cloudPath); if (data) gallery.push({ src: await new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(data); }), caption: ph.caption || "", date: ph.date || "" }); } catch (e) {}
+    }
+    if (gallery.length) { photos[name] = gallery; savePhotos(); }
+    saveRoster();
+    bizSaveProfiles();
+    save();
+    transfersWaiting = transfersWaiting.filter((t) => t.id !== id);
+    stToast("Welcome home, " + name + " ♡");
+    openPanel(name);
+  } catch (e) { stToast(e.message || "Couldn’t accept right now."); }
+}
+async function transferDecline(id) {
+  try { await hubInvoke({ action: "transfer_decline", id }); } catch (e) {}
+  transfersWaiting = transfersWaiting.filter((t) => t.id !== id);
+  render();
+}
+
+/* ---------------- Alerts: settings + automatic reminders ---------------- */
+const BIZ_ALERTS = [
+  ["inquiry", "New messages from your public page", "server"], ["application", "Adoption applications", "server"], ["surrender", "Surrender requests", "server"],
+  ["team", "Someone joins your team", "server"], ["weekly", "Sunday weekly summary", "server"], ["renewal", "Plan renewal reminders", "server"], ["sensor", "Govee sensor out of range", "server"], ["transfer", "A new owner accepts records", "server"],
+  ["hatch", "Clutch hatch window", "auto"], ["rackFeed", "Rack feeding day", "auto"], ["hatchling", "Hatchlings not eating yet", "auto"], ["hold", "Hold & deposit due dates", "auto"],
+  ["ship", "Shipping day & arrival check", "auto"], ["feeder", "Feeder stock low", "auto"], ["pairing", "Pairing follow-ups", "auto"], ["meds", "Medication doses", "auto"],
+  ["quarantine", "Quarantine finished", "auto"], ["vet", "Vet follow-ups", "auto"], ["adoptFollow", "Check in with adopters", "auto"],
+];
+function bizAlertOn(k) {
+  return accountPrefs?.notify?.[k] !== false;
+}
+BIZ_PANELS.Alerts = () => {
+  const rescue = stIsRescue(), breeder = bizIsBreeder();
+  const show = (k) => !(!breeder && ["hatch", "rackFeed", "hatchling", "pairing"].includes(k)) && !(!rescue && ["application", "surrender", "quarantine", "adoptFollow"].includes(k));
+  return '<p class="resourceIntro">Choose what reaches your phone. Alerts go to everyone on your team who has reminders turned on. ' + (pushDeviceEnabled ? "" : "<b>Turn on reminders on this phone</b> (Calendar → Reminders) to receive them.") + "</p>" +
+    BIZ_ALERTS.filter(([k]) => show(k)).map(([k, label]) => '<label class="checkLine alertLine"><input type="checkbox" ' + (bizAlertOn(k) ? "checked" : "") + ' onchange="bizAlertSet(\'' + k + '\',this.checked)"> ' + label + "</label>").join("") +
+    '<p class="lcSmall">Medication, rack feeding, hatch and other dated alerts also appear in your Calendar, so you can mark them done there.</p><button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
+};
+function bizAlertSet(k, on) {
+  accountPrefsSet("notify", { ...(accountPrefs?.notify || {}), [k]: on ? true : false });
+  bizQueueAuto();
+}
+let bizAutoTimer = null, bizAutoBusy = false;
+function bizQueueAuto() {
+  clearTimeout(bizAutoTimer);
+  bizAutoTimer = setTimeout(bizSyncAuto, 800);
+}
+/* Dated business alerts live in the Care Schedule as normal reminders (so they reach phones), tagged with autoKey.
+   A reminder the keeper completed is never re-created; one whose reason went away is removed if still open. */
+function bizSyncAuto() {
+  if (bizAutoBusy) return;
+  try {
+    if (!(homeBusinessMode() || stIsRescue() || bizIsBreeder())) return;
+  } catch (e) { return; }
+  bizAutoBusy = true;
+  try {
+    const want = new Map(), t = today(), add = (k, kind, e) => { if (bizAlertOn(kind)) want.set(k, { section: "Calendar", repeatDays: 0, done: false, notes: "", category: "other", ...e, autoKey: k }); };
+    const breeding = entries.filter((e) => e.section === "Breeding");
+    breeding.filter((c) => c.kind === "clutch" && c.dueDate && !c.hatchDate).forEach((c) => add("hatch:" + c.id, "hatch", { animal: c.animal, detail: "🥚 Hatch window opens (" + niceDate(c.dueDate) + ")", date: advanceDate(c.dueDate, -3) }));
+    breeding.filter((p) => p.kind === "pairing" && p.status !== "done").forEach((p) => {
+      const lock = (p.events || []).filter((x) => x.type === "Lock").map((x) => x.date).sort().pop();
+      if (lock) add("pair:" + p.id + ":" + lock, "pairing", { animal: p.animal, detail: "💞 " + p.animal + " × " + (p.partner || "?") + ": 2 weeks since lock, watch for ovulation", date: advanceDate(lock, 14) });
+    });
+    rackList().forEach((r) => {
+      const due = Object.values(r.slots || {}).filter(Boolean).filter((a) => { const f = lastFeed(a), n = carePlans[a]?.feedDays; return n && (!f || daysSince(f.date) >= n); });
+      if (due.length >= 2) add("rack:" + r.id + ":" + t, "rackFeed", { animal: r.name, detail: "🍽 " + due.length + " animals due to feed", date: t, category: "feeding" });
+    });
+    animals.forEach((a) => {
+      const p = profiles[a] || {}, s = p.sale || {}, r = p.rescue || null;
+      if ((p.dam || p.sire) && p.hatchDate && bizDays(p.hatchDate, t) >= 14 && bizDays(p.hatchDate, t) <= 120 && !entries.some((e) => e.animal === a && e.section === "Feeding Tracker" && e.detail !== "Refused" && e.detail !== "Skipped feeding"))
+        add("hatchling:" + a, "hatchling", { animal: a, detail: "🐣 Hasn’t eaten yet (" + bizDays(p.hatchDate, t) + " days old)", date: t });
+      if (s.balanceDue && s.status === "Pending") add("hold:" + a + ":" + s.balanceDue, "hold", { animal: a, detail: "💰 Balance due" + (s.holdFor ? " from " + s.holdFor : ""), date: s.balanceDue });
+      if (s.holdUntil && s.status === "Pending") add("holdend:" + a + ":" + s.holdUntil, "hold", { animal: a, detail: "⏳ Hold ends" + (s.holdFor ? " for " + s.holdFor : ""), date: s.holdUntil });
+      if (s.shipDate && !s.shippedDate) add("ship:" + a + ":" + s.shipDate, "ship", { animal: a, detail: "📦 Ships tomorrow: check weather at both ends", date: advanceDate(s.shipDate, -1) });
+      if (s.shippedDate && !s.receivedDate) add("arrive:" + a + ":" + s.shippedDate, "ship", { animal: a, detail: "📦 Did it arrive? Mark received", date: advanceDate(s.shippedDate, 2) });
+      (p.meds || []).forEach((m) => { if (!m.end || m.end >= t) add("med:" + m.id, "meds", { animal: a, detail: "💊 " + m.drug + (m.dose ? " " + m.dose : ""), date: m.start > t ? m.start : t, times: m.times || [], repeatDays: m.everyDays || 1 }); });
+      if (r) {
+        const q = rescueQuarantine(a);
+        if (q && r.status === "Quarantine") add("quar:" + a + ":" + q.end, "quarantine", { animal: a, detail: "⏳ Quarantine finished: ready to move to Available?", date: q.end });
+        if (r.vetDue) add("vet:" + a + ":" + r.vetDue, "vet", { animal: a, detail: "🩺 Vet follow-up due", date: r.vetDue });
+        if (r.status === "Adopted" && r.adoptedDate) add("adopt:" + a + ":" + r.adoptedDate, "adoptFollow", { animal: a, detail: "🏠 Check in with " + (r.adopter || "the adopter"), date: advanceDate(r.adoptedDate, 14) });
+      }
+    });
+    feederList().forEach((f) => { if (Number(f.count) <= Number(f.low)) add("feeder:" + f.name + ":" + t.slice(0, 7), "feeder", { animal: "Feeders", detail: "🐁 " + f.name + ": " + Number(f.count) + " left, time to reorder", date: t }); });
+    let changed = false;
+    const have = new Map(entries.filter((e) => e.autoKey).map((e) => [e.autoKey, e]));
+    // Remove open auto reminders whose reason went away (or whose alert was switched off).
+    const before = entries.length;
+    entries = entries.filter((e) => !e.autoKey || e.done || want.has(e.autoKey) || (e.autoKey.startsWith("med:") && want.has(e.autoKey)));
+    if (entries.length !== before) changed = true;
+    want.forEach((e, k) => {
+      const old = have.get(k);
+      if (!old) { entries.push(e); changed = true; }
+      else if (!old.done && (old.detail !== e.detail)) { old.detail = e.detail; changed = true; }
+    });
+    if (changed) { syncStampEntries(); scaleStoreSet("scaleTellApprovedPreview", JSON.stringify(entries)); try { updateStats(); } catch (e) {} }
+  } catch (e) {
+  } finally {
+    bizAutoBusy = false;
+  }
+}
+
+let inboxIntake = null;
+function inboxToIntake(id) {
+  const m = (bizInbox || []).find((x) => x.id === id);
+  if (!m) return;
+  inboxIntake = m;
+  openPanel("Intake");
+  setTimeout(() => {
+    const d = m.details || {}, set = (k, v) => { const el = document.getElementById(k); if (el && v) el.value = v; };
+    set("inName", m.animal || d.Name || d["Animal name"] || "");
+    set("inSpecies", d.Species || "");
+    set("inSource", "Owner surrender");
+    set("inFrom", m.from_name);
+    set("inContact", m.from_email);
+    const iss = document.getElementById("inIssues");
+    if (iss) iss.value = [d["Health concerns"], m.message].filter(Boolean).join(" · ").slice(0, 600);
+  }, 50);
+}
+/* Rescue pipeline strip on the home screen (both layouts). */
+function homeRescueStrip() {
+  let el = document.getElementById("homeRescue");
+  if (!stIsRescue()) { el?.remove(); return; }
+  const list = animals.filter((a) => rescueOf(a)), c = (st) => list.filter((a) => rescueStatus(a) === st).length;
+  const sec = document.querySelector(".homeReptiles");
+  if (!sec) return;
+  if (!el) { el = document.createElement("section"); el.id = "homeRescue"; el.className = "homeRescue"; sec.before(el); }
+  el.innerHTML = '<div class="homeSecHead"><h2>My Rescue ♡</h2><button class="homeViewAll" onclick="openPanel(\'Intake\')">＋ Intake</button></div><div class="rescueStages">' +
+    [["Intake", "Intake"], ["Quarantine", "Quarantine"], ["Medical hold", "Medical"], ["Available", "Available"], ["Adoption pending", "Pending"], ["Adopted", "Adopted"]]
+      .map(([st, lab]) => '<button onclick="rescueFilter=\'' + (st === "Adoption pending" ? "Available" : st === "Medical hold" ? "Medical" : st) + '\';openPanel(\'Rescue Animals\')"><b>' + c(st) + "</b><span>" + lab + "</span></button>").join("") + "</div>";
+}
+
+/* Welcome text after a code: promo codes never mention the Herps & Hers group. */
+function stCodeWelcome() {
+  const p = stPlan();
+  return p && p !== "member" ? "Welcome ♡ Your " + ST_PLANS[p].name + " plan is active." : "Welcome, Herps & Hers member ♡";
+}

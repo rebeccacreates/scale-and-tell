@@ -3208,3 +3208,19 @@ body[data-st-theme] .homePetsLink{background:var(--t-panel,#fffaf5);color:var(--
 .homeHello{display:none}
 .headerArt .headerHot{top:4%;height:22%}
 #homeToday{margin-top:12px}
+/* V3.49 rescue + breeder toolkit */
+.rescueStages{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;margin:8px 0 12px}
+.rescueStages button{display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border:1px solid #e3d4ea;border-radius:14px;padding:10px 4px;font:inherit;color:#45205b;cursor:pointer}
+.rescueStages b{font:700 24px/1 Georgia,serif}.rescueStages span{font-size:12px;color:#7a6a80}
+.homeRescue{margin-top:16px}
+.hatchSteps{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.hatchSteps span{font-size:12px;border-radius:10px;padding:2px 8px;background:#f4eef7;color:#7a6a80}.hatchSteps span.on{background:#eef5e6;color:#2f4d16}
+.famTree{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:center;overflow-x:auto}
+.famCol{display:flex;flex-direction:column;gap:6px}.famBox{background:#fff;border:1px solid #e3d4ea;border-radius:10px;padding:6px 8px;font-size:12px;min-width:0}
+.famBox small{display:block;color:#7a6a80;font-size:10px;text-transform:uppercase;letter-spacing:.05em}.famBox b{display:block;color:#45205b}.famBox span{color:#44701f}.famEmpty{opacity:.55}.famMe .famBox{border:2px solid #79538e}
+.incLog{display:flex;flex-direction:column;gap:4px;margin:8px 0}.incLog div{display:flex;gap:10px;background:#fff;border:1px solid #eee5f1;border-radius:8px;padding:6px 10px;font-size:13px}.incLog b{white-space:nowrap;color:#45205b}
+.moneyTrio{color:#45205b}.moneyTrio div{background:#f4eef7}
+.expoGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.expoCard{display:flex;flex-direction:column;gap:4px;background:#fff;border:1px solid #e3d4ea;border-radius:14px;padding:8px;text-align:center}
+.expoCard img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px}.expoCard small{color:#7a6a80}.expoPrice{font:700 22px Georgia,serif;color:#45205b}
+.alertLine{padding:8px 0;border-bottom:1px solid #f0e8f3}
+body[data-st-theme] :is(.rescueStages button,.famBox,.incLog div,.expoCard){background:var(--t-panel,#fff);color:var(--t-text,#45205b)}

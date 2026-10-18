@@ -18,13 +18,22 @@ label{display:block;margin:10px 0;font-weight:600;font-size:14px}input,textarea{
 button{width:100%;font:700 16px Arial,sans-serif;padding:12px;border:0;border-radius:12px;background:var(--accent);color:#fff;margin-top:6px;cursor:pointer}button:disabled{opacity:.6}
 .muted{color:var(--muted);font-size:13px}.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 #msg{min-height:1.4em;margin:10px 0 0;font-weight:600}
-footer{text-align:center;margin-top:20px}footer a{color:var(--muted);font-size:13px}
+footer{text-align:center;margin-top:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.item{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+.item img,.item .ph{width:100%;aspect-ratio:1;object-fit:cover;background:var(--line);display:block}
+.item div{padding:8px 10px;display:flex;flex-direction:column;gap:2px;flex:1}.item b{color:var(--brand)}.item small{color:var(--muted);font-size:12px}
+.item .price{font-weight:700}.item button{margin:6px 0 0;padding:8px;font-size:14px}
+.kinds{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.kinds button{width:auto;margin:0;padding:6px 12px;font-size:13px;background:var(--bg);color:var(--brand);border:1px solid var(--line)}.kinds button.on{background:var(--accent);color:#fff}footer a{color:var(--muted);font-size:13px}
 </style></head><body>
 <main>
   <div class="card" id="profile"><p class="muted">Loading…</p></div>
+  <section class="card" id="avail" hidden><h2 style="margin:0 0 10px;color:var(--brand)" id="availTitle">Available</h2><div class="grid" id="availGrid"></div></section>
   <form class="card" id="form" hidden>
-    <h2 style="margin:0 0 4px;color:var(--brand)">Send a message</h2>
-    <p class="muted">Your message goes to their Scale &amp; Tell Inbox and email. They’ll reply to the email you give here.</p>
+    <div class="kinds" id="kinds"></div>
+    <h2 style="margin:0 0 4px;color:var(--brand)" id="formTitle">Send a message</h2>
+    <p class="muted" id="formNote">Your message goes to their Scale &amp; Tell Inbox and email. They’ll reply to the email you give here.</p>
+    <div id="extra"></div>
     <label>Your name<input id="name" maxlength="80" required autocomplete="name"></label>
     <label>Your email<input id="email" type="email" maxlength="254" required autocomplete="email"></label>
     <label>Subject (optional)<input id="subject" maxlength="120" placeholder="e.g. Question about a ball python"></label>
@@ -40,6 +49,39 @@ const URL_ = "https://fitlubsbesadknkjimqd.supabase.co", KEY = "sb_publishable_-
 const slug = (new URLSearchParams(location.search).get("b") || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+let isRescue = false, kind = "message", about = "";
+const KINDS = { message: ["Send a message", "Your message goes to their Scale & Tell Inbox and email. They’ll reply to the email you give here."],
+  purchase: ["I’m interested", "Ask about this animal. They’ll reply to the email you give here."],
+  adoption: ["Apply to adopt", "Tell the rescue about you and your setup. They’ll reply to the email you give here."],
+  surrender: ["Surrender an animal", "Tell the rescue about the animal you need to rehome. They’ll reply about next steps."] };
+const EXTRA = { adoption: [["Experience", "Your experience with this species"], ["Setup", "Enclosure, heating and lighting you have ready"], ["Other pets", "Other animals at home"], ["Location", "City, State"]],
+  surrender: [["Animal name", ""], ["Species", ""], ["Age", ""], ["Reason", "Why you need to rehome"], ["Health concerns", "Anything the rescue should know"], ["Location", "City, State"]],
+  purchase: [["Location", "City, State (for shipping)"]] };
+function setKind(k, animal) {
+  kind = k; about = animal || "";
+  $("formTitle").textContent = KINDS[k][0] + (about ? ": " + about : "");
+  $("formNote").textContent = KINDS[k][1];
+  $("extra").innerHTML = (EXTRA[k] || []).map(([l, ph], i) => '<label>' + esc(l) + '<input data-k="' + esc(l) + '" maxlength="300" placeholder="' + esc(ph) + '"></label>').join("");
+  $("kinds").innerHTML = [["message", "Message"]].concat(isRescue ? [["surrender", "Surrender an animal"]] : []).map(([v, l]) => '<button type="button" class="' + (v === k ? "on" : "") + '" data-kind="' + v + '">' + l + "</button>").join("");
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-kind]");
+  if (b) { setKind(b.dataset.kind, b.dataset.animal || ""); if (b.dataset.animal) $("form").scrollIntoView({ behavior: "smooth" }); }
+});
+async function loadAvail() {
+  try {
+    const r = await fetch(URL_ + "/functions/v1/scale-hub", { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" }, body: JSON.stringify({ action: "public_list", slug }) });
+    const items = ((await r.json()) || {}).items || [];
+    if (!items.length) return;
+    $("availTitle").textContent = isRescue ? "Available for adoption" : "Available animals";
+    $("availGrid").innerHTML = items.map((x) => '<div class="item">' + (x.photo ? '<img alt="" loading="lazy" src="' + esc(x.photo) + '">' : '<span class="ph"></span>') +
+      '<div><b>' + esc(x.name) + "</b><small>" + esc([x.species, x.sex, x.genes || x.morph].filter(Boolean).join(" · ")) + "</small>" +
+      (x.price ? '<span class="price">$' + esc(x.price) + (x.kind === "adoption" ? " adoption fee" : "") + "</span>" : "") +
+      (x.status !== "Available" ? "<small>" + esc(x.status) + "</small>" : "") + (x.about ? "<small>" + esc(x.about) + "</small>" : "") +
+      '<button type="button" data-kind="' + (x.kind === "adoption" ? "adoption" : "purchase") + '" data-animal="' + esc(x.name) + '">' + (x.kind === "adoption" ? "Apply to adopt" : "I’m interested") + "</button></div></div>").join("");
+    $("avail").hidden = false;
+  } catch (e) {}
+}
 const safe = (u) => { try { const x = new URL(u); return x.protocol === "https:" ? x.href : ""; } catch (e) { return ""; } };
 async function load() {
   if (!slug) { $("profile").innerHTML = "<p>This link is missing a name.</p>"; return; }
@@ -55,6 +97,9 @@ async function load() {
       (p.is_rescue ? '<span class="tag">Reptile rescue</span>' + (p.verified ? '<span class="tag">✓ Verified 501(c)(3)</span>' : "") + '<span class="tag">' + (p.intake_open === false ? "🔴 Intake full" : "🟢 Intake open") + "</span>" : "") +
       (p.bio ? "<p>" + esc(p.bio) + "</p>" : "") + (links ? '<div class="links">' + links + "</div>" : "");
     $("form").hidden = !p.inquiries_on;
+    isRescue = !!p.is_rescue;
+    setKind("message");
+    loadAvail();
   } catch (e) { $("profile").innerHTML = "<p>Couldn’t load this page. Please try again.</p>"; }
 }
 $("form").addEventListener("submit", async (ev) => {
@@ -62,7 +107,9 @@ $("form").addEventListener("submit", async (ev) => {
   $("send").disabled = true; $("msg").textContent = "Sending…";
   try {
     const r = await fetch(URL_ + "/functions/v1/scale-hub", { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "inquiry", slug, name: $("name").value, email: $("email").value, subject: $("subject").value, message: $("message").value, company: $("company").value }) });
+      body: JSON.stringify({ action: "inquiry", slug, kind, animal: about || (kind === "surrender" ? (document.querySelector('[data-k="Animal name"]')?.value || "") : ""),
+        details: Object.fromEntries(Array.from(document.querySelectorAll("#extra input")).filter((i) => i.value.trim()).map((i) => [i.dataset.k, i.value.trim()])),
+        name: $("name").value, email: $("email").value, subject: $("subject").value, message: $("message").value, company: $("company").value }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw Error(j.error || "Couldn’t send. Please try again.");
     $("form").innerHTML = '<h2 style="color:var(--brand)">Message sent ♡</h2><p>Thanks! They’ll reply to your email.</p>';
