@@ -1329,7 +1329,7 @@ function tourDone(action = "") {
   else if (action === "start" && !animals.length) addAnimal();
 }
 function menuMarkup() {
-  // Home, My Reptiles, Calendar, Care Logs and Resources live in the bottom bar, so they are not repeated here.
+  // Home, My Reptiles, Calendar, Care Logs and Scale Hub live in the bottom bar, so they are not repeated here.
   let main = [
     ["Racks & Breeding", "Racks, rack feeding, pairings & clutches ♡"],
     ["Photo Journal", "Photos and profile pictures"],
@@ -1461,7 +1461,7 @@ function resourceBack() {
     closePanel();
     return;
   }
-  openPanel("Resources");
+  openPanel("Scale Hub");
 }
 function guideById(id) {
   return HERPS_GUIDES.find((g) => g.id === id);
@@ -1823,7 +1823,7 @@ function recommendedMarkup() {
         esc(p.brand) +
         " ↗</a></div>",
     ).join("") +
-    '<p class="resourceMuted">Some links are affiliate links: Herps &amp; Hers may earn a small commission on purchases, at no extra cost to you. As an Amazon Associate I earn from qualifying purchases. Any commissions or profit from paid accounts will go into upgrading the app, donations to organizations of Herps &amp; Hers&#39; choice, and/or hosting in-person Herps &amp; Hers events.</p><p class="resourceMuted">Coming soon: connect a SensorPush account to see live readings on each animal and rack.</p><button class="action secondary" onclick="openPanel(\'Resources\')">Back to Resources</button>'
+    '<p class="resourceMuted">Some links are affiliate links: Herps &amp; Hers may earn a small commission on purchases, at no extra cost to you. As an Amazon Associate I earn from qualifying purchases. Any commissions or profit from paid accounts will go into upgrading the app, donations to organizations of Herps &amp; Hers&#39; choice, and/or hosting in-person Herps &amp; Hers events.</p><p class="resourceMuted">Coming soon: connect a SensorPush account to see live readings on each animal and rack.</p><button class="action secondary" onclick="openPanel(\'Scale Hub\')">Back to Scale Hub</button>'
   );
 }
 function communityMarkup() {
@@ -2383,7 +2383,7 @@ function plansMarkup() {
     "</ul>" +
     (mine === key ? "" : action) +
     "</div>";
-  const soon = '<p class="planSoon">Coming soon ♡ Yearly plans open shortly.</p>';
+  const soon = (sku) => '<div class="subBox" id="sub-' + sku + '"><button class="action" onclick="stStartSub(\'' + sku + '\')">Choose this plan</button></div>';
   return (
     '<p class="resourceIntro">You&#39;re using <b>' +
     used +
@@ -2402,10 +2402,10 @@ function plansMarkup() {
       '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>',
     ) +
     '<h3 class="sectionTitle">For breeders &amp; rescues</h3><p class="lcSmall">Breeder plans add racks, rack feeding, pairings, clutches and hatchlings.</p>' +
-    card("founding_breeder", "$14.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches", "3 logins for your team", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon) +
-    card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "Your logo and colors", "MorphMarket export"], soon) +
-    card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>300 animals</b>", "Breeder tools for intake and care", "3 logins for your team", "Optional listing in Resources with an intake open / full switch"], soon) +
-    '<p class="lcSmall">Already have more animals than a plan allows? You keep them all; you just can&#39;t add more until you upgrade.</p>'
+    card("founding_breeder", "$14.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches", "3 logins for your team", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
+    card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "Your logo and colors", "MorphMarket export"], soon("premium_breeder")) +
+    card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>300 animals</b>", "Breeder tools for intake and care", "3 logins for your team", "Optional listing in Scale Hub with an intake open / full switch"], soon("rescue")) +
+    '<p class="lcSmall">Yearly plans renew through PayPal. Cancel anytime in <a href="https://www.paypal.com/myaccount/autopay/" target="_blank" rel="noopener">PayPal → Automatic payments</a>; you keep your plan until the end of the year you paid for.</p><p class="lcSmall">Already have more animals than a plan allows? You keep them all; you just can&#39;t add more until you upgrade.</p>'
   );
 }
 /* Shareable badge image for Founding Keepers and Breeders. */
@@ -3601,6 +3601,8 @@ function saveDeviceForm(kind) {
     placement: kind === "sensor" ? read("devPlacement") : "",
     metrics: kind === "sensor" ? read("devMetrics") : "",
   };
+  if (deviceEditing >= 0 && devices[deviceEditing]?.goveeDevice)
+    Object.assign(d, { goveeSku: devices[deviceEditing].goveeSku, goveeDevice: devices[deviceEditing].goveeDevice });
   let next = devices.slice();
   if (deviceEditing >= 0) next[deviceEditing] = d;
   else next.push(d);
@@ -3673,7 +3675,9 @@ function deviceCard(d) {
             esc(url) +
             '" target="_blank" rel="noopener noreferrer">Open camera service ↗</a>'
           : '<p class="helperLine">Open ' + esc(info.name) + " on this device and select " + esc(d.nickname) + ".</p>")
-      : '<small class="deviceOffline">Assigned gauge · readings entered by you, not pulled automatically.</small><button class="deviceLink" onclick="logHabitatFor(&quot;' +
+      : d.goveeDevice
+        ? '<small class="deviceOffline">Linked to Govee · tap to pull the current reading into your habitat log.</small><button class="deviceLink" onclick="goveePull(' + i + ')">Pull Govee reading</button>'
+        : '<small class="deviceOffline">Assigned gauge · readings entered by you, not pulled automatically.</small><button class="deviceLink" onclick="logHabitatFor(&quot;' +
         esc(d.animal) +
         '&quot;)">Log a reading</button>') +
     '<div class="recordActions"><button onclick="editDevice(' +
@@ -3797,7 +3801,7 @@ function habitatMarkup(a) {
   );
 }
 function gaugeComingSoon() {
-  return '<section class="gaugeComingSoon" aria-label="Upcoming gauge integrations"><strong>✧ Live gauge connections · Coming soon</strong><p>We&#39;re working with <b>SensorPush</b> to bring live temperature and humidity into Scale &amp; Tell for each animal and rack. Test equipment is on its way to us now. We&#39;re also reaching out to other gauge brands.</p><small>Until then, assign your gauge and log enclosure readings below. They&#39;ll appear in your habitat history.</small></section>';
+  return '<section class="gaugeComingSoon" aria-label="Gauge connections"><strong>✧ Live gauge connections</strong><p><b>Govee:</b> available now. Connect your own Govee account and pull temperature and humidity straight into your habitat log. <button class="linkBtn" onclick="openPanel(\'Govee Sensors\')">Connect Govee →</button></p><p><b>SensorPush:</b> SensorPush is sending us test equipment so we can build the connection. Coming soon.</p><small>Other brands: assign your gauge and log readings below. They&#39;ll appear in your habitat history.</small></section>';
 }
 function deviceDirectory() {
   return (
@@ -3831,7 +3835,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.40";
+const SCALE_LC_VERSION = "3.41";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4398,9 +4402,19 @@ function render() {
     renderPhotos();
     return;
   }
-  if (current === "Resources") {
+  if (current === "Scale Hub") {
     el.innerHTML =
-      '<p class="resourceIntro">Herps & Hers · Learn ♡ Share ♡ Grow. Choose the help you need without sorting through duplicated screens.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Reptile Products</strong><small>First Time Keeper Essentials, our Amazon and Chewy picks, and SensorPush.</small></button>';
+      '<p class="resourceIntro">Herps & Hers · Learn ♡ Share ♡ Grow. Choose the help you need without sorting through duplicated screens.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Bioactive & DIY\')"><strong>❦ Bioactive & DIY How-Tos</strong><small>Build a bioactive setup, pick a cleanup crew, and make safe hides, backgrounds and decor.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Reptile Products</strong><small>First Time Keeper Essentials, our Amazon and Chewy picks, and SensorPush.</small></button>';
+    return;
+  }
+  if (current === "Govee Sensors") {
+    el.innerHTML = goveeMarkup();
+    goveeLoad();
+    return;
+  }
+  if (current === "Bioactive & DIY") {
+    el.innerHTML = diyMarkup();
+    hubLoadPeer();
     return;
   }
   if (current === "Recommended Products") {
@@ -4419,7 +4433,7 @@ function render() {
       '" oninput="setGuideFilter()" placeholder="Search species..."></label><div id="guideResults">' +
       guideListMarkup() +
       '</div><p class="resourceMuted">Standards can evolve. Review species-specific recommendations and consult a qualified veterinarian about medical decisions.</p><button class="action secondary" onclick="resourceBack()">' +
-      (!cloudSession ? "Back to Sign In" : "Back to Resources") +
+      (!cloudSession ? "Back to Sign In" : "Back to Scale Hub") +
       "</button>";
     return;
   }
@@ -6265,7 +6279,7 @@ function saveAnimalSetup() {
       "Notifications",
       "Care Logs",
       "Calendar",
-      "Resources",
+      "Scale Hub",
       "Animal Setup",
       "Photo Journal",
       "My Reptiles",
@@ -7196,7 +7210,7 @@ function accessGateMarkup() {
     '<div class="accessCard accessBreeder"><span class="accessTag">Breeders &amp; rescues</span><h2>More animals? Racks? A rescue?</h2><div class="accessPlans">' +
     '<div><b>Founding Breeder</b><span>$14.99 / year</span><small>150 animals · racks, rack feeding, pairings, clutches · 3 logins</small></div>' +
     '<div><b>Premium Breeder</b><span>$29.99 / year</span><small>400 animals · your logo &amp; colors · MorphMarket export · 3 logins</small></div>' +
-    '<div><b>Rescue</b><span>$29.99 / year · $14.99 verified 501(c)(3)</span><small>300 animals · intake tools · listing in Resources · 3 logins</small></div>' +
+    '<div><b>Rescue</b><span>$29.99 / year · $14.99 verified 501(c)(3)</span><small>300 animals · intake tools · listing in Scale Hub · 3 logins</small></div>' +
     '</div><button class="authButton" type="button" onclick="openPanel(\'Plans\')">See breeder &amp; rescue plans</button></div>' +
     '<details class="accessCode" id="memberCodeBox"><summary>Have a group member code?</summary><label class="authField" for="memberCode">Group member code</label><input id="memberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Member code" onkeydown="if(event.key===\'Enter\')accessRedeemCode()"><button class="authButton" type="button" onclick="accessRedeemCode()">Use code</button><p id="memberCodeStatus" class="authMessage" role="status"></p></details>' +
     '<button class="authLink" type="button" onclick="cloudSignOut()">Sign out</button></div>'
@@ -9998,3 +10012,234 @@ function breederRename(oldName, newName) {
 if ("serviceWorker" in navigator && isSecureContext)
   navigator.serviceWorker.register("./sw.js", { scope: "./", updateViaCache: "none" }).catch(() => {});
 cloudInitialize();
+
+/* V3.41 · Scale Hub: Bioactive & DIY How-Tos */
+const DIY_GUIDES = [
+  { t: "Bioactive basics", tag: "Bioactive", steps: [
+    "Bioactive means a living, self-cleaning enclosure: soil, live plants and a cleanup crew (CUC) that breaks down waste and shed.",
+    "Match it to the species. Tropical setups (crested geckos, many snakes and frogs) need steady humidity; arid setups (bearded dragons, leopard geckos) need dry soil and drought-hardy plants.",
+    "Layers, bottom to top: drainage layer (tropical only), a mesh barrier, 3–6 in (8–15 cm) of soil mix, then leaf litter.",
+    "Plant, then add the CUC. Let the enclosure settle 2–4 weeks before the animal moves in so plants root and the crew establishes.",
+    "Still spot-clean large waste, and keep logging temps and humidity. A bioactive setup reduces cleaning; it doesn't replace care."] },
+  { t: "Tropical soil mix", tag: "Bioactive", steps: [
+    "A common base: about 40% organic topsoil (no fertilizer, pesticide or perlite), 20% coco fiber, 20% sphagnum or peat, 20% orchid bark, plus a handful of leaf litter and charcoal.",
+    "Moisten until it clumps when squeezed but doesn't drip.",
+    "Drainage layer under it: clay balls or lava rock, 1–2 in, separated from the soil by mesh so the soil doesn't wash down.",
+    "If water pools in the drainage layer, remove it before it reaches the soil."] },
+  { t: "Arid soil mix", tag: "Bioactive", steps: [
+    "A common base: about 60% organic topsoil and 40% play sand (washed, no calcium sand), with some excavator clay if you want burrows to hold shape.",
+    "Skip the drainage layer. Keep one corner slightly moist deeper down for the cleanup crew and plant roots.",
+    "Use drought-hardy plants such as haworthia, gasteria and some aloe; avoid spiky or toxic species within reach."] },
+  { t: "Choosing a cleanup crew", tag: "Bioactive", steps: [
+    "Springtails handle mold and fine waste; isopods break down waste, shed and leaf litter. Most setups use both.",
+    "Tropical: temperate white springtails plus isopods like dwarf whites or powder orange. Arid: dwarf white or other dry-tolerant isopods and a moist corner.",
+    "Feed the crew lightly at first (fish flakes, leaf litter, cuttlebone for calcium).",
+    "Add more leaf litter as it breaks down. A few isopods being eaten is normal; replace the crew if numbers crash."] },
+  { t: "Safe plants", tag: "Bioactive", steps: [
+    "Popular safe picks for tropical setups: pothos, snake plant (sansevieria), bromeliads, peperomia, ferns like bird's nest fern, and fittonia.",
+    "Rinse plants and replace nursery soil, which can contain fertilizer and pesticides. Some keepers quarantine new plants for a few weeks first.",
+    "Check each plant against a reptile-safe plant list for your species, especially for herbivores and omnivores that may eat them."] },
+  { t: "DIY foam background", tag: "DIY", steps: [
+    "Cut a styrofoam or rigid foam panel to the back wall and carve ledges and caves.",
+    "Secure it with aquarium-safe silicone and fill gaps with low-expansion foam (use a pet-safe, fully cured product).",
+    "Coat with grout or a cement/tile-grout mix in thin layers, colored with non-toxic paint or pigment.",
+    "Seal with a water-based, non-toxic sealer (often several coats), then let it cure and air out fully, often a week or more, before any animal goes in."] },
+  { t: "Using found wood, rocks and leaves", tag: "DIY", steps: [
+    "Avoid aromatic or sappy woods such as cedar and pine. Hardwoods like oak, maple and grapewood are common choices.",
+    "Avoid anything from sprayed areas or roadsides.",
+    "Scrub, then bake wood at low heat (about 200–250°F / 95–120°C) until dry, or soak in a dilute bleach solution then rinse and dry very thoroughly.",
+    "Boil or bake rocks; bake leaf litter (oak, magnolia) briefly to kill pests.",
+    "Stack heavy rocks directly on the enclosure floor, not on substrate, so burrowing can't topple them."] },
+  { t: "DIY hides and humid hides", tag: "DIY", steps: [
+    "Quick hide: a plastic food container with an entry hole, sanded smooth so no sharp edges remain.",
+    "Humid hide: the same container filled with damp sphagnum moss. Re-wet and replace the moss regularly to prevent mold.",
+    "Cork bark rounds and flats make easy natural hides.",
+    "Give every animal at least one hide on the warm side and one on the cool side."] },
+];
+let diyFilter = "";
+function diyMarkup() {
+  const tags = ["", "Bioactive", "DIY"];
+  return '<p class="resourceIntro">Bioactive &amp; DIY How-Tos. Practical starting points from the Herps &amp; Hers community. Always check what your species needs.</p>' +
+    '<div class="diyTabs">' + tags.map((t) => '<button class="' + (diyFilter === t ? "on" : "") + '" onclick="diyFilter=\'' + t + '\';render()">' + (t || "All") + "</button>").join("") + "</div>" +
+    DIY_GUIDES.filter((g) => !diyFilter || g.tag === diyFilter).map((g) =>
+      '<details class="diyGuide"><summary><b>' + esc(g.t) + '</b><span>' + g.tag + '</span></summary><ol>' + g.steps.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ol></details>").join("") +
+    '<div id="hubPeer"></div><details class="diyGuide diySubmit"><summary><b>✎ Submit your own how-to</b><span>Reviewed first</span></summary>' + hubSubmitForm() + '</details><button class="action secondary" onclick="openPanel(\'Scale Hub\')">Back to Scale Hub</button>';
+}
+
+/* V3.41 · yearly plans through PayPal subscriptions */
+let paypalSubLoader = null, stPlanIds = null;
+function stLoadPayPalSub(clientId) {
+  if (window.paypalSub?.Buttons) return Promise.resolve(window.paypalSub);
+  if (paypalSubLoader) return paypalSubLoader;
+  paypalSubLoader = new Promise((resolve, reject) => {
+    const tag = document.createElement("script");
+    tag.src = "https://www.paypal.com/sdk/js?client-id=" + encodeURIComponent(clientId) + "&vault=true&intent=subscription&components=buttons";
+    tag.setAttribute("data-namespace", "paypalSub");
+    tag.onload = () => (window.paypalSub?.Buttons ? resolve(window.paypalSub) : reject(Error("PayPal did not load.")));
+    tag.onerror = () => reject(Error("PayPal could not load. Check your connection and try again."));
+    document.head.appendChild(tag);
+  }).catch((e) => { paypalSubLoader = null; throw e; });
+  return paypalSubLoader;
+}
+async function stStartSub(sku) {
+  const box = document.getElementById("sub-" + sku);
+  if (!box) return;
+  if (!cloudSession || !cloudClient) { box.innerHTML = '<p class="planSoon">Sign in first, then choose your plan.</p>'; return; }
+  const isMember = stOwnsEntitlements() && stSkus.includes("member");
+  box.innerHTML = (isMember ? '<label class="lcSmall">Your name in the Herps &amp; Hers group (optional)<input id="subGroup-' + sku + '" maxlength="80"></label>' : "") +
+    '<p class="planSoon" id="subMsg-' + sku + '">Loading secure checkout…</p><div id="subBtns-' + sku + '"></div>';
+  const msg = (t) => { const m = document.getElementById("subMsg-" + sku); if (m) m.textContent = t; };
+  try {
+    const conf = await founderPayPalConfig();
+    if (!stPlanIds) stPlanIds = (await founderInvoke({ action: "plans" })).plans || {};
+    if (!stPlanIds[sku]) throw Error("This plan isn't available yet. Please try again soon.");
+    const pp = await stLoadPayPalSub(conf.clientId);
+    msg(conf.live ? "Billed yearly. Cancel anytime in PayPal." : "Test mode: no real money is charged.");
+    await pp.Buttons({
+      style: { shape: "pill", label: "subscribe" },
+      createSubscription: (data, actions) => actions.subscription.create({ plan_id: stPlanIds[sku], custom_id: cloudSession.user.id }),
+      onApprove: async (data) => {
+        msg("Confirming with PayPal…");
+        const groupName = document.getElementById("subGroup-" + sku)?.value || "";
+        for (let i = 0; i < 6; i++) {
+          try {
+            const r = await founderInvoke({ action: "subscribed", subscriptionId: data.subscriptionID, groupName });
+            if (r.active) { await founderRefreshEntitlement(); stToast("Welcome, " + ST_PLANS[sku].name + " ♡"); render(); return; }
+          } catch (e) { msg(e.message); }
+          await new Promise((r) => setTimeout(r, 5000));
+        }
+        msg("Payment received. Your plan unlocks automatically within a few minutes.");
+      },
+      onError: () => msg("PayPal had a problem. Please try again."),
+    }).render("#subBtns-" + sku);
+  } catch (e) { msg(e.message || "Checkout is unavailable right now."); }
+}
+
+/* V3.41 · Govee: keepers connect their own Govee API key (stored on our server, never in the browser) */
+async function hubInvoke(body) {
+  if (!cloudClient || !cloudSession) throw Error("Sign in first.");
+  const { data, error } = await cloudClient.functions.invoke("scale-hub", { body });
+  if (error) {
+    let m = "";
+    try { m = (await error.context?.json?.())?.error || ""; } catch (e) {}
+    throw Error(m || "Something went wrong. Please try again.");
+  }
+  return data || {};
+}
+let goveeState = { connected: null, devices: null, msg: "" };
+function goveeMarkup() {
+  const g = goveeState, linked = devices.filter((d) => d.goveeDevice);
+  let body = "";
+  if (g.connected === null) body = '<p class="helperLine">Checking your Govee connection…</p>';
+  else if (!g.connected)
+    body = '<h3 class="sectionTitle">1 · Get your Govee API key</h3><ol class="goveeSteps"><li>Open the <b>Govee Home</b> app.</li><li>Tap <b>Profile</b>, then the <b>⚙ Settings</b> gear.</li><li>Tap <b>Apply for API Key</b>, fill in your name and reason (for example “Logging my reptile enclosure temps in Scale &amp; Tell”).</li><li>Govee emails you the key, usually within minutes.</li></ol>' +
+      '<h3 class="sectionTitle">2 · Paste it here</h3><label>Govee API key<input id="goveeKey" autocomplete="off" spellcheck="false" placeholder="Paste the key from Govee’s email"></label><button class="action" onclick="goveeConnect()">Connect Govee</button>' +
+      '<p class="lcSmall">Your key is stored securely on the Scale &amp; Tell server and only used to read your sensors. You can disconnect anytime. Works with Govee thermometer-hygrometers on Wi-Fi or linked to a Govee gateway; Bluetooth-only sensors don’t share readings with Govee’s cloud.</p>';
+  else {
+    const opts = animals.map((a) => '<option>' + esc(a) + "</option>").join("");
+    body = '<p class="helperLine">✓ Govee connected.</p>' +
+      (linked.length ? '<h3 class="sectionTitle">Linked sensors</h3>' + linked.map((d) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(d.nickname) + "</b><span>" + esc(d.animal) + " · " + esc(d.placement) + '</span></div><button class="deviceLink" onclick="goveePull(' + devices.indexOf(d) + ')">Pull reading</button></div>').join("") + '<button class="action" onclick="goveePullAll()">Pull all readings now</button>' : "") +
+      '<h3 class="sectionTitle">Your Govee sensors</h3>' +
+      (g.devices === null ? '<p class="helperLine">Loading your sensors…</p>'
+        : !g.devices.length ? '<p class="helperLine">No Govee thermometers found on this account. Make sure the sensor is set up in the Govee Home app and online.</p>'
+        : g.devices.map((x, k) => {
+            const on = linked.find((d) => d.goveeDevice === x.device);
+            return '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(x.name) + "</b><span>" + esc(x.sku) + "</span></div>" +
+              (on ? '<small>Linked to ' + esc(on.animal) + "</small>"
+                : animals.length ? '<div class="goveeLink"><select id="gvA' + k + '">' + opts + '</select><select id="gvP' + k + '">' + ["Warm side", "Cool side", "Ambient"].map((o) => "<option>" + o + "</option>").join("") + '</select><button class="action" onclick="goveeLinkDevice(' + k + ')">Link</button></div>'
+                : '<small>Add an animal first, then link this sensor.</small>') + "</div>";
+          }).join("")) +
+      '<button class="action secondary" onclick="goveeDisconnect()">Disconnect Govee</button>';
+  }
+  return '<p class="resourceIntro">Connect your Govee thermometers and pull temperature and humidity into each animal’s habitat log.</p>' + body +
+    '<p id="goveeMsg" role="status" class="helperLine">' + esc(g.msg) + "</p>";
+}
+async function goveeLoad() {
+  if (goveeState.connected !== null && (goveeState.connected === false || goveeState.devices !== null)) return;
+  if (!cloudSession) { goveeState.msg = "Sign in to connect Govee."; goveeState.connected = false; return goveeRerender(); }
+  try {
+    if (goveeState.connected === null) goveeState.connected = !!(await hubInvoke({ action: "govee_status" })).connected;
+    if (goveeState.connected && goveeState.devices === null) goveeState.devices = (await hubInvoke({ action: "govee_devices" })).devices || [];
+  } catch (e) { goveeState.msg = e.message; if (goveeState.connected === null) goveeState.connected = false; if (goveeState.devices === null) goveeState.devices = []; }
+  goveeRerender();
+}
+function goveeRerender() { if (current === "Govee Sensors") render(); }
+async function goveeConnect() {
+  const key = document.getElementById("goveeKey")?.value.trim();
+  if (!key) return;
+  goveeState.msg = "Checking your key with Govee…"; goveeRerender();
+  try { await hubInvoke({ action: "govee_connect", key }); goveeState = { connected: true, devices: null, msg: "Connected ♡" }; }
+  catch (e) { goveeState.msg = e.message; }
+  goveeRerender(); goveeLoad();
+}
+async function goveeDisconnect() {
+  if (!confirm("Disconnect Govee? Your logged readings stay in your journal.")) return;
+  try { await hubInvoke({ action: "govee_disconnect" }); } catch (e) {}
+  saveDevices(devices.map((d) => { if (!d.goveeDevice) return d; const c = { ...d }; delete c.goveeDevice; delete c.goveeSku; return c; }));
+  goveeState = { connected: false, devices: null, msg: "Govee disconnected." };
+  goveeRerender();
+}
+function goveeLinkDevice(k) {
+  const x = goveeState.devices?.[k], animal = document.getElementById("gvA" + k)?.value, placement = document.getElementById("gvP" + k)?.value || "Warm side";
+  if (!x || !animals.includes(animal)) return;
+  saveDevices(devices.concat([{ id: deviceId(), kind: "sensor", animal, nickname: x.name.slice(0, 55), brand: "Govee", model: x.sku, link: "", placement, metrics: "Temperature + humidity", goveeSku: x.sku, goveeDevice: x.device }]));
+  goveeState.msg = x.name + " linked to " + animal + " ♡";
+  goveeRerender();
+}
+async function goveePull(i, quiet) {
+  const d = devices[i];
+  if (!d?.goveeDevice) return false;
+  try {
+    const r = await hubInvoke({ action: "govee_read", sku: d.goveeSku, device: d.goveeDevice });
+    const t = r.tempF == null ? "" : String(Math.round(r.tempF * 10) / 10), h = r.humidity == null ? "" : String(Math.round(r.humidity));
+    const e = { section: "Enclosure Care", animal: d.animal, detail: "Govee reading", date: today(), warmTemp: "", coolTemp: "", humidity: h,
+      notes: "Pulled from Govee · " + d.nickname + " (" + d.placement + ")" + (d.placement === "Ambient" && t ? " · ambient " + t + "°F" : "") };
+    if (d.placement === "Cool side") e.coolTemp = t; else if (d.placement !== "Ambient") e.warmTemp = t;
+    entries.push(e); save();
+    if (!quiet) { stToast(d.animal + ": " + (t ? t + "°F" : "") + (t && h ? " · " : "") + (h ? h + "% humidity" : "") + " logged ♡"); render(); }
+    return true;
+  } catch (err) { if (!quiet) stToast(err.message); return false; }
+}
+async function goveePullAll() {
+  const list = devices.map((d, i) => (d.goveeDevice ? i : -1)).filter((i) => i >= 0);
+  let ok = 0;
+  for (const i of list) if (await goveePull(i, true)) ok++;
+  stToast(ok + " of " + list.length + " Govee readings logged ♡");
+  render();
+}
+
+/* V3.41 · Scale Hub community how-tos (reviewed before posting, then tagged "Peer reviewed") */
+let hubPeer = null;
+async function hubLoadPeer() {
+  if (hubPeer === null && cloudClient) {
+    try {
+      const { data } = await cloudClient.from("hub_submissions").select("id,category,title,steps,credit_name,status").eq("status", "approved").order("created_at", { ascending: false }).limit(100);
+      hubPeer = data || [];
+    } catch (e) { hubPeer = []; }
+  }
+  const box = document.getElementById("hubPeer");
+  if (!box || !hubPeer) return;
+  const list = hubPeer.filter((g) => !diyFilter || g.category === diyFilter);
+  box.innerHTML = list.length ? '<h3 class="sectionTitle">From the community</h3>' + list.map((g) =>
+    '<details class="diyGuide"><summary><b>' + esc(g.title) + '</b><span class="peerTag">✓ Peer reviewed</span></summary><ol>' + (g.steps || []).map((x) => "<li>" + esc(x) + "</li>").join("") + "</ol>" +
+    (g.credit_name ? '<small class="diyCredit">Shared by ' + esc(g.credit_name) + " · " + esc(g.category) + "</small>" : "") + "</details>").join("") : "";
+}
+function hubSubmitForm() {
+  return '<p class="lcSmall">Share a build, mix or method. We review every how-to before it’s posted, then it appears here with a <b>Peer reviewed</b> tag.</p>' +
+    '<label>Category<select id="hubCat"><option>Bioactive</option><option>DIY</option></select></label>' +
+    '<label>Title<input id="hubTitle" maxlength="90" placeholder="e.g. Budget isopod culture for bioactive"></label>' +
+    '<label>Steps (one per line)<textarea id="hubSteps" rows="6" maxlength="6000" placeholder="1. What you used&#10;2. How you did it&#10;3. Tips or what to avoid"></textarea></label>' +
+    '<label>Credit me as (optional)<input id="hubCredit" maxlength="60" placeholder="Your name or handle"></label>' +
+    '<button class="action" onclick="hubSubmit()">Send for review</button><p id="hubMsg" role="status" class="helperLine"></p>';
+}
+async function hubSubmit() {
+  const v = (id) => document.getElementById(id)?.value || "", msg = (t) => { const m = document.getElementById("hubMsg"); if (m) m.textContent = t; };
+  const steps = v("hubSteps").split(/\n+/).map((x) => x.replace(/^\s*\d+[.)]\s*/, "").trim()).filter(Boolean);
+  if (v("hubTitle").trim().length < 3 || !steps.length) return msg("Add a title and at least one step.");
+  msg("Sending…");
+  try {
+    await hubInvoke({ action: "submit_howto", category: v("hubCat"), title: v("hubTitle"), steps, credit: v("hubCredit") });
+    ["hubTitle", "hubSteps", "hubCredit"].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ""; });
+    msg("Thank you ♡ Your how-to was sent for review. Once approved it appears here, tagged Peer reviewed.");
+  } catch (e) { msg(e.message); }
+}
