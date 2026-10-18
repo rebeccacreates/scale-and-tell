@@ -1670,7 +1670,9 @@ body.authLocked #appShell {
   margin: 13px 0 5px;
 }
 .authContent input[type="email"],
-.authContent input[type="password"] {
+.authContent input[type="password"],
+.authContent #signupMemberCode,
+.authContent #memberCode {
   width: 100%;
   height: 45px;
   box-sizing: border-box;
@@ -3088,3 +3090,43 @@ body[data-st-theme="forest"] .tourOk, body[data-st-theme="violet"] .tourOk { col
 /* V3.33 · finish the painted Welcome card with its matching artwork */
 .homeHello { margin: 0 -12px; padding: 0; background: none; line-height: 0; }
 .homeHello img { width: 100%; height: auto; display: block; }
+
+.importFixNote { background: #fff4dc; border: 1px solid #ead29a; border-radius: 12px; padding: 10px 12px; margin: 8px 0 10px; font: 14px/1.45 Arial, sans-serif; color: #4b3d2c; }
+.importFixNote .action { margin-top: 8px; width: 100%; }
+body[data-st-theme="forest"] .importFixNote, body[data-st-theme="violet"] .importFixNote { background: var(--t-soft); border-color: var(--t-border); color: var(--t-text); }
+
+/* V3.36 · plans and badges */
+.stBadge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; background: #44701f; color: #fff; font: bold 12px/1.4 Arial, sans-serif; letter-spacing: .3px; vertical-align: middle; white-space: nowrap; }
+.homeCount .stBadge { margin-right: 6px; }
+.menuBadgeRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.planCard { border: 1px solid #e3cfe6; border-radius: 16px; padding: 14px 16px; margin: 10px 0; background: #fffaf5; }
+.planCard.planMine { border: 2px solid #44701f; }
+.planHead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.planHead h3 { margin: 0; font: italic 700 20px Georgia, serif; color: #45205b; }
+.planPrice { font: bold 15px Arial, sans-serif; color: #79538e; }
+.planWho { margin: 4px 0 6px; color: #5e4a68; font-size: 14px; }
+.planCard ul { margin: 6px 0 10px; padding-left: 20px; }
+.planCard li { margin: 3px 0; }
+.planSoon { margin: 6px 0 0; font: bold 13px Arial, sans-serif; color: #44701f; }
+body[data-st-theme="forest"] .modal .planCard, body[data-st-theme="violet"] .modal .planCard { background: var(--t-card); border-color: var(--t-border); color: var(--t-text); }
+body[data-st-theme="forest"] .modal :is(.planHead h3, .planWho), body[data-st-theme="violet"] .modal :is(.planHead h3, .planWho) { color: var(--t-text); }
+body[data-st-theme="forest"] .modal :is(.planPrice, .planSoon), body[data-st-theme="violet"] .modal :is(.planPrice, .planSoon) { color: var(--t-accent); }
+.accessCode { margin: 14px 0 6px; padding: 10px 14px; border: 1px dashed #c9add2; border-radius: 14px; background: #fbf5fb; }
+.accessCode summary { cursor: pointer; font: bold 14px Arial, sans-serif; color: #79538e; }
+.planMemberLine { padding: 10px 12px; border-radius: 12px; background: #eef5e6; color: #2f4d16; font-size: 14px; }
+.accessBreeder { border: 2px solid #44701f !important; background: linear-gradient(#f4f9ee, #fffaf5) !important; position: relative; }
+.accessTag { display: inline-block; margin-bottom: 6px; padding: 3px 10px; border-radius: 999px; background: #44701f; color: #fff; font: bold 11px Arial, sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+.accessBreeder h2 { margin-top: 2px; }
+.accessPlans { display: grid; gap: 8px; margin: 10px 0 14px; }
+.accessPlans > div { background: #fff; border: 1px solid #d9e6c9; border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.accessPlans b { color: #45205b; font-size: 16px; }
+.accessPlans span { color: #44701f; font: bold 14px Arial, sans-serif; text-align: right; }
+.accessPlans small { grid-column: 1 / -1; color: #5e4a68; font-size: 13px; line-height: 1.4; }
+.memberUpgrade { position: relative; border: 2px solid #79538e; border-radius: 18px; padding: 14px 16px; margin: 0 0 14px; background: linear-gradient(#f6eefa, #fffaf5); color: #45205b; }
+.memberUpgrade h3 { margin: 4px 0 6px; font: italic 700 21px Georgia, serif; color: #45205b; }
+.memberUpgrade ul { margin: 6px 0 12px; padding-left: 20px; } .memberUpgrade li { margin: 4px 0; }
+.memberUpgrade .action { width: 100%; }
+.memberUpgradeBreeder { display: block; margin: 8px auto 0; background: none; border: 0; color: #79538e; font: bold 14px Arial, sans-serif; text-decoration: underline; cursor: pointer; }
+.memberUpgradeX { position: absolute; top: 8px; right: 10px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #efe2f1; color: #45205b; font-size: 20px; cursor: pointer; }
+body[data-st-theme="forest"] .memberUpgrade, body[data-st-theme="violet"] .memberUpgrade { background: var(--t-card); border-color: var(--t-accent); color: var(--t-text); }
+body[data-st-theme="forest"] .memberUpgrade h3, body[data-st-theme="violet"] .memberUpgrade h3 { color: var(--t-text); }

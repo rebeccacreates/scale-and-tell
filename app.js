@@ -478,9 +478,9 @@ function renderHomeCards() {
   const count = document.getElementById("homeCount");
   const logs = entries.filter((e) => e.section !== "Calendar").length;
   if (count)
-    count.textContent = animals.length
-      ? animals.length + (animals.length === 1 ? " reptile" : " reptiles") + " · " + logs + (logs === 1 ? " care log" : " care logs")
-      : "";
+    count.innerHTML = stBadgeMarkup() + (animals.length
+      ? " " + esc(animals.length + (animals.length === 1 ? " reptile" : " reptiles") + " · " + logs + (logs === 1 ? " care log" : " care logs"))
+      : "");
   row.classList.toggle("homeRowEmpty", !animals.length);
   if (!animals.length) {
     row.innerHTML =
@@ -630,6 +630,50 @@ try {
 function stCanUsePack() {
   return !!(stEntitlementActive && cloudSession?.user?.id && stEntitlementUser === cloudSession.user.id);
 }
+/* V3.36 · Plans. Keepers are hobby owners; Breeders get racks, pairings and clutches. */
+const ST_PLANS = {
+  member: { name: "Herps & Hers Member", limit: 20 },
+  founding_keeper: { name: "Founding Keeper", limit: 40, badge: true },
+  founding_breeder: { name: "Founding Breeder", limit: 150, badge: true, breeder: true },
+  rescue: { name: "Rescue", limit: 300, badge: true, breeder: true },
+  premium_breeder: { name: "Premium Breeder", limit: 400, badge: true, breeder: true },
+};
+const ST_PLAN_ORDER = ["premium_breeder", "rescue", "founding_breeder", "founding_keeper", "member"];
+// Founding Keepers who bought before breeder tiers existed keep their breeder tools forever.
+const ST_BREEDER_CUTOFF = "2026-10-19";
+let stSkus = [],
+  stFkSince = "";
+function stOwnsEntitlements() {
+  // The home screen draws once before sign-in is set up, so this must not touch cloudSession too early.
+  try {
+    return !!(cloudSession?.user?.id && stEntitlementUser === cloudSession.user.id);
+  } catch (e) {
+    return false;
+  }
+}
+function stPlan() {
+  if (!stOwnsEntitlements()) return "";
+  return ST_PLAN_ORDER.find((k) => stSkus.includes(k)) || "";
+}
+function stAnimalLimit() {
+  const p = stPlan();
+  return p ? ST_PLANS[p].limit : 20;
+}
+function stCanUseBreeder() {
+  if (!stOwnsEntitlements()) return false;
+  if (stSkus.some((k) => ST_PLANS[k]?.breeder)) return true;
+  return stSkus.includes("founding_keeper") && !!stFkSince && stFkSince < ST_BREEDER_CUTOFF;
+}
+function stBadgeMarkup() {
+  const p = stPlan();
+  return p && ST_PLANS[p].badge ? '<span class="stBadge" title="' + esc(ST_PLANS[p].name) + '">✓ ' + esc(ST_PLANS[p].name) + "</span>" : "";
+}
+function stCanAddAnimal() {
+  if (animals.length < stAnimalLimit()) return true;
+  openPanel("Plans");
+  stToast("Your plan holds " + stAnimalLimit() + " animals. Upgrade to add more ♡");
+  return false;
+}
 function stSetTheme(v) {
   document.body.dataset.stTheme = ST_THEME_IDS.includes(v) ? v : "original";
   let meta = document.querySelector('meta[name="theme-color"]');
@@ -644,6 +688,8 @@ function stCanUseApp() {
   return !!(cloudSession?.user?.id && stEntitlementUser === cloudSession.user.id && (stEntitlementActive || stMemberAccess));
 }
 function founderClearEntitlement() {
+  stSkus = [];
+  stFkSince = "";
   stEntitlementRequest++;
   stEntitlementUser = null;
   stEntitlementActive = false;
@@ -668,13 +714,17 @@ async function founderRefreshEntitlement() {
     if (user.id !== requestedId) return;
     const { data, error } = await cloudClient
       .from("keeper_entitlements")
-      .select("sku,status")
+      .select("sku,status,verified_at,expires_at")
       .eq("user_id", requestedId);
     if (error) throw error;
     if (request !== stEntitlementRequest || cloudSession?.user?.id !== requestedId) return;
     const rows = Array.isArray(data) ? data : data ? [data] : [];
     stEntitlementUser = requestedId;
-    stEntitlementActive = rows.some((r) => r.sku === "founding_keeper" && r.status === "active");
+    const live = rows.filter((r) => r.status === "active" && (!r.expires_at || new Date(r.expires_at) > new Date()));
+    stSkus = live.map((r) => r.sku);
+    stFkSince = String(live.find((r) => r.sku === "founding_keeper")?.verified_at || "").slice(0, 10);
+    // Every paid plan includes the Founding Keeper extras (designs, Care Binder, keepsakes).
+    stEntitlementActive = live.some((r) => r.sku !== "member");
     stMemberAccess = rows.some((r) => r.sku === "member" && r.status === "active");
     stAccessChecked = true;
     stAccessFailed = false;
@@ -691,6 +741,7 @@ async function founderRefreshEntitlement() {
     if (request === stEntitlementRequest) {
       updateAuthGate();
       if (stCanUseApp() && ["empty", "synced"].includes(cloudAutoStatus)) cloudSetStatus(cloudAutoStatus);
+      setTimeout(stMaybeShowUpgrade, 1500);
       if (current === "Founding Keeper Studio") render();
     }
   }
@@ -777,6 +828,9 @@ function founderCheckoutMarkup() {
   return (
     '<div class="founderCheckout">' +
     '<p class="founderTestNote" id="founderTestNote" hidden>Test mode: use a PayPal sandbox account. No real money is charged.</p>' +
+    (stOwnsEntitlements() && stSkus.includes("member")
+      ? '<label class="authField" for="founderGroupName">Your name in the Herps &amp; Hers group (optional)</label><input id="founderGroupName" maxlength="80" autocomplete="name" placeholder="So we can add your badge in the group ♡">'
+      : "") +
     '<div id="paypalButtons" aria-label="Pay with PayPal"></div><p id="founderPayStatus" class="studioStatus" role="status"></p><p class="lcSmall">Any commissions or profit from paid accounts will go into upgrading the app, donations to organizations of Herps &amp; Hers&#39; choice, and/or hosting in-person Herps &amp; Hers events.</p></div>'
   );
 }
@@ -852,7 +906,11 @@ async function founderMountPayPal() {
           founderPaying = true;
           founderPayStatus("Confirming your payment with PayPal…");
           try {
-            const data = await founderInvoke({ action: "capture", orderId: d.orderID });
+            const data = await founderInvoke({
+              action: "capture",
+              orderId: d.orderID,
+              groupName: (document.getElementById("founderGroupName")?.value || "").trim().slice(0, 80),
+            });
             if (!data.active) throw Error(data.error || "Payment could not be confirmed.");
             founderPayStatus("✓ Thank you, Founding Keeper ♡ Everything is unlocked.");
             await founderRefreshEntitlement();
@@ -897,7 +955,9 @@ function founderStudioMarkup() {
       : "") +
     "</div>" +
     '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feed a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p>' +
-    (access ? '<button class="action" onclick="openPanel(&quot;Racks & Breeding&quot;)">Open Racks &amp; Breeding</button>' : "") +
+    (stCanUseBreeder()
+      ? '<button class="action" onclick="openPanel(&quot;Racks & Breeding&quot;)">Open Racks &amp; Breeding</button>'
+      : '<p class="lcSmall">Part of <b>Founding Breeder</b> ($14.99 a year).</p><button class="action secondary" onclick="openPanel(&quot;Plans&quot;)">See plans</button>') +
     "</div>" +
     '<div class="studioTile"><h3>Personalized Care Binder</h3><p>Your animal profiles, recent care history, upcoming tasks and saved vet details.</p>' +
     founderPackAction("binder", "Open Care Binder") +
@@ -1241,8 +1301,8 @@ function tourMarkup() {
   if (tourStep === 2)
     page =
       stCanUsePack()
-        ? '<div class="tourSlide"><div class="tourPack"><h4>You&#39;re a Founding Keeper ♡</h4><p>Thank you for supporting Scale &amp; Tell! Your extras are unlocked: breeder tools (racks, rack feeding, pairings and clutches), four app designs, your Care Binder, My Year in Scales and printable keeper cards.</p><button class="action secondary" onclick="tourDone(\'founder\')">Open Founding Keeper Studio</button></div></div>'
-        : '<div class="tourSlide"><div class="tourPack"><h4>Want more? Become a Founding Keeper ♡</h4><p><b>$14.99 once · optional.</b> Breeder tools (racks, rack feeding, pairings and clutches), four app designs, a personalized Care Binder, My Year in Scales and printable keeper cards.</p><button class="action secondary" onclick="tourDone(\'founder\')">See the Founding Keeper extras</button></div><p class="lcSmall">Your animals, care logs, reminders, photos and backups are all included already. The extras are just a bonus.</p></div>';
+        ? '<div class="tourSlide"><div class="tourPack"><h4>You&#39;re a Founding Keeper ♡</h4><p>Thank you for supporting Scale &amp; Tell! Your extras are unlocked: four app designs, your Care Binder, My Year in Scales, printable keeper cards and room for 40 animals.</p><button class="action secondary" onclick="tourDone(\'founder\')">Open Founding Keeper Studio</button></div></div>'
+        : '<div class="tourSlide"><div class="tourPack"><h4>Want more? Become a Founding Keeper ♡</h4><p><b>$14.99 once · optional.</b> Room for 40 animals, four app designs, a personalized Care Binder, My Year in Scales and printable keeper cards. Breeding? See <b>Founding Breeder</b> for racks, pairings and clutches.</p><button class="action secondary" onclick="tourDone(\'founder\')">See the Founding Keeper extras</button></div><p class="lcSmall">Your animals, care logs, reminders, photos and backups are all included already. The extras are just a bonus.</p></div>';
   return '<div class="tourShell" aria-live="polite">' + page + nav + "</div>";
 }
 function tourGo(step) {
@@ -1262,6 +1322,7 @@ function tourDone(action = "") {
     } catch (e) {}
   }
   closePanel();
+  if (!action) setTimeout(stMaybeShowUpgrade, 400);
   if (action === "add") addAnimal();
   else if (action === "import") openPanel("Import Existing Records");
   else if (action === "founder") openPanel("Founding Keeper Studio");
@@ -1298,7 +1359,22 @@ function menuMarkup() {
       )
       .join("");
   return (
-    '<p class="resourceIntro">Everything your keeper journal needs, in one place.</p><button class="menuTile menuFeature" onclick="openPanel(&quot;Founding Keeper Studio&quot;)"><strong>♡ Founding Keeper</strong><small>See your $14.99 one-time supporter extras and theme designs</small></button>' +
+    (stBadgeMarkup()
+      ? '<div class="menuBadgeRow">' + stBadgeMarkup() + '<button class="authLink" onclick="stShareBadge()">Share my badge</button></div>'
+      : "") +
+    (stPlan() === "member"
+      ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Upgrade&quot;)"><strong>♡ Become a Founding Keeper</strong><small>$14.99 once · your badge in the Herps &amp; Hers group with a weekly shout-out, 40 animals and more</small></button>'
+      : "") +
+    '<p class="resourceIntro">Everything your keeper journal needs, in one place.</p><button class="menuTile" onclick="openPanel(&quot;Plans&quot;)"><strong>Plans &amp; animal spaces</strong><small>' +
+    animals.length +
+    " of " +
+    stAnimalLimit() +
+    ' animals used · Keeper and Breeder plans</small></button>' +
+    (stPlan() === "member"
+      ? ""
+      : '<button class="menuTile menuFeature" onclick="openPanel(&quot;Founding Keeper Studio&quot;)"><strong>♡ Founding Keeper</strong><small>' +
+        (stCanUsePack() ? "Your designs, Care Binder and keepsakes" : "$14.99 once · 40 animals, designs, Care Binder and keepsakes") +
+        "</small></button>") +
     tiles(main) +
     '<details class="compactDisclosure"><summary>More</summary>' +
     tiles(tools) +
@@ -1395,6 +1471,7 @@ function openGuide(i) {
   if (!g) return;
   current = "Herps Guide";
   document.getElementById("heading").textContent = g.title;
+  document.getElementById("heading").hidden = false;
   window.scaleGuideId = i;
   guidePage = 0;
   document.querySelector(".modal").scrollTop = 0;
@@ -2188,6 +2265,7 @@ function renderHomeToday() {
   }
   box.innerHTML =
     '<div class="homeTodayCard"><h2>Today&#39;s Care ♡</h2>' +
+    strayImportNotice() +
     list +
     '<div class="homeTodayActions"><button onclick="openQuickLog()">＋ Quick Log</button><button onclick="openPanel(\'Calendar\')">Calendar</button></div></div>';
 }
@@ -2231,6 +2309,126 @@ function openQuickLog(a) {
   }
   quickLogDate = today();
   openPanel("Quick Log", selectedAnimal);
+}
+/* V3.39 · Herps & Hers members (group code) get a friendly upgrade card. */
+function memberUpgradeSnoozed() {
+  try {
+    return Date.now() < Number(localStorage.getItem("scaleTellUpgradeSnooze") || 0);
+  } catch (e) {
+    return false;
+  }
+}
+function memberUpgradeSnooze() {
+  try {
+    localStorage.setItem("scaleTellUpgradeSnooze", String(Date.now() + 7 * 86400000));
+  } catch (e) {}
+  renderHomeToday();
+}
+function stUpgradeKey() {
+  try {
+    const u = cloudSession?.user;
+    return u ? "scaleTellUpgradeShown:" + u.id + ":" + (u.last_sign_in_at || "") : "";
+  } catch (e) {
+    return "";
+  }
+}
+/* Shown once after each sign-in (including a brand-new account), never in the middle of something else. */
+function stMaybeShowUpgrade() {
+  if (stPlan() !== "member") return;
+  const key = stUpgradeKey();
+  if (!key) return;
+  try {
+    if (localStorage.getItem(key)) return;
+  } catch (e) {
+    return;
+  }
+  if (document.getElementById("sheet")?.classList.contains("on") || document.body.classList.contains("authLocked")) return;
+  try {
+    localStorage.setItem(key, "1");
+  } catch (e) {}
+  openPanel("Upgrade");
+}
+function memberUpgradeMarkup(onHome) {
+  return (
+    '<div class="memberUpgrade">' +
+    (onHome ? '<button class="memberUpgradeX" aria-label="Hide for a week" onclick="memberUpgradeSnooze()">×</button>' : "") +
+    '<span class="accessTag">Herps &amp; Hers member</span><h3>Become a Founding Keeper ♡</h3><p>Upgrade once for <b>$14.99</b> and get:</p><ul>' +
+    "<li>Your <b>Founding Keeper badge in the Herps &amp; Hers group</b>, announced in our weekly post</li>" +
+    "<li>Room for <b>40 animals</b> (you have " + stAnimalLimit() + ")</li>" +
+    "<li>Four app designs, Care Binder, My Year in Scales and printables</li>" +
+    "<li>The ✓ badge in your app</li></ul>" +
+    '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Upgrade to Founding Keeper</button>' +
+    '<button class="memberUpgradeBreeder" onclick="openPanel(\'Plans\')">Breeder or rescue? See those plans</button>' +
+    (current === "Upgrade" ? '<button class="action secondary" onclick="closePanel()">Maybe later</button>' : "") +
+    "</div>"
+  );
+}
+function plansMarkup() {
+  const mine = stPlan(),
+    used = animals.length,
+    // Only people who joined with the group code hear about the Herps & Hers group perks.
+    isMember = stOwnsEntitlements() && stSkus.includes("member");
+  const card = (key, price, who, perks, action) =>
+    '<div class="planCard' +
+    (mine === key ? " planMine" : "") +
+    '"><div class="planHead"><h3>' +
+    esc(ST_PLANS[key].name) +
+    (mine === key ? ' <span class="stBadge">Your plan</span>' : "") +
+    '</h3><span class="planPrice">' +
+    price +
+    "</span></div><p class=\"planWho\">" +
+    who +
+    '</p><ul>' +
+    perks.map((x) => "<li>" + x + "</li>").join("") +
+    "</ul>" +
+    (mine === key ? "" : action) +
+    "</div>";
+  const soon = '<p class="planSoon">Coming soon ♡ Yearly plans open shortly.</p>';
+  return (
+    '<p class="resourceIntro">You&#39;re using <b>' +
+    used +
+    " of " +
+    stAnimalLimit() +
+    "</b> animal spaces." +
+    (stCanUseBreeder() ? " Breeder tools are on." : "") +
+    "</p>" +
+    '<h3 class="sectionTitle">For keepers</h3>' +
+    (mine === "member" ? memberUpgradeMarkup(false) : "") +
+    card(
+      "founding_keeper",
+      "$14.99 once",
+      "For hobby keepers.",
+      ["Up to <b>40 animals</b>", "Care logs, reminders, photos and backups", "Four app designs, Care Binder, My Year in Scales, printables", (isMember ? "✓ Founding Keeper badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Keeper badge")],
+      '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>',
+    ) +
+    '<h3 class="sectionTitle">For breeders &amp; rescues</h3><p class="lcSmall">Breeder plans add racks, rack feeding, pairings, clutches and hatchlings.</p>' +
+    card("founding_breeder", "$14.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches", "3 logins for your team", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon) +
+    card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "Your logo and colors", "MorphMarket export"], soon) +
+    card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>300 animals</b>", "Breeder tools for intake and care", "3 logins for your team", "Optional listing in Resources with an intake open / full switch"], soon) +
+    '<p class="lcSmall">Already have more animals than a plan allows? You keep them all; you just can&#39;t add more until you upgrade.</p>'
+  );
+}
+/* Shareable badge image for Founding Keepers and Breeders. */
+async function stShareBadge() {
+  const p = stPlan();
+  if (!p || !ST_PLANS[p].badge) return;
+  const file = p === "founding_keeper" ? "badge-founding-keeper.png" : "badge-founding-breeder.png";
+  try {
+    const blob = await (await fetch(file)).blob(),
+      f = new File([blob], file, { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) {
+      await navigator.share({ files: [f], title: ST_PLANS[p].name, text: "I'm a " + ST_PLANS[p].name + " on Scale & Tell ♡ scaleandtell.app" });
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return;
+  }
+  const a = document.createElement("a");
+  a.href = file;
+  a.download = file;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 function quickLogMarkup() {
   const a = selectedAnimal;
@@ -2405,6 +2603,7 @@ function panelBack() {
   current = previous.name;
   selectedAnimal = previous.animal;
   document.getElementById("heading").textContent = panelHeading(current);
+  document.getElementById("heading").hidden = animals.includes(current);
   render();
   syncPanelBack();
   const modal = document.querySelector(".modal");
@@ -2431,7 +2630,10 @@ function openPanel(name, animal) {
   if (animal) selectedAnimal = animal;
   else if (animals.includes(name)) selectedAnimal = name;
   current = name;
-  document.getElementById("heading").textContent = panelHeading(name);
+  const headingEl = document.getElementById("heading");
+  headingEl.textContent = panelHeading(name);
+  // A reptile's profile card already shows its name, so the title bar stays empty there.
+  headingEl.hidden = animals.includes(name);
   document.getElementById("sheet").classList.add("on");
   let modal = document.querySelector(".modal");
   if (modal) modal.scrollTop = 0;
@@ -3595,7 +3797,7 @@ function habitatMarkup(a) {
   );
 }
 function gaugeComingSoon() {
-  return '<section class="gaugeComingSoon" aria-label="Upcoming gauge integrations"><strong>✧ Live gauge connections · Coming soon</strong><p>SensorPush live readings are in the works, so you&#39;ll be able to see temperature and humidity for each animal and rack. Other brands may follow.</p><small>Pending manufacturer access and compatibility testing. Automatic readings are not available yet. You can still assign your gauge and log enclosure readings below.</small></section>';
+  return '<section class="gaugeComingSoon" aria-label="Upcoming gauge integrations"><strong>✧ Live gauge connections · Coming soon</strong><p>We&#39;re working with <b>SensorPush</b> to bring live temperature and humidity into Scale &amp; Tell for each animal and rack. Test equipment is on its way to us now. We&#39;re also reaching out to other gauge brands.</p><small>Until then, assign your gauge and log enclosure readings below. They&#39;ll appear in your habitat history.</small></section>';
 }
 function deviceDirectory() {
   return (
@@ -3629,7 +3831,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.33";
+const SCALE_LC_VERSION = "3.40";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -3926,6 +4128,14 @@ function render() {
     profileTab("Overview");
     return;
   }
+  if (current === "Plans") {
+    el.innerHTML = plansMarkup();
+    return;
+  }
+  if (current === "Upgrade") {
+    el.innerHTML = memberUpgradeMarkup(false);
+    return;
+  }
   if (current === "Quick Log") {
     el.innerHTML = quickLogMarkup();
     return;
@@ -3943,6 +4153,7 @@ function render() {
       '<p class="muted">' +
       (current === "Due Today" ? "Unfinished tasks due today or earlier." : "Your next three scheduled tasks.") +
       "</p>" +
+      (current === "Due Today" ? strayImportNotice() : "") +
       taskMarkup(current === "Due Today" ? pending : pending.slice(0, 3)) +
       '<button class="action" onclick="openPanel(\'Calendar\')">View full calendar</button>';
     return;
@@ -5034,6 +5245,55 @@ function reminderEditMarkup() {
         '</select></label><button class="action secondary" onclick="reminderMoveToLog()">Move to Care Logs</button></details>')
   );
 }
+/* V3.34 · Old screenshot imports that landed as "due" reminders: past-dated "Other care" with written notes,
+   no repeat, no notify times, no checklist. Real reminders are left alone. */
+function strayImportedReminders() {
+  const t = today();
+  return entries.filter(
+    (e) =>
+      e.section === "Calendar" &&
+      !e.done &&
+      e.detail === "Other care" &&
+      e.date < t &&
+      String(e.notes || "").trim().length > 3 &&
+      !Number(e.repeatDays) &&
+      !Number(e.repeatMonths) &&
+      !(Array.isArray(e.times) && e.times.length) &&
+      !Array.isArray(e.checklist),
+  );
+}
+function strayImportNotice() {
+  const n = strayImportedReminders().length;
+  return n
+    ? '<div class="importFixNote"><b>' +
+        n +
+        (n === 1 ? " item looks" : " items look") +
+        ' like old care records</b> from a screenshot import, not reminders. <button class="action" onclick="moveStrayImports()">Move ' +
+        (n === 1 ? "it" : "all " + n) +
+        " to Care Logs</button></div>"
+    : "";
+}
+function moveStrayImports() {
+  const list = strayImportedReminders();
+  if (!list.length) return;
+  if (!confirm("Move " + list.length + " old imported record" + (list.length === 1 ? "" : "s") + " out of your reminders and into Care Logs? Dates and notes are kept.")) return;
+  const backup = entries.slice();
+  list.forEach((e) => {
+    const i = entries.indexOf(e),
+      notes = String(e.notes || "").trim().slice(0, 1200),
+      section = importGuessSection(notes);
+    entries[i] = { id: e.id, section, animal: e.animal, date: e.date, detail: importDetailFor(section, notes), notes };
+  });
+  try {
+    save();
+  } catch (err) {
+    entries = backup;
+    alert("Could not move these records. Nothing was changed.");
+    return;
+  }
+  render();
+  stToast("Moved ♡ " + list.length + " record" + (list.length === 1 ? "" : "s") + " now in Care Logs.");
+}
 function reminderMoveToLog() {
   const e = entries[reminderEditIndex];
   if (!e || e.section !== "Calendar") return;
@@ -6016,6 +6276,7 @@ function saveAnimalSetup() {
       "Pet-Sitter Sheet",
       "Welcome Setup",
       "Quick Log",
+      "Plans",
       ...BREEDER_PANELS,
     ].some((x) => x.toLowerCase() === name.toLowerCase())
   ) {
@@ -6082,6 +6343,10 @@ function saveAnimalSetup() {
   } else {
     if (animals.length >= 500) {
       alert("Scale & Tell supports up to 500 active animals.");
+      return;
+    }
+    if (cloudSession && stOwnsEntitlements() && animals.length >= stAnimalLimit()) {
+      stCanAddAnimal();
       return;
     }
     animals.push(name);
@@ -6160,6 +6425,7 @@ function openAnimalAt(i) {
   if (animals[i]) openPanel(animals[i]);
 }
 function addAnimal() {
+  if (cloudSession && stOwnsEntitlements() && !stCanAddAnimal()) return;
   animalEditIndex = -1;
   openPanel("Animal Setup");
 }
@@ -6884,7 +7150,36 @@ function authLogin() {
 }
 function authCreate() {
   authSetStay();
+  const code = (document.getElementById("signupMemberCode")?.value || "").trim().slice(0, 40);
+  try {
+    if (code) localStorage.setItem("scaleTellPendingCode", code);
+    else localStorage.removeItem("scaleTellPendingCode");
+  } catch (e) {}
   cloudSignUp();
+}
+/* After the first sign-in, a code typed on Create Account is used automatically. */
+let stPendingCodeTried = false;
+async function stRedeemPendingCode() {
+  let code = "";
+  try {
+    code = localStorage.getItem("scaleTellPendingCode") || "";
+  } catch (e) {}
+  if (!code || stPendingCodeTried || !cloudClient || !cloudSession) return;
+  stPendingCodeTried = true;
+  try {
+    const { data, error } = await cloudClient.rpc("redeem_member_code", { p_code: code });
+    if (!error && data !== "limit") localStorage.removeItem("scaleTellPendingCode");
+    if (!error && data === "ok") {
+      await founderRefreshEntitlement();
+      cloudSetStatus(cloudAutoStatus);
+      stToast("Welcome, Herps & Hers member ♡");
+    } else if (!error && data === "invalid") {
+      const st = document.getElementById("memberCodeStatus");
+      if (st) st.textContent = "That group code didn't work. Check the latest code in the group, or choose a plan.";
+      const d = document.getElementById("memberCodeBox");
+      if (d) d.open = true;
+    }
+  } catch (e) {}
 }
 function authGuestGuides() {
   openPanel("Care Library");
@@ -6895,10 +7190,16 @@ function accessGateMarkup() {
     '<div id="accessGate"><h1>Welcome to Scale &amp; Tell ♡</h1><p class="authIntro">Signed in as <b>' +
     esc(cloudSession?.user?.email || "your account") +
     "</b>. One last step to open your journal.</p>" +
-    '<div class="accessCard"><h2>Herps &amp; Hers member?</h2><p>Enter the member code shared in the Herps &amp; Hers group. Your app is free.</p><label class="authField" for="memberCode">Member code</label><input id="memberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Member code" onkeydown="if(event.key===\'Enter\')accessRedeemCode()"><button class="authButton" type="button" onclick="accessRedeemCode()">Unlock with code</button><p id="memberCodeStatus" class="authMessage" role="status"></p></div>' +
-    '<div class="accessCard"><h2>Lifetime access · $14.99</h2><p>One payment, yours forever. No subscription. Includes the Founding Keeper Pack: four app designs, breeder tools (racks, rack feeding, pairings and clutches), Care Binder, My Year in Scales and keeper printables.</p>' +
+    '<div class="accessCard"><h2>Founding Keeper · $14.99 once</h2><p>For hobby keepers. One payment, yours forever. Up to <b>40 animals</b>, four app designs, Care Binder, My Year in Scales and keeper printables.</p>' +
     founderCheckoutMarkup() +
-    '</div><button class="authLink" type="button" onclick="cloudSignOut()">Sign out</button></div>'
+    '</div>' +
+    '<div class="accessCard accessBreeder"><span class="accessTag">Breeders &amp; rescues</span><h2>More animals? Racks? A rescue?</h2><div class="accessPlans">' +
+    '<div><b>Founding Breeder</b><span>$14.99 / year</span><small>150 animals · racks, rack feeding, pairings, clutches · 3 logins</small></div>' +
+    '<div><b>Premium Breeder</b><span>$29.99 / year</span><small>400 animals · your logo &amp; colors · MorphMarket export · 3 logins</small></div>' +
+    '<div><b>Rescue</b><span>$29.99 / year · $14.99 verified 501(c)(3)</span><small>300 animals · intake tools · listing in Resources · 3 logins</small></div>' +
+    '</div><button class="authButton" type="button" onclick="openPanel(\'Plans\')">See breeder &amp; rescue plans</button></div>' +
+    '<details class="accessCode" id="memberCodeBox"><summary>Have a group member code?</summary><label class="authField" for="memberCode">Group member code</label><input id="memberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Member code" onkeydown="if(event.key===\'Enter\')accessRedeemCode()"><button class="authButton" type="button" onclick="accessRedeemCode()">Use code</button><p id="memberCodeStatus" class="authMessage" role="status"></p></details>' +
+    '<button class="authLink" type="button" onclick="cloudSignOut()">Sign out</button></div>'
   );
 }
 async function accessRedeemCode() {
@@ -6944,6 +7245,7 @@ function updateAuthGate() {
   if (needsAccess) {
     if (document.getElementById("sheet")?.classList.contains("on")) closePanel();
     if (!document.getElementById("accessGate")) {
+      setTimeout(stRedeemPendingCode, 0);
       body.innerHTML = accessGateMarkup();
       setTimeout(founderMountPayPal, 0);
     }
@@ -6998,7 +7300,10 @@ function updateAuthGate() {
         (signup ? "At least 8 characters" : "Enter your password") +
         '"><label class="authStay"><input type="checkbox" id="cloudStay" ' +
         (authStayEnabled() ? "checked" : "") +
-        "><span>Keep me signed in on this device</span></label>") +
+        "><span>Keep me signed in on this device</span></label>" +
+        (signup
+          ? '<label class="authField" for="signupMemberCode">Group member code (optional)</label><input id="signupMemberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Leave blank if you don&#39;t have one">'
+          : "")) +
     (reset
       ? '<button class="authButton" onclick="cloudResetEmail()">Send reset link</button><button class="authButton light" onclick="authChooseMode(\'signin\')">Back to Sign In</button>'
       : signup
@@ -9114,7 +9419,7 @@ function agoText(date) {
 }
 function breederLocked() {
   return (
-    '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feeding a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p><p><b>Included with Founding Keeper</b> ($14.99 one-time).</p><button class="action" onclick="openPanel(&quot;Founding Keeper Studio&quot;)">See Founding Keeper</button></div>'
+    '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feeding a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p><p><b>Included with Founding Breeder</b> ($14.99 a year, up to 150 animals) and every breeder and rescue plan.</p><button class="action" onclick="openPanel(&quot;Plans&quot;)">See plans</button></div>'
   );
 }
 function breederHome() {
@@ -9157,7 +9462,7 @@ function breederHome() {
         : "") +
     "</small></button>";
   return (
-    '<p class="muted">Founding Keeper breeder tools ♡</p>' +
+    '<p class="muted">Breeder tools ♡</p>' +
     '<h3 class="sectionTitle">Racks (' +
     rs.length +
     ")</h3>" +
@@ -9651,7 +9956,7 @@ function addHatchlings() {
   render();
 }
 function breederMarkup() {
-  if (!stCanUsePack()) return breederLocked();
+  if (!stCanUseBreeder()) return breederLocked();
   if (current === "Racks & Breeding") return breederHome();
   if (current === "Rack Setup") return rackSetupMarkup();
   if (current === "Rack View") return rackViewMarkup();
