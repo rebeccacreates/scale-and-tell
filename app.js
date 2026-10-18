@@ -475,6 +475,7 @@ const HOME_CARD_SLOTS = [
 function renderHomeCards() {
   const row = document.getElementById("homeReptileRow");
   if (!row) return;
+  homeNavApply();
   if (homeBusinessMode()) return renderHomeBusiness(row);
   homeResetPersonal();
   const count = document.getElementById("homeCount");
@@ -750,6 +751,7 @@ async function founderRefreshEntitlement() {
       updateAuthGate();
       if (stCanUseApp() && ["empty", "synced"].includes(cloudAutoStatus)) cloudSetStatus(cloudAutoStatus);
       setTimeout(stMaybeShowUpgrade, 1500);
+      setTimeout(rescueMaybeAskLayout, 1800);
       try { renderHomeCards(); } catch (e) {}
       if (current === "Founding Keeper Studio") render();
     }
@@ -971,8 +973,8 @@ function founderStudioMarkup() {
     '<div class="studioTile"><h3>Personalized Care Binder</h3><p>Your animal profiles, recent care history, upcoming tasks and saved vet details.</p>' +
     founderPackAction("binder", "Open Care Binder") +
     "</div>" +
-    '<div class="studioTile"><h3>My Year in Scales ♡</h3><p>A personal printable recap of your animals, milestones and journal photographs.</p>' +
-    founderPackAction("year", "Open My Year in Scales") +
+    '<div class="studioTile"><h3>My Year in Scales ♡</h3><p>Your year as a slideshow: meals, sheds, growth, busiest month and your best photos, animal by animal.</p>' +
+    (stCanUsePack() ? '<button class="action" onclick="yisOpen()">▶ Play My Year in Scales</button><button class="action secondary" onclick="founderOpenPrint(\'year\')">Printable version</button>' : "") +
     "</div>" +
     '<div class="studioTile"><h3>Keeper Printables</h3><p>Large photo-based enclosure cards, emergency quick-reference cards and a blank feeding record.</p>' +
     founderPackAction("printables", "Open Keeper Printables") +
@@ -1389,6 +1391,7 @@ function menuMarkup() {
         (stTeam?.role === "member" ? "Shared journal · Inbox" : "Team logins, Inbox, your public page" + (stCanBrand() ? ", branding, MorphMarket export" : "")) +
         (bizUnread ? " · " + bizUnread + " new" : "") + "</small></button>"
       : "") +
+    (homeBusinessMode() ? tiles([["Care Logs", "Every feeding, shed, weight and note"], ["My Reptiles", "All animals, including your own pets"]]) : "") +
     tiles(main) +
     '<details class="compactDisclosure"><summary>More</summary>' +
     tiles(tools) +
@@ -3867,7 +3870,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.44";
+const SCALE_LC_VERSION = "3.48";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4161,7 +4164,7 @@ function render() {
       history.length +
       "</b></div><div><small>Next care</small><b>" +
       nextCareLabel(a) +
-      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button>' + (homeBusinessMode() ? '<button onclick="saleOpen(selectedAnimal)">Listing &amp; sale</button>' : '') + '<button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
+      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button>' + (homeBusinessMode() || stIsRescue() ? '<button onclick="saleOpen(selectedAnimal)">' + (stIsRescue() && !stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder") ? "Adoption &amp; placement" : "Listing &amp; sale") + '</button>' : '') + '<button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
     profileTab("Overview");
     return;
   }
@@ -10449,7 +10452,9 @@ function bizApplyBrand() {
     ".stBadge{background:" + dark + "!important}.rackMini i{background:" + light + "}.rackMini i.on{background:" + a + "!important}.rackMini{background:" + soft + "!important}" +
     ".homeCard,.resourceTile,.menuTile,.deviceCard,.diyGuide{border-color:" + light + "!important}" +
     ".homeCardAdd,.homePetsLink{border-color:" + a + "!important;color:" + dark + "!important}" +
-    "a{color:" + dark + "}";
+    "a{color:" + dark + "}" +
+    // Text sitting on a filled brand color stays white so it is always readable.
+    ".menuFeature strong,.menuFeature small,.action:not(.secondary) *,#bizBanner b,#bizBanner small{color:#fff!important}";
 }
 
 function bizBrandPrint(html) {
@@ -10566,6 +10571,7 @@ const BIZ_PANELS = {
       t("Inbox", "✉ Inbox" + (bizUnread ? " · " + bizUnread + " new" : ""), "Inquiries from your public page and website.") +
       t("Sales", "$ Listings &amp; sales", "Listed, pending, sold, buyer, shipped and received dates.") +
       t("My Public Page", "✦ Public page &amp; social links", "Your inquiry link for your website, Facebook and Instagram bio.") +
+      (stIsRescue() ? t("Rescue Layout", "⚙ Racks or enclosures", "Currently: " + (accountPrefs?.rescueLayout === "racks" ? "racks layout" : "enclosures layout") + ". Change how your home screen is set up.") : "") +
       (stIsRescue() ? t("Rescue Profile", "♧ Rescue profile &amp; intake", "Your Scale Hub listing, intake open/full, and 501(c)(3) verification.") : "") +
       (stCanBrand() ? t("Branding", "❦ Your logo &amp; colors", "Shows in the app and on Care Binder printouts.") + t("MorphMarket Export", "⇪ MorphMarket export", "Download your animals in MorphMarket’s bulk-import format.")
         : '<p class="lcSmall">Premium Breeder adds your logo &amp; colors and MorphMarket export.</p>');
@@ -10731,7 +10737,10 @@ async function bizLoadRescues() {
 /* V3.44 · Business home: breeders see racks and pairings first, rescues see racks; personal pets stay one tap away. */
 function homeBusinessMode() {
   try {
-    return stOwnsEntitlements() && stSkus.some((k) => ["founding_breeder", "premium_breeder", "rescue"].includes(k));
+    if (!stOwnsEntitlements()) return false;
+    if (stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder")) return true;
+    // Rescues choose: racks get the rack layout, enclosures keep the regular layout (rescue tools either way).
+    return stSkus.includes("rescue") && accountPrefs?.rescueLayout === "racks";
   } catch (e) {
     return false;
   }
@@ -10873,4 +10882,194 @@ BIZ_PANELS.Sales = () => {
       : '<p class="helperLine">Nothing here yet.</p>') +
     '<label class="logSearchLabel">Add an animal<select id="saleAdd" onchange="if(this.value)saleOpen(this.value)"><option value="">Choose…</option>' + animals.filter((a) => saleStage(saleOf(a)) === "Not listed").map((a) => "<option>" + esc(a) + "</option>").join("") + "</select></label>" +
     '<button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
+};
+
+/* V3.45 · My Year in Scales: a full-screen story slideshow built from the last 12 months. */
+let yisSlides = [], yisIdx = 0, yisTimer = null, yisPaused = false;
+const YIS_MS = 6500;
+function yisGrams(e) {
+  const m = String(e.detail || "").replace(",", ".").match(/([\d.]+)\s*(kg|g|lb|oz)?/i);
+  if (!m) return null;
+  const n = Number(m[1]), u = (m[2] || "g").toLowerCase();
+  return u === "kg" ? n * 1000 : u === "lb" ? n * 453.6 : u === "oz" ? n * 28.35 : n;
+}
+function yisPhotos(a) {
+  return (photos[a] || []).filter((p) => typeof p.src === "string" && /^data:image\/|^https?:|^blob:/.test(p.src));
+}
+function yisBuild() {
+  const d = new Date(); d.setFullYear(d.getFullYear() - 1);
+  const start = d.toISOString().slice(0, 10), yr = new Date().getFullYear();
+  const recs = entries.filter((e) => e.section !== "Calendar" && e.date >= start && animals.includes(e.animal));
+  const meals = recs.filter((e) => e.section === "Feeding Tracker" && e.detail !== "Refused");
+  const refused = recs.filter((e) => e.section === "Feeding Tracker" && e.detail === "Refused");
+  const sheds = recs.filter((e) => e.section === "Shed History");
+  const days = new Set(recs.map((e) => e.date)).size;
+  const top = (list) => { const c = {}; list.forEach((e) => (c[e.animal] = (c[e.animal] || 0) + 1)); return Object.entries(c).sort((x, y) => y[1] - x[1])[0]; };
+  const preyC = {}; meals.forEach((e) => e.preyType && (preyC[e.preyType] = (preyC[e.preyType] || 0) + 1));
+  const prey = Object.entries(preyC).sort((x, y) => y[1] - x[1])[0];
+  const months = Array(12).fill(0), mNames = [];
+  for (let i = 11; i >= 0; i--) { const m = new Date(); m.setDate(1); m.setMonth(m.getMonth() - i); mNames.push(m.toLocaleDateString("en-US", { month: "short" })); }
+  recs.forEach((e) => { const dt = new Date(e.date + "T12:00"), now = new Date(); const diff = (now.getFullYear() - dt.getFullYear()) * 12 + now.getMonth() - dt.getMonth(); if (diff >= 0 && diff < 12) months[11 - diff]++; });
+  const busiest = months.indexOf(Math.max(...months));
+  const growth = animals.map((a) => {
+    const w = recs.filter((e) => e.animal === a && e.section === "Weight Tracker").map((e) => ({ d: e.date, g: yisGrams(e) })).filter((x) => x.g).sort((x, y) => x.d.localeCompare(y.d));
+    return w.length >= 2 ? { a, from: w[0].g, to: w[w.length - 1].g, pts: w } : null;
+  }).filter(Boolean).sort((x, y) => (y.to - y.from) - (x.to - x.from));
+  const allPhotos = animals.flatMap((a) => yisPhotos(a).filter((p) => !p.date || p.date >= start).map((p) => p.src));
+  const portraits = animals.slice(0, 9).map((a) => portraitForAnimal(a).src);
+  const pic = (src) => '<img alt="" src="' + esc(src) + '">';
+  const S = [];
+  S.push({ cls: "yisIntro", html: '<div class="yisCollage">' + portraits.map(pic).join("") + '</div><div class="yisCap"><small>Scale &amp; Tell presents</small><h1>My Year in Scales</h1><p>' + (bizBrand?.business_name ? esc(bizBrand.business_name) + " · " : "") + niceDate(start) + " – today</p></div>" });
+  S.push({ html: '<small>This year you logged</small><div class="yisBig">' + recs.length + '</div><p>care moments for <b>' + animals.length + "</b> " + (animals.length === 1 ? "animal" : "animals") + ", on <b>" + days + "</b> different days.</p><p class=\"yisSub\">That's real dedication ♡</p>" });
+  if (meals.length) {
+    const t = top(meals);
+    S.push({ html: '<small>Dinner is served</small><div class="yisBig">' + meals.length + "</div><p>meals eaten" + (refused.length ? " · " + refused.length + " refused (we see you, picky eaters)" : "") + ".</p>" +
+      (t ? '<div class="yisStar">' + pic(portraitForAnimal(t[0]).src) + "<p><b>" + esc(t[0]) + "</b> was your biggest eater with <b>" + t[1] + "</b> meals.</p></div>" : "") +
+      (prey ? '<p class="yisSub">Most served: ' + esc(prey[0]) + " (" + prey[1] + "×)</p>" : "") });
+  }
+  if (sheds.length) {
+    const t = top(sheds);
+    S.push({ html: '<small>Out with the old</small><div class="yisBig">' + sheds.length + "</div><p>sheds logged.</p>" + (t ? '<div class="yisStar">' + pic(portraitForAnimal(t[0]).src) + "<p><b>" + esc(t[0]) + "</b> shed the most: <b>" + t[1] + "</b> times.</p></div>" : "") });
+  }
+  if (growth.length) {
+    const g = growth[0], min = Math.min(...g.pts.map((x) => x.g)), max = Math.max(...g.pts.map((x) => x.g)), rng = max - min || 1;
+    const pts = g.pts.map((x, i) => (10 + (i * 280) / Math.max(1, g.pts.length - 1)).toFixed(1) + "," + (110 - ((x.g - min) / rng) * 90).toFixed(1)).join(" ");
+    const diff = Math.round(g.to - g.from);
+    S.push({ html: '<small>Growing up</small><div class="yisStar">' + pic(portraitForAnimal(g.a).src) + "<p><b>" + esc(g.a) + "</b> went from <b>" + Math.round(g.from) + " g</b> to <b>" + Math.round(g.to) + " g</b>.</p></div>" +
+      '<div class="yisBig">' + (diff >= 0 ? "+" : "") + diff + ' g</div><svg class="yisChart" viewBox="0 0 300 120" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/></svg>' +
+      (growth.length > 1 ? '<p class="yisSub">Also growing: ' + growth.slice(1, 4).map((x) => esc(x.a) + " +" + Math.round(x.to - x.from) + " g").join(" · ") + "</p>" : "") });
+  }
+  if (recs.length) {
+    const max = Math.max(...months, 1);
+    S.push({ html: "<small>Your busiest month</small><h2>" + mNames[busiest] + '</h2><p><b>' + months[busiest] + '</b> care moments</p><div class="yisBars">' +
+      months.map((v, i) => '<div class="' + (i === busiest ? "on" : "") + '"><i style="height:' + Math.max(4, (v / max) * 100) + '%"></i><span>' + mNames[i][0] + "</span></div>").join("") + "</div>" });
+  }
+  const breeding = entries.filter((e) => e.section === "Breeding" && e.date >= start);
+  const clutches = breeding.filter((e) => e.kind === "clutch");
+  if (breeding.length) {
+    const eggs = clutches.reduce((n, c) => n + (Number(c.good) || 0), 0);
+    S.push({ html: "<small>Breeding season</small><div class=\"yisTrio\"><div><b>" + breeding.filter((e) => e.kind === "pairing").length + "</b>pairings</div><div><b>" + clutches.length + "</b>clutches</div><div><b>" + eggs + "</b>good eggs</div></div><p>" + clutches.filter((c) => c.hatchDate).length + " clutches hatched this year.</p>" });
+  }
+  const sold = animals.filter((a) => { const x = profiles[a]?.sale; return x && ["Sold", "Shipped", "Received"].includes(x.status) || x?.shippedDate; });
+  if (sold.length) S.push({ html: "<small>Sent to new homes</small><div class=\"yisBig\">" + sold.length + "</div><p>animals sold and on their way to new keepers ♡</p>" });
+  // One slide per animal (up to 12)
+  animals.slice(0, 12).forEach((a) => {
+    const r = recs.filter((e) => e.animal === a), p = profiles[a] || {};
+    const m = r.filter((e) => e.section === "Feeding Tracker" && e.detail !== "Refused").length, sh = r.filter((e) => e.section === "Shed History").length;
+    const gr = growth.find((x) => x.a === a), ph = yisPhotos(a).length;
+    S.push({ cls: "yisAnimal", bg: portraitForAnimal(a).src, html: '<div class="yisCap"><small>' + esc([species[a], p.morph].filter(Boolean).join(" · ")) + "</small><h2>" + esc(a) + '</h2><div class="yisTrio"><div><b>' + m + "</b>meals</div><div><b>" + sh + "</b>sheds</div><div><b>" + (gr ? (gr.to - gr.from >= 0 ? "+" : "") + Math.round(gr.to - gr.from) + "g" : ph) + "</b>" + (gr ? "grown" : "photos") + "</div></div></div>" });
+  });
+  if (allPhotos.length >= 3) S.push({ cls: "yisPhotos", html: '<div class="yisGrid">' + allPhotos.slice(-12).reverse().map(pic).join("") + '</div><div class="yisCap"><h2>Moments worth remembering</h2><p>' + allPhotos.length + " photos this year</p></div>" });
+  S.push({ cls: "yisEnd", html: '<div class="yisCollage">' + portraits.map(pic).join("") + '</div><div class="yisCap"><h2>Here\'s to another year ♡</h2><p>Every scale. Every shed. Every milestone.</p><div class="yisBtns"><button onclick="event.stopPropagation();yisShare()">Share my year</button><button onclick="event.stopPropagation();yisGo(0)">Watch again</button></div><small>Scale &amp; Tell · Herps &amp; Hers</small></div>' });
+  return { S, recs, meals, sheds, days };
+}
+function yisOpen() {
+  if (!stCanUsePack()) return;
+  if (!animals.length) { stToast("Add an animal first ♡"); return; }
+  closePanel?.();
+  yisSlides = yisBuild().S;
+  let o = document.getElementById("yis");
+  if (!o) {
+    o = document.createElement("div");
+    o.id = "yis";
+    o.setAttribute("role", "dialog");
+    o.setAttribute("aria-label", "My Year in Scales");
+    document.body.appendChild(o);
+    o.addEventListener("click", (e) => { if (e.target.closest("button")) return; const x = e.clientX / window.innerWidth; yisGo(yisIdx + (x < 0.3 ? -1 : 1)); });
+    o.addEventListener("pointerdown", () => (yisPaused = true));
+    o.addEventListener("pointerup", () => (yisPaused = false));
+    document.addEventListener("keydown", (e) => { if (!document.getElementById("yis")?.classList.contains("on")) return; if (e.key === "Escape") yisClose(); if (e.key === "ArrowRight") yisGo(yisIdx + 1); if (e.key === "ArrowLeft") yisGo(yisIdx - 1); });
+  }
+  o.innerHTML = '<div class="yisBars2">' + yisSlides.map(() => "<i><b></b></i>").join("") + '</div><button class="yisClose" aria-label="Close" onclick="yisClose()">×</button><div class="yisStage"></div>';
+  o.classList.add("on");
+  document.body.style.overflow = "hidden";
+  yisGo(0);
+}
+function yisGo(i) {
+  if (i < 0) i = 0;
+  if (i >= yisSlides.length) return yisClose();
+  yisIdx = i;
+  const o = document.getElementById("yis"), sl = yisSlides[i];
+  if (!o) return;
+  const stage = o.querySelector(".yisStage");
+  stage.className = "yisStage " + (sl.cls || "") + " yisHue" + (i % 5);
+  stage.style.backgroundImage = sl.bg ? 'url("' + sl.bg.replace(/"/g, "%22") + '")' : "";
+  stage.innerHTML = '<div class="yisInner">' + sl.html + "</div>";
+  o.querySelectorAll(".yisBars2 i").forEach((b, k) => { b.className = k < i ? "done" : k === i ? "now" : ""; });
+  clearInterval(yisTimer);
+  let t = 0;
+  const bar = o.querySelectorAll(".yisBars2 i b")[i];
+  if (i === yisSlides.length - 1) { if (bar) bar.style.width = "100%"; return; }
+  yisTimer = setInterval(() => {
+    if (yisPaused) return;
+    t += 100;
+    if (bar) bar.style.width = Math.min(100, (t / YIS_MS) * 100) + "%";
+    if (t >= YIS_MS) yisGo(yisIdx + 1);
+  }, 100);
+}
+function yisClose() {
+  clearInterval(yisTimer);
+  document.getElementById("yis")?.classList.remove("on");
+  document.body.style.overflow = "";
+}
+async function yisShare() {
+  const b = yisBuild();
+  const text = "My Year in Scales ♡\n" + animals.length + " animals · " + b.recs.length + " care moments · " + b.meals.length + " meals · " + b.sheds.length + " sheds\nTracked with Scale & Tell · scaleandtell.app";
+  try {
+    if (navigator.share) await navigator.share({ text });
+    else { await navigator.clipboard.writeText(text); stToast("Copied ♡ Paste it into your post."); }
+  } catch (e) {}
+}
+
+/* V3.46 · Bottom bar for business accounts: breeders get My Racks + Pairings, rescues get My Racks. */
+var HOME_NAVS = {
+  personal: { img: "home-nav-hub.webp", slots: [["My Reptiles", "openPanel('My Reptiles')"], ["Calendar", "openPanel('Calendar')"], ["Care Logs", "openPanel('Care Logs')"]] },
+  breeder: { img: "home-nav-breeder.webp", slots: [["My Racks", "openPanel('Racks & Breeding')"], ["Pairings", "homeOpenPairings()"], ["Calendar", "openPanel('Calendar')"]] },
+  rescue: { img: "home-nav-rescue.webp", slots: [["My Racks", "openPanel('Racks & Breeding')"], ["Calendar", "openPanel('Calendar')"], ["Care Logs", "openPanel('Care Logs')"]] },
+};
+function homeNavApply() {
+  const nav = document.querySelector(".homeNav .art");
+  if (!nav) return;
+  let kind = "personal";
+  if (homeBusinessMode()) kind = stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder") ? "breeder" : "rescue";
+  if (nav.dataset.kind === kind || !HOME_NAVS) return;
+  nav.dataset.kind = kind;
+  const cfg = HOME_NAVS[kind], img = nav.querySelector("img"), hots = nav.querySelectorAll("button.hot");
+  if (img) img.src = cfg.img;
+  cfg.slots.forEach(([label, fn], i) => {
+    const b = hots[i + 1];
+    if (b) { b.setAttribute("aria-label", label); b.setAttribute("onclick", fn); }
+  });
+}
+function homeOpenPairings() {
+  openPanel("Racks & Breeding");
+  setTimeout(() => {
+    const h = Array.from(document.querySelectorAll("#sheet .sectionTitle")).find((x) => /^Pairings/.test(x.textContent));
+    h?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 150);
+}
+
+/* V3.46 · Rescues pick their home layout once (changeable in Business Tools). */
+function rescueMaybeAskLayout() {
+  try {
+    if (!stIsRescue() || stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder")) return;
+    if (accountPrefs?.rescueLayout) return;
+    if (document.getElementById("sheet")?.classList.contains("on") || document.body.classList.contains("authLocked")) { setTimeout(rescueMaybeAskLayout, 4000); return; }
+    openPanel("Rescue Layout");
+  } catch (e) {}
+}
+function rescueSetLayout(v) {
+  accountPrefsSet("rescueLayout", v);
+  const nav = document.querySelector(".homeNav .art");
+  if (nav) delete nav.dataset.kind;
+  renderHomeCards();
+  stToast(v === "racks" ? "Rack layout is on ♡" : "Enclosure layout is on ♡");
+  closePanel();
+}
+BIZ_PANELS["Rescue Layout"] = () => {
+  const cur = accountPrefs?.rescueLayout || "";
+  return '<p class="resourceIntro"><b>Welcome, rescue ♡</b> Do you have racks set up, or enclosures? This helps us set up your account so you can manage your animals best.</p>' +
+    '<button class="resourceTile' + (cur === "racks" ? " pickOn" : "") + '" onclick="rescueSetLayout(\'racks\')"><strong>▤ Racks</strong><small>Your home screen shows your racks and tubs first. Feed a whole rack at once.</small></button>' +
+    '<button class="resourceTile' + (cur === "enclosures" ? " pickOn" : "") + '" onclick="rescueSetLayout(\'enclosures\')"><strong>⌂ Enclosures</strong><small>Your home screen shows each animal with its photo, like a keeper’s journal.</small></button>' +
+    '<p class="lcSmall">Either way you keep every rescue tool: intake status, your listing, team logins, Inbox and adoption tracking. You can change this anytime in Business Tools.</p>';
 };
