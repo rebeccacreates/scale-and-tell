@@ -684,7 +684,14 @@ function stSetTheme(v) {
   if (meta)
     meta.content = { original: "#45205b", forest: "#142b24", violet: "#20142d", cream: "#f5eedb" }[v] || "#45205b";
 }
-stSetTheme("original");
+/* V3.53 · Show a keeper's own colors instantly on launch, from the last confirmed sign-in on this device. */
+function stLastOwner() {
+  try { return localStorage.getItem("scaleTellSyncOwner33") || ""; } catch (e) { return ""; }
+}
+function stThemeCacheOk(uid) {
+  try { return !!uid && localStorage.getItem("scaleTellThemeUid") === uid; } catch (e) { return false; }
+}
+stSetTheme(stThemeCacheOk(stLastOwner()) ? stSavedTheme : "original");
 let stMemberAccess = false,
   stAccessChecked = false,
   stAccessFailed = false;
@@ -702,6 +709,7 @@ function founderClearEntitlement() {
   stAccessFailed = false;
   stPreviewTheme = null;
   stSetTheme("original");
+  try { bizBrand = null; bizApplyBrand(); } catch (e) {}
   if (current === "Founding Keeper Studio") render();
 }
 async function founderRefreshEntitlement() {
@@ -710,7 +718,7 @@ async function founderRefreshEntitlement() {
   stEntitlementUser = null;
   stEntitlementActive = false;
   stPreviewTheme = null;
-  stSetTheme("original");
+  stSetTheme(stThemeCacheOk(requestedId) ? stSavedTheme : "original");
   if (current === "Founding Keeper Studio") render();
   if (!requestedId || !cloudClient) return;
   try {
@@ -739,6 +747,10 @@ async function founderRefreshEntitlement() {
     stAccessChecked = true;
     stAccessFailed = false;
     stSetTheme(stEntitlementActive ? stSavedTheme : "original");
+    try {
+      if (stEntitlementActive) localStorage.setItem("scaleTellThemeUid", requestedId);
+      else localStorage.removeItem("scaleTellThemeUid");
+    } catch (e) {}
   } catch (e) {
     if (request !== stEntitlementRequest) return;
     stEntitlementActive = false;
@@ -746,7 +758,7 @@ async function founderRefreshEntitlement() {
     // A network problem must not lock a keeper out; the server still checks access on every save.
     stAccessChecked = true;
     stAccessFailed = true;
-    stSetTheme("original");
+    stSetTheme(stThemeCacheOk(requestedId) ? stSavedTheme : "original");
   } finally {
     if (request === stEntitlementRequest) {
       updateAuthGate();
@@ -3901,7 +3913,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.52";
+const SCALE_LC_VERSION = "3.53";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -10488,18 +10500,33 @@ async function bizCountUnread() {
 /* ---------- Branding (Premium Breeder & Rescue; team members see the owner's) ---------- */
 async function bizLoadBrand() {
   if (!cloudClient || !cloudSession) return;
+  const uid = cloudSession.user.id;
   try {
-    const { data } = await cloudClient.from("brand_settings").select("business_name,accent,logo_path").eq("user_id", cloudJournalUid()).maybeSingle();
+    const { data, error } = await cloudClient.from("brand_settings").select("business_name,accent,logo_path").eq("user_id", cloudJournalUid()).maybeSingle();
+    if (error) throw error;
     bizBrand = data || null;
     if (bizBrand?.logo_path) {
       const r = await cloudClient.storage.from(CLOUD_BUCKET).createSignedUrl(bizBrand.logo_path, 3600 * 12);
       bizBrand.logoUrl = r.data?.signedUrl || "";
     }
+    try {
+      if (bizBrand) localStorage.setItem("scaleTellBrandCache", JSON.stringify({ uid, brand: bizBrand }));
+      else localStorage.removeItem("scaleTellBrandCache");
+    } catch (e) {}
   } catch (e) {
-    bizBrand = null;
+    // Offline or slow: keep the colors already showing rather than flashing back to the default.
   }
   bizApplyBrand();
 }
+/* Apply the last saved business colors right away on launch; the live copy replaces them a moment later. */
+function bizApplyCachedBrand() {
+  try {
+    const c = JSON.parse(localStorage.getItem("scaleTellBrandCache") || "null");
+    if (c && c.uid && c.uid === stLastOwner() && c.brand) { bizBrand = c.brand; bizApplyBrand(); }
+  } catch (e) {}
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => setTimeout(bizApplyCachedBrand, 0));
+else setTimeout(bizApplyCachedBrand, 0);
 function bizShade(hex, amt) {
   // amt < 0 darkens toward black, amt > 0 lightens toward white.
   const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt));
