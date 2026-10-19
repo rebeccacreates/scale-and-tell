@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#45205b"><meta name="robots" content="noindex"><title>Foster · Scale &amp; Tell</title><link rel="icon" href="icon-192.png">
+<style>
+:root{--ink:#332239;--brand:#45205b;--accent:#79538e;--bg:#f4eef7;--card:#fff;--line:#e3d4ea;--muted:#776a80}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Arial,sans-serif}
+main{max-width:560px;margin:auto;padding:20px 16px 48px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px}
+h1{font:italic 700 30px Georgia,serif;color:var(--brand);margin:.2em 0}h2{margin:0;color:var(--brand);font:italic 700 24px Georgia,serif}
+label{display:block;font-weight:600;font-size:14px;margin:10px 0 4px}input,select{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+button{font:700 15px Arial,sans-serif;padding:11px 14px;border:0;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer}button.sec{background:var(--bg);color:var(--brand);border:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.grid button{padding:12px 6px}
+.muted{color:var(--muted);font-size:13px}.row{display:flex;gap:8px;align-items:center;justify-content:space-between}#msg{font-weight:600;min-height:1.4em}
+ul{padding-left:18px;margin:8px 0 0}li{font-size:14px;margin:2px 0}.extra{display:none}.extra.on{display:block}
+</style></head><body><main>
+<div class="row"><h1>Foster ♡</h1><button class="sec" id="out" hidden onclick="signOut()">Sign out</button></div>
+<p class="muted">Log care for the animals you’re fostering. It goes straight to the rescue.</p>
+<div id="app"><div class="card"><p class="muted">Loading…</p></div></div>
+<p id="msg" role="status"></p>
+<p class="muted" style="text-align:center"><a href="./">Scale &amp; Tell</a> · <a href="privacy.html">Privacy</a></p>
+</main>
+<script src="supabase.min.js?v=2.57.4"></script>
+<script>
+const sb = supabase.createClient("https://fitlubsbesadknkjimqd.supabase.co", "sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG");
+const $ = (i) => document.getElementById(i), msg = (t) => ($("msg").textContent = t || "");
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const nice = (d) => { try { return new Date(d + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }); } catch (e) { return d; } };
+let list = [];
+function signInView(mode) {
+  $("out").hidden = true;
+  $("app").innerHTML = '<div class="card"><h2>' + (mode === "up" ? "Create your foster account" : "Sign in") + '</h2><p class="muted">Use the email the rescue has for you.</p>' +
+    '<label>Email<input id="em" type="email" autocomplete="email"></label><label>Password<input id="pw" type="password" autocomplete="' + (mode === "up" ? "new-password" : "current-password") + '" minlength="8"></label>' +
+    '<p><button onclick="auth(\'' + mode + '\')">' + (mode === "up" ? "Create account" : "Sign in") + '</button> <button class="sec" onclick="signInView(\'' + (mode === "up" ? "in" : "up") + '\')">' + (mode === "up" ? "I have an account" : "New here? Create account") + "</button></p>" +
+    (mode === "in" ? '<p><a href="#" onclick="reset();return false">Forgot password?</a></p>' : "") + "</div>";
+}
+async function auth(mode) {
+  const email = $("em").value.trim(), password = $("pw").value;
+  if (!email || password.length < 8) return msg("Enter your email and a password of at least 8 characters.");
+  msg(mode === "up" ? "Creating your account…" : "Signing in…");
+  const r = mode === "up" ? await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } }) : await sb.auth.signInWithPassword({ email, password });
+  if (r.error) return msg(r.error.message);
+  if (mode === "up" && !r.data.session) return msg("Check your email and tap the confirmation link, then come back here and sign in.");
+  msg(""); load();
+}
+async function reset() {
+  const email = $("em").value.trim();
+  if (!email) return msg("Type your email first.");
+  await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname.replace(/foster\.html$/, "") });
+  msg("If that email has an account, a reset link is on its way.");
+}
+async function signOut() { await sb.auth.signOut(); signInView("in"); }
+async function load() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return signInView("in");
+  $("out").hidden = false;
+  const { data, error } = await sb.rpc("foster_animals");
+  if (error) return ($("app").innerHTML = '<div class="card"><p>' + esc(error.message) + "</p></div>");
+  list = data || [];
+  if (!list.length) return ($("app").innerHTML = '<div class="card"><h2>No animals yet</h2><p>Signed in as <b>' + esc(session.user.email) + "</b>. When a rescue assigns an animal to this email, it shows up here.</p></div>");
+  $("app").innerHTML = list.map((a, i) => {
+    const feeds = (a.recent || []).filter((e) => e.section === "Feeding Tracker"), last = feeds[0];
+    return '<div class="card"><div class="row"><h2>' + esc(a.animal) + '</h2><span class="muted">' + esc(a.species || "") + "</span></div>" +
+      '<p class="muted">' + esc(a.org || "Rescue") + (last ? " · last fed " + esc(nice(last.date)) : "") + (a.feedDays ? " · feeds every " + esc(a.feedDays) + " days" : "") + "</p>" +
+      '<div class="grid"><button onclick="quick(' + i + ',\'fed\')">🍽 Fed</button><button onclick="quick(' + i + ',\'refused\')">✕ Refused</button><button onclick="quick(' + i + ',\'shed\')">✨ Shed</button>' +
+      '<button onclick="toggle(' + i + ',\'w\')">⚖ Weight</button><button onclick="toggle(' + i + ',\'n\')">✎ Note</button><button onclick="toggle(' + i + ',\'h\')">🩺 Health</button></div>' +
+      '<div class="extra" id="x' + i + 'w"><label>Weight (grams)<input id="w' + i + '" type="number" min="0" step="0.1"></label><button onclick="log(' + i + ',\'Weight Tracker\',$(\'w' + i + '\').value,\'\')">Save weight</button></div>' +
+      '<div class="extra" id="x' + i + 'n"><label>Note<input id="n' + i + '" maxlength="300" placeholder="Basking a lot, soaked in water bowl…"></label><button onclick="log(' + i + ',\'Observations\',\'Observation\',$(\'n' + i + '\').value)">Save note</button></div>' +
+      '<div class="extra" id="x' + i + 'h"><label>Health note<input id="h' + i + '" maxlength="300" placeholder="Gave medication, stuck shed on toes…"></label><button onclick="log(' + i + ',\'Health & Vet\',\'Health note\',$(\'h' + i + '\').value)">Save</button></div>' +
+      (a.recent?.length ? "<ul>" + a.recent.slice(0, 5).map((e) => "<li>" + esc(nice(e.date)) + " · " + esc(e.detail || e.section) + "</li>").join("") + "</ul>" : "") + "</div>";
+  }).join("");
+}
+function toggle(i, k) { ["w", "n", "h"].forEach((x) => $("x" + i + x).classList.toggle("on", x === k && !$("x" + i + x).classList.contains("on"))); }
+function quick(i, k) {
+  const t = new Date(), hhmm = String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
+  if (k === "fed") return log(i, "Feeding Tracker", "Ate", "", { feedingTime: hhmm });
+  if (k === "refused") return log(i, "Feeding Tracker", "Refused", "", { feedingTime: hhmm });
+  return log(i, "Shed History", "Shed", "");
+}
+async function log(i, section, detail, notes, extra) {
+  const a = list[i];
+  if (section === "Weight Tracker" && !(Number(detail) > 0)) return msg("Enter the weight in grams.");
+  if (section !== "Weight Tracker" && section !== "Feeding Tracker" && section !== "Shed History" && !String(notes || "").trim()) return msg("Write a note first.");
+  msg("Saving…");
+  const { data, error } = await sb.rpc("foster_log", { p_owner: a.owner, p_animal: a.animal, p_section: section, p_detail: String(detail), p_notes: notes || "", p_date: today(), p_extra: extra || {} });
+  if (error || data !== "ok") return msg(error?.message || (data === "denied" ? "This animal isn’t assigned to you anymore." : "Couldn’t save. Try again."));
+  msg("✓ Saved for " + a.animal + " ♡");
+  load();
+}
+sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_IN") load(); });
+load();
+</script></body></html>
