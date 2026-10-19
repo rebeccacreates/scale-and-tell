@@ -26,3 +26,4 @@
 .v57Gene{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0;font-weight:600}.v57Gene select{width:auto}
 .v57Done{opacity:.55}
 .fkList{margin:6px 0 10px;padding-left:20px}.fkList li{margin:3px 0}
+.v57Code{display:block;word-break:break-all;background:#f4eef7;border:1px solid #e3d4ea;border-radius:8px;padding:8px 10px;font:13px ui-monospace,Menlo,monospace;color:#34213f;margin:4px 0}
