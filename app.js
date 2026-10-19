@@ -2806,36 +2806,30 @@ function recordMeta(e) {
     .map(esc)
     .join(" · ");
 }
+let logLimit = 150;
+const LOG_ICONS = { "Feeding Tracker": "🍽", "Shed History": "✨", "Weight Tracker": "⚖", "Enclosure Care": "🏠", "UVB & Lighting": "☀", Supplements: "💊", Observations: "👁", "Health & Vet": "🩺", Breeding: "💞", Ledger: "$" };
 function logList(items) {
-  return items.length
-    ? items
-        .slice()
-        .sort((a, b) => b.date.localeCompare(a.date) || entries.indexOf(b) - entries.indexOf(a))
-        .map(
-          (e) =>
-            '<div class="entry"><b>' +
-            esc(e.animal) +
-            "</b> · " +
-            esc(e.detail) +
-            '<br><span class="muted">' +
-            niceDate(e.date) +
-            " · " +
-            esc(e.section) +
-            (recordMeta(e) ? " · " + recordMeta(e) : "") +
-            "</span>" +
-            (e.section === "Health & Vet" && safeHealthAttachment(e.attachment)
-              ? '<div class="healthAttachment"><img src="' +
-                e.attachment +
-                '" alt="Attached care photo" loading="lazy"></div>'
-              : "") +
-            '<div class="recordActions"><button onclick="editCareRecord(' +
-            entries.indexOf(e) +
-            ')">Edit</button><button onclick="deleteCareRecord(' +
-            entries.indexOf(e) +
-            ')">Delete</button></div></div>',
-        )
-        .join("")
-    : '<p class="muted">No records yet ♡</p>';
+  if (!items.length) return '<p class="muted">No records yet ♡</p>';
+  const pos = new Map(entries.map((e, i) => [e, i]));
+  const sorted = items.slice().sort((a, b) => b.date.localeCompare(a.date) || pos.get(b) - pos.get(a));
+  let last = "", html = "";
+  sorted.slice(0, logLimit).forEach((e) => {
+    if (e.date !== last) { last = e.date; html += '<h4 class="logDay">' + esc(niceDate(e.date)) + "</h4>"; }
+    const i = pos.get(e), meta = recordMeta(e);
+    html += '<div class="entry logRow"><span class="logIcon" aria-hidden="true">' + (LOG_ICONS[e.section] || "•") + '</span><div class="logMain"><b>' + esc(e.animal) + "</b> · " + esc(e.detail) +
+      (meta ? '<br><span class="muted">' + meta + "</span>" : "") +
+      (e.section === "Health & Vet" && safeHealthAttachment(e.attachment) ? '<div class="healthAttachment"><img src="' + e.attachment + '" alt="Attached care photo" loading="lazy"></div>' : "") +
+      '</div><details class="logMore"><summary aria-label="Edit or delete">⋯</summary><div class="recordActions"><button onclick="editCareRecord(' + i + ')">Edit</button><button onclick="deleteCareRecord(' + i + ')">Delete</button></div></details></div>';
+  });
+  if (sorted.length > logLimit) html += '<button class="action secondary" onclick="logLimit+=200;filterLogs&&document.getElementById(\'filteredLogs\')?filterLogs():render()">Show more (' + (sorted.length - logLimit) + " older)</button>";
+  return html;
+}
+function logChip(type) {
+  const sel = document.getElementById("logType");
+  if (sel) sel.value = type;
+  document.querySelectorAll(".logChips .chip").forEach((c) => c.classList.toggle("on", c.dataset.t === type));
+  logLimit = 150;
+  filterLogs();
 }
 function editCareRecord(i) {
   let e = entries[i];
@@ -3657,7 +3651,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.64";
+const SCALE_LC_VERSION = "3.65";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4064,7 +4058,7 @@ function render() {
       animals.length +
       " animal" +
       (animals.length === 1 ? "" : "s") +
-      '. The first three appear on Home. Search below to find an animal.</p><button class="action" onclick="addAnimal()">+ Add animal</button>' +
+      '. Tap one to open it.</p><button class="action" onclick="addAnimal()">+ Add animal</button>' +
       (legacySampleCandidates().length
         ? '<div class="notice">This account still contains unused starter examples: ' +
           esc(legacySampleCandidates().join(", ")) +
@@ -4075,23 +4069,20 @@ function render() {
       " of " +
       animals.length +
       " shown</p>" +
-      animals
+      rosterToolbar() +
+      rosterOrder()
         .map(
-          (a, i) =>
-            '<div class="task reptileListItem" data-match="' +
+          (i) => { const a = animals[i], st = rosterStatus(a); return (
+            '<div class="task reptileListItem rosterRow" data-match="' +
             esc((a + " " + (species[a] || "")).toLowerCase()) +
-            '"><div class="rosterSummary">' +
+            '" data-sp="' + esc(species[a] || "Other") + '"><button class="rosterTap" onclick="openAnimalAt(' + i + ')">' +
             profilePicture(a, "reptileListPic") +
-            "<div><b>" +
+            "<span><b>" +
             esc(a) +
             "</b><small>" +
-            esc(species[a] || "Other") +
-            "</small>" +
-            '</div><button class="action secondary" onclick="openAnimalAt(' +
-            i +
-            ')">Open</button></div><details class="rosterManage"><summary>Manage ' +
-            esc(a) +
-            '</summary><div class="rosterControl"><button onclick="renameAnimal(' +
+            esc(species[a] || "Other") + (profiles[a]?.sex && !/unknown/i.test(profiles[a].sex) ? " · " + esc(profiles[a].sex) : "") +
+            '</small><small class="rosterSt ' + st.cls + '">' + esc(st.text) + "</small></span></button>" +
+            '<details class="rosterManage"><summary aria-label="More options for ' + esc(a) + '">⋯</summary><div class="rosterControl"><button onclick="renameAnimal(' +
             i +
             ')">Edit details</button><button onclick="moveAnimal(' +
             i +
@@ -4107,7 +4098,7 @@ function render() {
             esc(a) +
             ' down">Move down ↓</button><button onclick="archiveAnimal(' +
             i +
-            ')">Archive</button></div></details></div>',
+            ')">Archive</button></div></details></div>'); },
         )
         .join("") +
       '<details class="compactDisclosure"><summary>Archived animals and devices</summary><button class="action secondary" onclick="openPanel(&quot;Archived Reptiles&quot;)">Archived animals</button><button class="action secondary" onclick="openPanel(&quot;Devices&quot;)">Manage devices</button></details>';
@@ -4201,9 +4192,9 @@ function render() {
   if (current === "Care Logs") {
     let names = [...new Set([...animals, ...entries.filter((e) => e.section !== "Calendar").map((e) => e.animal)])];
     el.innerHTML =
-      '<p class="muted">One shared care history for every animal.</p><button class="action secondary" onclick="openPanel(&quot;Import Existing Records&quot;)">📷 Import old logs from a screenshot</button><label class="logSearchLabel">Search care records<input type="search" id="logSearch" maxlength="100" placeholder="Feeding, prey, notes…" oninput="filterLogs()"></label><details class="compactDisclosure" id="careFilterDetails" ' +
+      '<p class="muted">One shared care history for every animal.</p><button class="action secondary" onclick="openPanel(&quot;Import Existing Records&quot;)">📷 Import old logs from a screenshot</button><label class="logSearchLabel">Search care records<input type="search" id="logSearch" maxlength="100" placeholder="Feeding, prey, notes…" oninput="filterLogs()"></label><div class="chipRow logChips"><button class="chip on" data-t="" onclick="logChip(\'\')">All</button><button class="chip" data-t="Feeding Tracker" onclick="logChip(\'Feeding Tracker\')">🍽 Feedings</button><button class="chip" data-t="Shed History" onclick="logChip(\'Shed History\')">✨ Sheds</button><button class="chip" data-t="Weight Tracker" onclick="logChip(\'Weight Tracker\')">⚖ Weights</button><button class="chip" data-t="Health & Vet" onclick="logChip(\'Health & Vet\')">🩺 Health</button><button class="chip" data-t="Observations" onclick="logChip(\'Observations\')">👁 Notes</button></div><details class="compactDisclosure" id="careFilterDetails" ' +
       (logPrefillAnimal ? "open" : "") +
-      '><summary>Filter by animal, activity or date</summary><div class="filters"><label>Animal<select id="logAnimal" onchange="filterLogs()"><option value="">All reptiles</option>' +
+      '><summary>Filter by animal, activity or date</summary><div class="filters"><label>Animal<select id="logAnimal" onchange="filterLogs()"><option value="">All animals</option>' +
       names.map((a) => '<option value="' + esc(a) + '">' + esc(a) + "</option>").join("") +
       '</select></label><label>Activity<select id="logType" onchange="filterLogs()"><option value="">All care</option>' +
       [
@@ -5280,10 +5271,11 @@ function calendarMarkup() {
     done = tasks.filter((e) => e.done);
   return (
     '<p class="muted">All your saved reminders in one place.</p>' +
-    pushSettingsMarkup() +
+    (typeof pushDeviceEnabled !== "undefined" && pushDeviceEnabled ? '<details class="compactDisclosure"><summary>🔔 Phone reminders are on · settings</summary>' + pushSettingsMarkup() + "</details>" : pushSettingsMarkup()) +
     '<h3 class="sectionTitle">Due & overdue (' +
     due.length +
     ")</h3>" +
+    (due.length > 1 ? '<button class="action secondary" onclick="completeAllDue()">✓ Mark all ' + due.length + " done</button>" : "") +
     taskMarkup(due) +
     '<h3 class="sectionTitle">Coming up (' +
     upcoming.length +
@@ -7206,7 +7198,9 @@ function updateAuthGate() {
         ? '<button class="authButton" onclick="authCreate()">Create Account</button><button class="authButton light" onclick="authChooseMode(\'signin\')">Already registered? Sign In</button>'
         : '<button class="authButton" onclick="authLogin()">Sign In</button><div class="authMeta"><button class="authLink" onclick="authChooseMode(\'signup\')">Create Account</button><button class="authLink" onclick="authChooseMode(\'reset\')">Forgot Password?</button></div>') +
     '<p id="cloudStatus" class="authMessage" role="status"></p>' +
-    authGuestActions();
+    authGuestActions() +
+    (!reset && !signup && landingFirstVisit() ? landingBottom() : "");
+  if (!reset && !signup && landingFirstVisit()) body.insertAdjacentHTML("afterbegin", landingTop());
 }
 function authGuestActions() {
   return '<div class="authDivider">Browse without an account</div><button class="authButton outline" onclick="authGuestGuides()">Explore Our Care Guides</button><a class="authFacebook" href="https://www.facebook.com/share/g/1HxUA4zXkr/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer"><span class="fbGlyph" aria-hidden="true">f</span>Join Our Facebook Community ↗</a><p class="authSupport">Viewing guides is free. Sign in to keep personal care records synced across devices.</p>';
@@ -12868,3 +12862,83 @@ function stUseTemplate(i) {
       UPDATE_TEMPLATES.map((t, i) => '<button class="resourceTile" onclick="stUseTemplate(' + i + ')"><strong>' + esc(t.label) + "</strong><small>" + esc(t.subject) + "</small></button>").join("") + base();
   };
 })();
+
+/* V3.65 · My Reptiles: sort, filter by species, and feeding status on every row. */
+let rosterSort = "", rosterSp = "";
+try { rosterSort = localStorage.getItem("scaleTellRosterSort") || ""; } catch (e) {}
+function rosterStatus(a) {
+  if (brumationOf(a)) return { text: "💤 Brumating", cls: "" };
+  const f = lastFeed(a), n = Number(carePlans[a]?.feedDays) || 0;
+  if (!f) return { text: "No feedings logged yet", cls: "" };
+  const d = daysSince(f.date), left = n ? n - d : null;
+  const fed = (f.detail === "Refused" ? "Refused " : "Fed ") + (d === 0 ? "today" : d === 1 ? "yesterday" : d + " days ago");
+  if (left === null) return { text: fed, cls: "" };
+  return { text: fed + " · " + (left > 0 ? "due in " + left + (left === 1 ? " day" : " days") : left === 0 ? "due today" : "overdue " + -left + (left === -1 ? " day" : " days")), cls: left < 0 ? "late" : left === 0 ? "due" : "" };
+}
+function rosterOrder() {
+  const idx = animals.map((a, i) => i).filter((i) => !rosterSp || (species[animals[i]] || "Other") === rosterSp);
+  const fedAt = (a) => lastFeed(a)?.date || "";
+  const dueIn = (a) => { const f = lastFeed(a), n = Number(carePlans[a]?.feedDays) || 0; return f && n ? n - daysSince(f.date) : 9999; };
+  const by = {
+    name: (x, y) => animals[x].localeCompare(animals[y]),
+    species: (x, y) => (species[animals[x]] || "").localeCompare(species[animals[y]] || "") || animals[x].localeCompare(animals[y]),
+    due: (x, y) => dueIn(animals[x]) - dueIn(animals[y]),
+    fed: (x, y) => fedAt(animals[x]).localeCompare(fedAt(animals[y])),
+  }[rosterSort];
+  return by ? idx.sort(by) : idx;
+}
+function rosterToolbar() {
+  const sps = [...new Set(animals.map((a) => species[a] || "Other"))].sort();
+  return '<div class="rosterTools"><label>Sort<select onchange="rosterSort=this.value;try{localStorage.setItem(\'scaleTellRosterSort\',this.value)}catch(e){};render()">' +
+    [["", "My order"], ["name", "Name A–Z"], ["species", "Species"], ["due", "Feeding due first"], ["fed", "Longest since fed"]].map(([v, l]) => '<option value="' + v + '"' + (rosterSort === v ? " selected" : "") + ">" + l + "</option>").join("") + "</select></label></div>" +
+    (sps.length > 1 ? '<div class="chipRow">' + ['<button class="chip' + (!rosterSp ? " on" : "") + '" onclick="rosterSp=\'\';render()">All ' + animals.length + "</button>"].concat(sps.map((x) => '<button class="chip' + (rosterSp === x ? " on" : "") + '" onclick="rosterSp=\'' + esc(x).replace(/'/g, "\\'") + '\';render()">' + esc(x) + " " + animals.filter((a) => (species[a] || "Other") === x).length + "</button>")).join("") + "</div>" : "");
+}
+
+/* V3.65 · Clear every due reminder at once (repeating ones schedule their next date as usual). */
+function completeAllDue() {
+  const t = today(), idx = entries.map((e, i) => [e, i]).filter(([e]) => e.section === "Calendar" && !e.done && e.date <= t).map(([, i]) => i);
+  if (!idx.length || !confirm("Mark all " + idx.length + " due reminders done? Repeating reminders move to their next date.")) return;
+  const r = render;
+  render = () => {};
+  try { idx.forEach((i) => completeReminder(i, true)); } finally { render = r; }
+  stToast("✓ " + idx.length + " reminders done");
+  render();
+}
+
+/* ===================== V3.65 · Front page for first-time visitors (signed out, never signed in here) ===================== */
+function landingFirstVisit() {
+  try { return !localStorage.getItem("scaleTellSyncOwner33") && !localStorage.getItem("scaleTellLandingSeen"); } catch (e) { return true; }
+}
+function landingTop() {
+  return '<div class="landTop"><p class="landKick">The care journal for reptiles &amp; exotic pets</p><h1 class="landH">Every feeding, shed &amp; milestone, in one place ♡</h1>' +
+    '<p class="landSub">Reminders on your phone, care history you can share with your vet, and tools for breeders and rescues. Made by keepers, for keepers.</p>' +
+    '<div class="landCtas"><button class="authButton" onclick="authChooseMode(\'signup\')">Get started</button><button class="authButton light" onclick="document.getElementById(\'cloudEmail\').scrollIntoView({behavior:\'smooth\',block:\'center\'});document.getElementById(\'cloudEmail\').focus()">I have an account</button></div>' +
+    '<a class="landMore" href="#landFeatures" onclick="event.preventDefault();document.getElementById(\'landFeatures\').scrollIntoView({behavior:\'smooth\'})">See what it does ↓</a></div><h2 class="landSignin">Sign in</h2>';
+}
+function landingBottom() {
+  const f = (i, t, d) => '<div class="landF"><span>' + i + "</span><b>" + t + "</b><small>" + d + "</small></div>";
+  const plan = (n, p, d) => '<div class="landP"><b>' + n + "</b><span>" + p + "</span><small>" + d + "</small></div>";
+  return '<section class="landSec" id="landFeatures"><h2>For keepers</h2><div class="landGrid">' +
+    f("🍽", "One-tap logs", "Feedings with the time, sheds, weights, cleanings and notes.") +
+    f("🔔", "Phone reminders", "Never wonder who ate when, even with a big collection.") +
+    f("📈", "Trends", "Weight charts, refusal streaks and shed predictions.") +
+    f("🩺", "Vet-ready history", "Send your vet a full care history before the visit.") +
+    f("🏖", "Pet-sitter sheet", "Clear care instructions in one tap.") +
+    f("▷", "Learn", "Illustrated care guides and hand-picked videos.") + "</div>" +
+    '<h2>For breeders</h2><div class="landGrid">' +
+    f("▤", "Racks", "Feed a whole rack at once.") + f("💞", "Pairings & clutches", "Locks, ovulation, clutches, litters and babies.") +
+    f("🧬", "Genetics calculator", "See possible babies from any pairing.") + f("📦", "Sales", "Listings, deposits, invoices, buyer packets and Expo Mode.") + "</div>" +
+    '<h2>For rescues</h2><div class="landGrid">' +
+    f("♧", "Intake to adoption", "Quarantine, medical, available and adopted.") + f("⌂", "Fosters", "Each foster sees only their animals.") +
+    f("✍", "E-sign contracts", "Adopters sign on their phone.") + f("★", "Impact report", "Year-end numbers for grants and donors.") + "</div>" +
+    '<h2>Plans</h2><div class="landPlans">' +
+    plan("Founding Keeper", "$14.99 once", "40 animals · 3 logins · reminders, designs, Care Binder &amp; Keeper Tools") +
+    plan("Founding Breeder", "$14.99 / year", "150 animals · racks, pairings, clutches · 3 logins") +
+    plan("Premium Breeder", "$29.99 / year", "400 animals · genetics, invoices, your logo · 5 logins") +
+    plan("Rescue", "$29.99 / year", "300 animals · fosters, contracts · $14.99 for verified 501(c)(3)s") +
+    '</div><p class="landNote">No subscription for Founding Keeper. 10% of paid-plan profits are donated to a nonprofit reptile rescue ♡</p>' +
+    '<p class="landNote">Works on iPhone, Android and computer. Works with Govee sensors and Herpstat thermostats (Scale &amp; Tell is independent and not affiliated with either company).</p>' +
+    '<button class="authButton" onclick="authChooseMode(\'signup\');window.scrollTo({top:0,behavior:\'smooth\'})">Create my account</button>' +
+    '<p class="landFoot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="mailto:support@scaleandtell.app">Contact</a></p></section>';
+}
+

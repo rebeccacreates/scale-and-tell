@@ -38,3 +38,29 @@ body[data-st-theme="forest"] .helpList details,body[data-st-theme="violet"] .hel
 body[data-st-theme="forest"] .v57Stats div,body[data-st-theme="violet"] .v57Stats div,body[data-st-theme="forest"] .v57Table th,body[data-st-theme="violet"] .v57Table td{border-color:rgba(255,255,255,.18)}
 body[data-st-theme="forest"] .v57Code,body[data-st-theme="violet"] .v57Code{background:rgba(255,255,255,.08);color:inherit;border-color:rgba(255,255,255,.15)}
 body[data-st-theme="forest"] .stBanner,body[data-st-theme="violet"] .stBanner{background:#3a3220;border-color:#6b5a30;color:#fff3d6}
+/* V3.65 lists */
+.chipRow{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}.chipRow::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid #e3d4ea;background:var(--card,#fff);color:inherit;border-radius:999px;padding:6px 12px;font:600 13px Arial,sans-serif;cursor:pointer;white-space:nowrap}.chip.on{background:#79538e;border-color:#79538e;color:#fff}
+.rosterTools{display:flex;gap:8px;align-items:end;margin:8px 0 2px}.rosterTools label{flex:1;margin:0}
+.rosterRow{display:flex;align-items:center;gap:6px;padding:8px 10px!important}
+.rosterTap{flex:1;display:flex;gap:12px;align-items:center;background:none;border:0;text-align:left;color:inherit;cursor:pointer;padding:0;font:inherit;min-width:0}
+.rosterTap span{display:flex;flex-direction:column;min-width:0}.rosterTap b{font-size:17px}.rosterTap small{opacity:.8}
+.rosterSt{font-weight:600;opacity:1!important}.rosterSt.due{color:#8a5a00}.rosterSt.late{color:#b3261e}
+.rosterRow .rosterManage{position:relative;margin:0}.rosterRow .rosterManage>summary{list-style:none;cursor:pointer;font-size:22px;padding:4px 10px;border-radius:10px}.rosterRow .rosterManage>summary::-webkit-details-marker{display:none}
+.rosterRow .rosterManage[open] .rosterControl{position:absolute;right:0;top:36px;z-index:5;background:var(--card,#fff);border:1px solid #e3d4ea;border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:150px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.logDay{margin:14px 0 4px;font:700 13px Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;opacity:.7}
+.logRow{display:flex;gap:10px;align-items:flex-start;padding:8px 10px!important}.logIcon{font-size:18px;line-height:1.4}.logMain{flex:1;min-width:0}
+.logMore>summary{list-style:none;cursor:pointer;font-size:20px;padding:0 8px}.logMore>summary::-webkit-details-marker{display:none}.logMore[open] .recordActions{display:flex;flex-direction:column;gap:4px}
+body[data-st-theme="forest"] .rosterSt.due,body[data-st-theme="violet"] .rosterSt.due{color:#ffd27a}body[data-st-theme="forest"] .rosterSt.late,body[data-st-theme="violet"] .rosterSt.late{color:#ff9a8f}
+body[data-st-theme="forest"] .chip,body[data-st-theme="violet"] .chip,body[data-st-theme="forest"] .rosterRow .rosterManage[open] .rosterControl,body[data-st-theme="violet"] .rosterRow .rosterManage[open] .rosterControl{background:#2b2b2b;border-color:rgba(255,255,255,.2)}
+.rosterRow .rosterTap{background:none!important;box-shadow:none!important;border:0!important;padding:0!important;margin:0!important;color:inherit!important;min-height:0}.rosterRow .reptileListPic{width:64px;height:64px;border-radius:14px;object-fit:cover;flex:none}
+/* V3.65 front page */
+.landTop{text-align:center;padding:4px 0 10px}.landKick{font:700 12px Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#2f6a1c;margin:0}
+.landH{font:italic 700 30px/1.15 Georgia,serif;color:#45205b;margin:8px 0}.landSub{margin:0 0 12px;line-height:1.5}
+.landCtas{display:flex;flex-direction:column;gap:8px}.landMore{display:inline-block;margin-top:10px;font-weight:700;color:#79538e}
+.landSignin{font:italic 700 22px Georgia,serif;color:#45205b;margin:22px 0 4px;border-top:1px solid #e3d4ea;padding-top:18px}
+.landSec{margin-top:26px;border-top:1px solid #e3d4ea;padding-top:8px}.landSec h2{font:italic 700 22px Georgia,serif;color:#45205b;margin:18px 0 8px}
+.landGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.landF{border:1px solid #e3d4ea;border-radius:14px;padding:10px;background:#fff;display:flex;flex-direction:column;gap:2px;text-align:left}.landF span{font-size:20px}.landF b{font-size:14px}.landF small{font-size:12px;opacity:.85;line-height:1.35}
+.landPlans{display:flex;flex-direction:column;gap:8px}.landP{border:1px solid #e3d4ea;border-radius:14px;padding:12px;background:#fff;display:grid;grid-template-columns:1fr auto;gap:2px 8px;text-align:left}.landP span{font-weight:700;color:#2f6a1c}.landP small{grid-column:1/-1;font-size:13px;opacity:.85}
+.landNote{font-size:13px;opacity:.85;margin:10px 0}.landFoot{text-align:center;font-size:13px;margin-top:14px}
+.landTop ~ h1,.landTop ~ .authTagline,.landTop ~ .authIntro{display:none}
