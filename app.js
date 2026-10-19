@@ -678,7 +678,16 @@ function stCanAddAnimal() {
   stToast("Your plan holds " + stAnimalLimit() + " animals. Upgrade to add more ♡");
   return false;
 }
+/* A business's own brand color replaces the app design everywhere, so every device looks the same. */
+function stBrandActive() {
+  if (typeof window.__stBrandOn === "boolean") return window.__stBrandOn;
+  try {
+    const c = JSON.parse(localStorage.getItem("scaleTellBrandCache") || "null");
+    return !!(c && /^#[0-9a-f]{6}$/i.test(c.brand?.accent || "") && c.uid === localStorage.getItem("scaleTellSyncOwner33"));
+  } catch (e) { return false; }
+}
 function stSetTheme(v) {
+  if (stBrandActive() && stPreviewTheme === null) v = "original";
   document.body.dataset.stTheme = ST_THEME_IDS.includes(v) ? v : "original";
   let meta = document.querySelector('meta[name="theme-color"]');
   if (meta)
@@ -796,9 +805,10 @@ function founderSaveTheme() {
     stSavedTheme = v;
     stPreviewTheme = null;
     stSetTheme(v);
+    try { accountPrefsSet("theme", v); save(); } catch (e) {}
     let t = document.getElementById("studioThemeStatus");
     if (t)
-      t.textContent = "✓ " + ST_THEME_NAMES[v] + " saved on this device. Your journal and photos were not changed.";
+      t.textContent = "✓ " + ST_THEME_NAMES[v] + " saved on all your devices. Your journal and photos were not changed.";
   } catch (e) {
     let t = document.getElementById("studioThemeStatus");
     if (t) t.textContent = "Could not save this preference. Your records were not changed.";
@@ -8380,6 +8390,15 @@ function cloudApplyLocalSnapshot(p) {
         (e?.message || ""),
     );
   }
+  stThemeFromPrefs(p.accountPrefs);
+}
+/* V3.53 · The chosen app design follows the keeper to every device. */
+function stThemeFromPrefs(prefs) {
+  const v = prefs && prefs.theme;
+  if (!ST_THEME_IDS.includes(v) || v === stSavedTheme) return;
+  stSavedTheme = v;
+  try { localStorage.setItem(ST_THEME_KEY, v); } catch (e) {}
+  if (stPreviewTheme === null && (stCanUsePack() || stThemeCacheOk(stLastOwner()))) stSetTheme(v);
 }
 async function cloudRestore() {
   if (cloudWorking) return;
@@ -10506,6 +10525,15 @@ function bizApplyCachedBrand() {
 }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => setTimeout(bizApplyCachedBrand, 0));
 else setTimeout(bizApplyCachedBrand, 0);
+function bizLum(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function bizContrast(x, y) {
+  const a = bizLum(x), b = bizLum(y);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
 function bizShade(hex, amt) {
   // amt < 0 darkens toward black, amt > 0 lightens toward white.
   const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt));
@@ -10517,6 +10545,7 @@ function bizApplyBrand() {
   let banner = document.getElementById("bizBanner"), css = document.getElementById("bizBrandCss");
   const on = bizBrand && (bizBrand.business_name || bizBrand.logoUrl);
   if (!on) {
+    if (window.__stBrandOn) { window.__stBrandOn = false; stSetTheme(stCanUsePack() ? stSavedTheme : "original"); }
     banner?.remove();
     css?.remove();
     if (hello) hello.style.display = "";
@@ -10533,21 +10562,35 @@ function bizApplyBrand() {
     '<div><b>' + esc(bizBrand.business_name || "") + '</b><small>Powered by Scale &amp; Tell ♡ Herps &amp; Hers</small></div>';
   // Their color becomes the app's accent: buttons, headings, tabs and badges.
   const a = /^#[0-9a-f]{6}$/i.test(bizBrand.accent || "") ? bizBrand.accent : null;
+  const was = window.__stBrandOn;
+  window.__stBrandOn = !!a;
+  if (was !== window.__stBrandOn) stSetTheme(stCanUsePack() ? stSavedTheme : "original");
   if (!a) { css?.remove(); return; }
   if (!css) { css = document.createElement("style"); css.id = "bizBrandCss"; document.head.appendChild(css); }
-  const dark = bizShade(a, -0.35), light = bizShade(a, 0.85), soft = bizShade(a, 0.93);
+  // Every color is checked for contrast, so any brand color a keeper picks stays easy to read.
+  const light = bizShade(a, 0.85), soft = bizShade(a, 0.93);
+  let dark = bizShade(a, -0.35);
+  for (let k = -0.45; bizContrast(dark, "#ffffff") < 5 && k >= -0.9; k -= 0.1) dark = bizShade(a, k);
+  let glow = bizShade(a, 0.45); // text on the dark app designs
+  for (let k = 0.55; bizContrast(glow, "#1d2a24") < 5.5 && k <= 0.95; k += 0.1) glow = bizShade(a, k);
+  const onFill = bizContrast(a, "#ffffff") >= 4.5 ? "#ffffff" : bizContrast(a, "#ffffff") >= 3 && bizContrast(a, "#1b1b1b") < 6 ? "#ffffff" : "#1b1b1b";
+  const D = (sel) => sel.split(",").map((x) => 'body[data-st-theme="forest"] ' + x + ',body[data-st-theme="violet"] ' + x).join(",");
+  const heads = ".homeSecHead h2,.sectionTitle,.sheet h2,.modal h2,.resourceTile strong,.menuTile strong,.homeCardText b,.homeToday h2,.homeToday h3,.lcPanel h3,.productCard h3";
   css.textContent =
-    ".action:not(.secondary),.homeViewAll,.homeTodayActions button,.diyTabs button.on,.menuFeature,#bizBanner{background:" + a + "!important;color:#fff!important;border-color:" + a + "!important}" +
+    ".action:not(.secondary),.homeViewAll,.homeTodayActions button,.diyTabs button.on,.menuFeature,#bizBanner{background:" + a + "!important;color:" + onFill + "!important;border-color:" + a + "!important}" +
     ".action.secondary,.homeTodayActions button+button{background:" + light + "!important;color:" + dark + "!important}" +
-    ".homeSecHead h2,.sectionTitle,.sheet h2,.resourceTile strong,.menuTile strong,.homeCardText b,.homeToday h2,.homeToday h3{color:" + dark + "!important}" +
-    ".stBadge{background:" + dark + "!important}.rackMini i{background:" + light + "}.rackMini i.on{background:" + a + "!important}.rackMini{background:" + soft + "!important}" +
+    heads + "{color:" + dark + "!important}" +
+    ".stBadge{background:" + dark + "!important;color:#fff!important}.rackMini i{background:" + light + "}.rackMini i.on{background:" + a + "!important}.rackMini{background:" + soft + "!important}" +
     ".homeCard,.resourceTile,.menuTile,.deviceCard,.diyGuide{border-color:" + light + "!important}" +
     ".homeCardAdd,.homePetsLink{border-color:" + a + "!important;color:" + dark + "!important}" +
     "a{color:" + dark + "}" +
+    // Dark app designs (Forest Green, Deep Purple): headings and links switch to a light tint of the brand color.
+    D(heads + ",.homeCardAdd,.homePetsLink,a") + "{color:" + glow + "!important}" +
+    D(".rackMini") + "{background:rgba(255,255,255,.06)!important}" +
     // The bottom bar is artwork, so it is re-tinted from the app's purple to the brand hue.
     ".homeNav img{filter:hue-rotate(" + bizHueShift(a) + "deg) saturate(" + bizSatScale(a) + ")}" +
-    // Text sitting on a filled brand color stays white so it is always readable.
-    ".menuFeature strong,.menuFeature small,.action:not(.secondary) *,#bizBanner b,#bizBanner small{color:#fff!important}";
+    // Text sitting on a filled brand color uses whichever of white or near-black reads best.
+    ".menuFeature strong,.menuFeature small,.action:not(.secondary) *,#bizBanner b,#bizBanner small{color:" + onFill + "!important}";
 }
 
 function bizBrandPrint(html) {
