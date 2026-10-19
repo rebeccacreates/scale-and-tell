@@ -755,6 +755,8 @@ function founderClearEntitlement() {
   stAccessFailed = false;
   stPreviewTheme = null;
   stSetTheme("original");
+  window.__stIsAdmin = false;
+  try { stEmailPref = null; } catch (e) {}
   try { bizBrand = null; bizApplyBrand(); } catch (e) {}
   if (current === "Founding Keeper Studio") render();
 }
@@ -811,6 +813,7 @@ async function founderRefreshEntitlement() {
       if (stCanUseApp() && ["empty", "synced"].includes(cloudAutoStatus)) cloudSetStatus(cloudAutoStatus);
       setTimeout(stMaybeShowUpgrade, 1500);
       setTimeout(rescueMaybeAskLayout, 1800);
+      setTimeout(stAdminCheck, 1200);
       try { renderHomeCards(); } catch (e) {}
       setTimeout(bizQueueAuto, 2500);
       if (!window.__stTransferChecked) { window.__stTransferChecked = true; setTimeout(transferCheck, 3500); }
@@ -1414,6 +1417,7 @@ function menuMarkup() {
     ["Welcome Tour", "Replay the introduction"],
     ["Privacy & Account", "Privacy, and deleting your account"],
   ];
+  if (window.__stIsAdmin) tools.unshift(["Send Update Email", "Email everyone who gets app updates"]);
   let tiles = (group) =>
     group
       .map(
@@ -3939,7 +3943,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.54";
+const SCALE_LC_VERSION = "3.55";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7978,6 +7982,7 @@ function cloudAccountMarkup() {
     esc(label) +
     "</b></p>" +
     action +
+    stEmailPrefMarkup() +
     advanced +
     '<button class="action secondary" onclick="openPanel(\'Privacy & Account\')">Privacy & account options</button><button class="action secondary" onclick="cloudSignOut()">Sign out</button><p class="muted">' +
     (state === "synced" && cloudConfirmedAt
@@ -10296,6 +10301,60 @@ async function stStartSub(sku) {
   } catch (e) { msg(e.message || "Checkout is unavailable right now."); }
 }
 
+/* V3.54 · App update emails: keepers choose in My Account; admins send updates from the Menu. */
+let stEmailPref = null;
+function stEmailPrefMarkup() {
+  if (stEmailPref === null) setTimeout(stEmailPrefLoad, 0);
+  return '<label class="emailPref"><input type="checkbox" id="emailUpd" ' + (stEmailPref ? "checked" : "") + (stEmailPref === null ? " disabled" : "") +
+    ' onchange="stEmailPrefSet(this.checked)"> Email me about app updates and new features</label><p class="lcSmall" id="emailUpdMsg">A few emails a year. Unsubscribe anytime.</p>';
+}
+async function stEmailPrefLoad() {
+  if (!cloudClient || !cloudSession || stEmailPref !== null) return;
+  try {
+    const { data } = await cloudClient.from("email_prefs").select("updates").eq("user_id", cloudSession.user.id).maybeSingle();
+    stEmailPref = data ? !!data.updates : false;
+  } catch (e) { stEmailPref = false; }
+  const b = document.getElementById("emailUpd");
+  if (b) { b.disabled = false; b.checked = stEmailPref; }
+}
+async function stEmailPrefSet(on) {
+  const m = document.getElementById("emailUpdMsg");
+  try {
+    const { error } = await cloudClient.from("email_prefs").update({ updates: on, updated_at: new Date().toISOString() }).eq("user_id", cloudSession.user.id);
+    if (error) throw error;
+    stEmailPref = on;
+    if (m) m.textContent = on ? "✓ You’ll get app update emails." : "✓ You won’t get app update emails.";
+  } catch (e) {
+    if (m) m.textContent = "Couldn’t save. Please try again.";
+    const b = document.getElementById("emailUpd"); if (b) b.checked = !on;
+  }
+}
+async function stAdminCheck() {
+  if (!cloudClient || !cloudSession) return;
+  try {
+    const { data } = await cloudClient.from("app_admins").select("user_id").eq("user_id", cloudSession.user.id).maybeSingle();
+    window.__stIsAdmin = !!data;
+    if (window.__stIsAdmin && current === "Menu") render();
+  } catch (e) {}
+}
+let stMailState = { subject: "", body: "", msg: "", stats: null };
+async function stMailStats() {
+  try { stMailState.stats = await hubInvoke({ action: "email_count" }); if (current === "Send Update Email") render(); } catch (e) {}
+}
+async function stMailSend(test) {
+  stMailState.subject = document.getElementById("mailSubj")?.value.trim() || "";
+  stMailState.body = document.getElementById("mailBody")?.value.trim() || "";
+  const msg = (t) => { stMailState.msg = t; const m = document.getElementById("mailMsg"); if (m) m.textContent = t; };
+  if (!stMailState.subject || !stMailState.body) return msg("Add a subject and a message.");
+  if (!test && !confirm("Send “" + stMailState.subject + "” to " + (stMailState.stats?.on ?? "everyone who's subscribed") + " people now?")) return;
+  msg(test ? "Sending you a test…" : "Sending…");
+  try {
+    const r = await hubInvoke({ action: "email_broadcast", subject: stMailState.subject, body: stMailState.body, test });
+    if (test) msg("✓ Test sent to " + (cloudSession?.user?.email || "you") + ". Check your inbox.");
+    else { stMailState = { subject: "", body: "", msg: "✓ Sent to " + r.sent + " people ♡", stats: null }; render(); }
+  } catch (e) { msg(e.message); }
+}
+
 /* V3.41 · Govee: keepers connect their own Govee API key (stored on our server, never in the browser) */
 async function hubInvoke(body) {
   if (!cloudClient || !cloudSession) throw Error("Sign in first.");
@@ -12052,3 +12111,16 @@ function breedSpeciesOk(a, b) {
   if (!x || !y || x === y || x.includes(y) || y.includes(x)) return true;
   return confirm(a + " is listed as a " + species[a] + " and " + b + " as a " + species[b] + ". These are different species and can't produce a clutch together.\n\nSave anyway? (Choose Cancel to fix the animals or their species.)");
 }
+BIZ_PANELS["Send Update Email"] = () => {
+  if (!window.__stIsAdmin) return "<p>Only Scale &amp; Tell admins can send update emails.</p>";
+  if (!stMailState.stats) setTimeout(stMailStats, 0);
+  const st = stMailState.stats;
+  return '<p class="resourceIntro">Email everyone who has app update emails turned on. Each email has an unsubscribe link.</p>' +
+    '<p class="lcSmall"><b>' + (st ? st.on + " of " + st.all + " accounts" : "…") + "</b> will get this email.</p>" +
+    '<label>Subject<input id="mailSubj" maxlength="140" value="' + esc(stMailState.subject) + '" placeholder="e.g. New in Scale & Tell: Watch & Learn"></label>' +
+    '<label>Message<textarea id="mailBody" rows="10" maxlength="8000" placeholder="Hi keepers ♡&#10;&#10;Here’s what’s new…">' + esc(stMailState.body) + "</textarea></label>" +
+    '<p class="lcSmall">Leave a blank line between paragraphs. An “Open Scale &amp; Tell” button and the unsubscribe link are added for you.</p>' +
+    '<div class="inlineActions"><button class="action secondary" onclick="stMailSend(true)">Send me a test</button><button class="action" onclick="stMailSend(false)">Send to everyone</button></div>' +
+    '<p class="helperLine" id="mailMsg" role="status">' + esc(stMailState.msg) + "</p>" +
+    (st?.past?.length ? '<h3 class="sectionTitle">Sent before</h3>' + st.past.map((x) => '<div class="deviceCard"><b>' + esc(x.subject) + '</b><p class="lcSmall">' + niceDate(String(x.created_at).slice(0, 10)) + " · " + x.recipients + " people</p></div>").join("") : "");
+};

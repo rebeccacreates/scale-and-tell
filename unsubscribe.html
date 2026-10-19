@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#45205b"><meta name="robots" content="noindex"><title>Email preferences · Scale &amp; Tell</title><link rel="icon" href="icon-192.png">
+<style>
+:root{--ink:#332239;--brand:#45205b;--accent:#79538e;--bg:#f4eef7;--card:#fff;--line:#e3d4ea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Arial,sans-serif}
+main{max-width:480px;margin:60px auto;padding:0 16px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;text-align:center}
+h1{font:italic 700 28px Georgia,serif;color:var(--brand);margin:.2em 0 .4em}button{font:700 16px Arial,sans-serif;padding:12px 18px;border:0;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer;margin-top:10px}
+button.sec{background:var(--bg);color:var(--brand);border:1px solid var(--line)}a{color:var(--accent)}img{width:72px;border-radius:18px}
+</style></head><body><main><div class="card"><img src="icon-192.png" alt=""><h1 id="h">One moment…</h1><p id="p"></p><div id="b"></div></div>
+<p style="text-align:center"><a href="./">Open Scale &amp; Tell</a></p></main>
+<script>
+const URL_ = "https://fitlubsbesadknkjimqd.supabase.co", KEY = "sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG";
+const t = (new URLSearchParams(location.search).get("t") || "").replace(/[^0-9a-f-]/gi, "");
+const $ = (i) => document.getElementById(i);
+async function set(on) {
+  $("b").innerHTML = "";
+  try {
+    const r = await fetch(URL_ + "/functions/v1/scale-hub", { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" }, body: JSON.stringify({ action: "email_unsub", token: t, on }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Error(j.error || "Something went wrong.");
+    $("h").textContent = on ? "You’re subscribed again ♡" : "You’re unsubscribed";
+    $("p").textContent = on ? "You’ll get Scale & Tell app update emails." : "You won’t get Scale & Tell app update emails anymore. Account emails, like password resets, still arrive.";
+    $("b").innerHTML = on ? "" : '<button class="sec" onclick="set(true)">Oops, keep me subscribed</button>';
+  } catch (e) { $("h").textContent = "Couldn’t update"; $("p").textContent = e.message + " You can also turn update emails off in the app under Menu → My Account."; }
+}
+if (t.length !== 36) { $("h").textContent = "Link not complete"; $("p").textContent = "Open the app and go to Menu → My Account to change your email settings."; }
+else set(false);
+</script></body></html>

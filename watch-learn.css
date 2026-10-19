@@ -14,3 +14,4 @@
 @media (prefers-reduced-motion:reduce){#stBoot img{animation:none}}
 
 #clutchForm.egg .lv,#clutchForm.live .eg{display:none!important}
+.emailPref{display:flex;gap:10px;align-items:center;margin:14px 0 2px;font-weight:600}.emailPref input{width:20px;height:20px;margin:0}
