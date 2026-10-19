@@ -3657,7 +3657,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.63";
+const SCALE_LC_VERSION = "3.64";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -12834,3 +12834,37 @@ async function adminLoad() {
   try { const { data, error } = await cloudClient.rpc("admin_stats"); if (error) throw error; adminStats = data || {}; } catch (e) { adminStats = { error: e.message }; }
   if (current === "Admin Dashboard") render();
 }
+
+/* V3.64 · Ready-made update emails: tap one to fill in the subject and message. */
+const UPDATE_TEMPLATES = [
+  { label: "Help, getting started & privacy", aud: "all", subject: "New in Scale & Tell: help, a smoother start and more ♡",
+    body: "Hi keepers ♡\n\nHere’s what’s new in Scale & Tell:\n\n• A smoother start: one loading screen, then your own layout and colors. No more flashing.\n• Help is built in: search “How do I…?” answers in Menu → More → Help & Feedback.\n• New keepers get a simple 3-step getting-started card on Home.\n• “What’s new” shows you each update the first time you open the app.\n• Rescues: fosters now get their own foster page that shows only the animals assigned to them.\n• Updated Privacy Policy and new Terms of Use, linked in Menu → More → Privacy & Account.\n\nClose the app all the way and open it again to get the update.\n\nThank you for being here ♡\nScale & Tell",
+    banner: "New: Help, a smoother start and more ♡" },
+  { label: "Herpstat, Govee alerts & banners", aud: "all", subject: "Your sensors just got smarter ♡",
+    body: "Hi keepers ♡\n\nNew this week in Scale & Tell:\n\n• Works with Herpstat thermostats: your Herpstat can send its temperatures, humidity and alarms straight into the app (Menu → Devices → Connect Herpstat).\n• Govee alert ranges: choose your own too-hot, too-cold and humidity limits for each sensor, and get a phone alert when it drifts.\n• More animals: rodents, small mammals, amphibians, fish and more, with litter and pup wording for rodent breeders.\n• Brumation mode pauses feeding reminders while an animal brumates.\n\nScale & Tell is independent and not affiliated with Spyder Robotics or Govee.\n\nClose the app all the way and open it again to get the update ♡\nScale & Tell",
+    banner: "New: Herpstat & Govee alerts ♡" },
+  { label: "Keeper Tools, family sharing & business tools", aud: "all", subject: "Keeper Tools, family sharing and more are here ♡",
+    body: "Hi keepers ♡\n\nBig update today:\n\n• Keeper Tools (Founding Keeper): vet and medication reminders, shed predictions from your own logs, then-and-now growth photos and an emergency card.\n• Family sharing: Founding Keeper includes 3 logins, and $29.99 plans include 5.\n• Watch & Learn: hand-picked videos by topic.\n• Feeding times: every feeding can now save the time.\n• Premium Breeder: genetics calculator, invoices and receipts, bulk import, shipping weather check, waitlist and sales summary.\n• Rescues: foster tracking, e-sign adoption contracts, a year-end impact report, a donate button and vet costs per animal.\n\nFounding Keeper is $14.99 once, and 10% of paid-plan profits go to a nonprofit reptile rescue.\n\nClose the app all the way and open it again to get the update ♡\nScale & Tell",
+    banner: "New: Keeper Tools & family sharing ♡" },
+];
+function stUseTemplate(i) {
+  const t = UPDATE_TEMPLATES[i];
+  if (!t) return;
+  stMailState.subject = t.subject;
+  stMailState.body = t.body;
+  stMailState.aud = t.aud;
+  stMailState.msg = "Filled in “" + t.label + "”. Check it, send yourself a test, then Send to everyone.";
+  render();
+  setTimeout(() => {
+    const bt = document.getElementById("bnTitle"); if (bt) bt.value = t.banner;
+    document.getElementById("mailSubj")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 50);
+}
+(function () {
+  const base = BIZ_PANELS["Send Update Email"];
+  BIZ_PANELS["Send Update Email"] = function () {
+    if (!window.__stIsAdmin) return base();
+    return '<h3 class="sectionTitle">⚡ Ready-made updates</h3><p class="lcSmall">Tap one to fill in the email (and the banner headline). You can edit it before sending.</p>' +
+      UPDATE_TEMPLATES.map((t, i) => '<button class="resourceTile" onclick="stUseTemplate(' + i + ')"><strong>' + esc(t.label) + "</strong><small>" + esc(t.subject) + "</small></button>").join("") + base();
+  };
+})();
