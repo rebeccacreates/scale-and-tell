@@ -1014,7 +1014,7 @@ async function founderMountPayPal() {
 function founderStudioMarkup() {
   let access = stCanUsePack();
   return (
-    '<div class="studioTile studioIntro"><h3>Here’s what you get as a Founding Keeper ♡</h3><p><strong>$14.99 · one-time, optional.</strong> Your everyday care tracking and cloud journal remain free.</p><p>Browse everything included below.</p>' +
+    '<div class="studioTile studioIntro"><h3>Here’s what you get as a Founding Keeper ♡</h3><p><strong>$14.99 · one-time, optional.</strong> Your everyday care tracking and cloud journal remain free.</p><p><b>Everything you get:</b></p><ul class="fkList"><li>Room for <b>40 animals</b></li><li><b>3 logins</b> to share your journal with family</li><li><b>Vet &amp; medication reminders</b> on your phone</li><li><b>Shed predictions</b> from each animal’s own history</li><li><b>Photo progress</b>: then-and-now growth photos to share</li><li><b>Emergency card</b>: printable and lock-screen</li><li>Four app designs, your Care Binder, My Year in Scales and keeper printables</li><li>Your ✓ Founding Keeper badge</li></ul><p>Browse the designs and keepsakes below.</p>' +
     (access
       ? '<p class="studioPackNote">✓ Your verified Founding Keeper access is active.</p>'
       : '<p class="studioPackNote">Unlocks automatically on this account right after payment. No subscription.</p>' +
@@ -1373,8 +1373,8 @@ function tourMarkup() {
       stPlanChecking()
         ? '<div class="tourSlide"><p class="planChecking">Checking your plan…</p></div>'
         : stCanUsePack()
-        ? '<div class="tourSlide"><div class="tourPack"><h4>You&#39;re a Founding Keeper ♡</h4><p>Thank you for supporting Scale &amp; Tell! Your extras are unlocked: four app designs, your Care Binder, My Year in Scales, printable keeper cards and room for ' + stAnimalLimit() + ' animals on your ' + esc(ST_PLANS[stPlan()]?.name || "plan") + ' plan.</p><button class="action secondary" onclick="tourDone(\'founder\')">Open Founding Keeper Studio</button></div></div>'
-        : '<div class="tourSlide"><div class="tourPack"><h4>Want more? Become a Founding Keeper ♡</h4><p><b>$14.99 once · optional.</b> Room for 40 animals, four app designs, a personalized Care Binder, My Year in Scales and printable keeper cards. Breeding? See <b>Founding Breeder</b> for racks, pairings and clutches.</p><button class="action secondary" onclick="tourDone(\'founder\')">See the Founding Keeper extras</button></div><p class="lcSmall">Your animals, care logs, reminders, photos and backups are all included already. The extras are just a bonus.</p></div>';
+        ? '<div class="tourSlide"><div class="tourPack"><h4>You&#39;re a Founding Keeper ♡</h4><p>Thank you for supporting Scale &amp; Tell! Your extras are unlocked: Keeper Tools (vet &amp; med reminders, shed predictions, photo progress, emergency card), Family Sharing, four app designs, your Care Binder, My Year in Scales, printable keeper cards and room for ' + stAnimalLimit() + ' animals on your ' + esc(ST_PLANS[stPlan()]?.name || "plan") + ' plan.</p><button class="action secondary" onclick="tourDone(\'founder\')">Open Founding Keeper Studio</button></div></div>'
+        : '<div class="tourSlide"><div class="tourPack"><h4>Want more? Become a Founding Keeper ♡</h4><p><b>$14.99 once · optional.</b> Room for 40 animals, 3 logins for family, vet &amp; medication reminders, shed predictions, photo progress, an emergency card, four app designs, a Care Binder and keepsakes. Breeding? See <b>Founding Breeder</b> for racks, pairings and clutches.</p><button class="action secondary" onclick="tourDone(\'founder\')">See the Founding Keeper extras</button></div><p class="lcSmall">Your animals, care logs, reminders, photos and backups are all included already. The extras are just a bonus.</p></div>';
   return '<div class="tourShell" aria-live="polite">' + page + nav + "</div>";
 }
 function tourGo(step) {
@@ -1418,6 +1418,7 @@ function menuMarkup() {
     ["Privacy & Account", "Privacy, and deleting your account"],
   ];
   if (window.__stIsAdmin) tools.unshift(["Send Update Email", "Email everyone who gets app updates"]);
+  if (stCanUsePack()) main.unshift(["Keeper Tools", "Vet & meds, shed predictions, photo progress, emergency card"]);
   let tiles = (group) =>
     group
       .map(
@@ -1436,7 +1437,7 @@ function menuMarkup() {
       ? '<div class="menuBadgeRow">' + stBadgeMarkup() + '<button class="authLink" onclick="stShareBadge()">Share my badge</button></div>'
       : "") +
     (stPlan() === "member"
-      ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Upgrade&quot;)"><strong>♡ Become a Founding Keeper</strong><small>$14.99 once · your badge in the Herps &amp; Hers group with a weekly shout-out, 40 animals and more</small></button>'
+      ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Upgrade&quot;)"><strong>♡ Become a Founding Keeper</strong><small>$14.99 once · your badge in the Herps &amp; Hers group with a weekly shout-out, 40 animals, 3 logins, vet reminders and more</small></button>'
       : "") +
     '<p class="resourceIntro">Everything your keeper journal needs, in one place.</p><button class="menuTile" onclick="openPanel(&quot;Plans&quot;)"><strong>Plans &amp; animal spaces</strong><small>' +
     animals.length +
@@ -1446,9 +1447,13 @@ function menuMarkup() {
     (stPlan() === "member"
       ? ""
       : '<button class="menuTile menuFeature" onclick="openPanel(&quot;Founding Keeper Studio&quot;)"><strong>♡ Founding Keeper</strong><small>' +
-        (stCanUsePack() ? "Your designs, Care Binder and keepsakes" : "$14.99 once · 40 animals, designs, Care Binder and keepsakes") +
+        (stCanUsePack() ? "Your designs, Care Binder and keepsakes" : "$14.99 once · 40 animals, 3 logins, vet reminders, shed predictions and more") +
         "</small></button>") +
-    (stCanTeam() || stTeam?.role === "member"
+    (!stCanTeam() && (stLogins() > 1 || (stTeam?.role === "member" && !stTeamIsBiz()))
+      ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Team Logins&quot;)"><strong>♡ Family Sharing</strong><small>' +
+        (stTeam?.role === "member" ? "You share " + esc(stTeam.owner_email || "a") + "’s journal" : "Share your journal with up to " + (stLogins() - 1) + " people") + "</small></button>"
+      : "") +
+    (stCanTeam() || (stTeam?.role === "member" && stTeamIsBiz())
       ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Business Tools&quot;)"><strong>✦ Business Tools</strong><small>' +
         (stTeam?.role === "member" ? "Shared journal · Inbox" : "Team logins, Inbox, your public page" + (stCanBrand() ? ", branding, MorphMarket export" : "")) +
         (bizUnread ? " · " + bizUnread + " new" : "") + "</small></button>"
@@ -2432,6 +2437,8 @@ function memberUpgradeMarkup(onHome) {
     '<span class="accessTag">Herps &amp; Hers member</span><h3>Become a Founding Keeper ♡</h3><p>Upgrade once for <b>$14.99</b> and get:</p><ul>' +
     "<li>Your <b>Founding Keeper badge in the Herps &amp; Hers group</b>, announced in our weekly post</li>" +
     "<li>Room for <b>40 animals</b> (you have " + stAnimalLimit() + ")</li>" +
+    "<li><b>3 logins</b> to share with family</li>" +
+    "<li>Vet &amp; medication reminders, shed predictions, photo progress and an emergency card</li>" +
     "<li>Four app designs, Care Binder, My Year in Scales and printables</li>" +
     "<li>The ✓ badge in your app</li></ul>" +
     '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Upgrade to Founding Keeper</button>' +
@@ -2475,13 +2482,13 @@ function plansMarkup() {
       "founding_keeper",
       "$14.99 once",
       "For hobby keepers.",
-      ["Up to <b>40 animals</b>", "Care logs, reminders, photos and backups", "Four app designs, Care Binder, My Year in Scales, printables", (isMember ? "✓ Founding Keeper badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Keeper badge")],
+      ["Up to <b>40 animals</b>", "Care logs, reminders, photos and backups", "Four app designs, Care Binder, My Year in Scales, printables", "<b>3 logins</b> to share with family", "Medication &amp; vet reminders, shed predictions, photo progress and an emergency card", (isMember ? "✓ Founding Keeper badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Keeper badge")],
       '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>',
     ) +
     '<h3 class="sectionTitle">For breeders &amp; rescues</h3><p class="lcSmall">Breeder plans add racks, rack feeding, pairings, clutches and hatchlings.</p>' +
     card("founding_breeder", "$14.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches & litters", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
-    card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "Your logo and colors on the app and printouts", "MorphMarket export"], soon("premium_breeder")) +
-    card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>300 animals</b>", "Everything in Premium Breeder: 3 logins, your logo and colors, MorphMarket export, public page and Inbox", "Listing in Scale Hub → Reptile Rescues with an intake open / full switch", "Verified 501(c)(3)? Add your EIN under Business Tools → Rescue profile for the $14.99/yr price"], soon("rescue")) +
+    card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "<b>5 logins</b> for your team", "Your logo and colors on the app and printouts", "MorphMarket export", "Genetics calculator, invoices &amp; receipts, bulk import, shipping weather check, waitlist and sales summary"], soon("premium_breeder")) +
+    card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>300 animals</b>", "Everything in Premium Breeder: 5 logins, your logo and colors, MorphMarket export, public page and Inbox", "Foster tracking, adoption contracts with e-signatures, a year-end impact report, a donate button and vet costs per animal", "Listing in Scale Hub → Reptile Rescues with an intake open / full switch", "Verified 501(c)(3)? Add your EIN under Business Tools → Rescue profile for the $14.99/yr price"], soon("rescue")) +
     '<p class="lcSmall">Yearly plans renew through PayPal. Cancel anytime in <a href="https://www.paypal.com/myaccount/autopay/" target="_blank" rel="noopener">PayPal → Automatic payments</a>; you keep your plan until the end of the year you paid for.</p><p class="lcSmall">Already have more animals than a plan allows? You keep them all; you just can&#39;t add more until you upgrade.</p>'
   );
 }
@@ -3943,7 +3950,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.56";
+const SCALE_LC_VERSION = "3.58";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4241,7 +4248,7 @@ function render() {
       history.length +
       "</b></div><div><small>Next care</small><b>" +
       nextCareLabel(a) +
-      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button>' + (bizIsBreeder() ? '<button onclick="geneOpen(selectedAnimal)">Genetics &amp; lineage</button>' : '') + (stIsRescue() ? '<button onclick="rescueOf(selectedAnimal) ? rescueOpen(selectedAnimal) : (profiles[selectedAnimal] = { ...(profiles[selectedAnimal] || {}), rescue: { status: \'Intake\', intakeDate: today() } }, bizSaveProfiles(), rescueOpen(selectedAnimal))">Rescue record</button>' : '') + (stIsRescue() || bizIsBreeder() ? '<button onclick="rescueAnimal=selectedAnimal;medEditId=\'\';openPanel(\'Medication\')">Add medication</button>' : '') + (homeBusinessMode() || stIsRescue() ? '<button onclick="saleOpen(selectedAnimal)">' + (stIsRescue() && !stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder") ? "Adoption &amp; placement" : "Listing &amp; sale") + '</button>' : '') + '<button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
+      '</b></div></div><button class="action profilePrimaryAction" onclick="openQuickLog(selectedAnimal)">＋ Quick Log</button><div class="tabs profileNav" role="tablist" aria-label="Animal profile sections"><button type="button" onclick="profileTab(&quot;Overview&quot;)" role="tab">Overview</button><button type="button" onclick="profileTab(&quot;History&quot;)" role="tab">History</button><button type="button" onclick="profileTab(&quot;Habitat&quot;)" role="tab">Habitat</button><button type="button" onclick="profileTab(&quot;Photos&quot;)" role="tab">Photos</button></div><div id="profileTab"></div><details class="profileMore"><summary>More profile options</summary><div class="compactActions"><button onclick="editAnimalByName(selectedAnimal)">Edit animal details</button><button onclick="stShareAnimal(selectedAnimal)">Share this animal ↗</button>' + (bizIsBreeder() ? '<button onclick="geneOpen(selectedAnimal)">Genetics &amp; lineage</button>' : '') + (stIsRescue() ? '<button onclick="rescueOf(selectedAnimal) ? rescueOpen(selectedAnimal) : (profiles[selectedAnimal] = { ...(profiles[selectedAnimal] || {}), rescue: { status: \'Intake\', intakeDate: today() } }, bizSaveProfiles(), rescueOpen(selectedAnimal))">Rescue record</button>' : '') + (stIsRescue() || bizIsBreeder() || stCanUsePack() ? '<button onclick="rescueAnimal=selectedAnimal;medEditId=\'\';openPanel(\'Medication\')">Add medication</button>' : '') + keeperMoreButtons() + (homeBusinessMode() || stIsRescue() ? '<button onclick="saleOpen(selectedAnimal)">' + (stIsRescue() && !stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder") ? "Adoption &amp; placement" : "Listing &amp; sale") + '</button>' : '') + '<button onclick="helpAnimal=selectedAnimal;openPanel(&quot;Urgent Help&quot;)">Urgent Help</button><button onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Personal care targets</button><button onclick="openPanel(&quot;Pet-Sitter Sheet&quot;,selectedAnimal)">Pet-sitter sheet</button></div></details>';
     profileTab("Overview");
     return;
   }
@@ -7349,13 +7356,13 @@ function accessGateMarkup() {
     '<div id="accessGate"><h1>Welcome to Scale &amp; Tell ♡</h1><p class="authIntro">Signed in as <b>' +
     esc(cloudSession?.user?.email || "your account") +
     "</b>. One last step to open your journal.</p>" +
-    '<div class="accessCard"><h2>Founding Keeper · $14.99 once</h2><p>For hobby keepers. One payment, yours forever. Up to <b>40 animals</b>, four app designs, Care Binder, My Year in Scales and keeper printables.</p>' +
+    '<div class="accessCard"><h2>Founding Keeper · $14.99 once</h2><p>For hobby keepers. One payment, yours forever. Up to <b>40 animals</b> and <b>3 logins</b> for family, vet &amp; medication reminders, shed predictions, photo progress, an emergency card, four app designs, Care Binder, My Year in Scales and keeper printables.</p>' +
     founderCheckoutMarkup() +
     '</div>' +
     '<div class="accessCard accessBreeder"><span class="accessTag">Breeders &amp; rescues</span><h2>More animals? Racks? A rescue?</h2><div class="accessPlans">' +
     '<div><b>Founding Breeder</b><span>$14.99 / year</span><small>150 animals · racks, rack feeding, pairings, clutches · 3 logins</small></div>' +
-    '<div><b>Premium Breeder</b><span>$29.99 / year</span><small>400 animals · your logo &amp; colors · MorphMarket export · 3 logins</small></div>' +
-    '<div><b>Rescue</b><span>$29.99 / year · $14.99 verified 501(c)(3)</span><small>300 animals · intake tools · listing in Scale Hub · 3 logins</small></div>' +
+    '<div><b>Premium Breeder</b><span>$29.99 / year</span><small>400 animals · genetics calculator, invoices, waitlist · 5 logins</small></div>' +
+    '<div><b>Rescue</b><span>$29.99 / year · $14.99 verified 501(c)(3)</span><small>300 animals · intake, fosters, e-sign contracts · 5 logins</small></div>' +
     '</div><button class="authButton" type="button" onclick="openPanel(\'Plans\')">See breeder &amp; rescue plans</button></div>' +
     '<details class="accessCode" id="memberCodeBox"><summary>Have a member or promo code?</summary><label class="authField" for="memberCode">Member or promo code</label><input id="memberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Member code" onkeydown="if(event.key===\'Enter\')accessRedeemCode()"><button class="authButton" type="button" onclick="accessRedeemCode()">Use code</button><p id="memberCodeStatus" class="authMessage" role="status"></p></details>' +
     '<button class="authLink" type="button" onclick="cloudSignOut()">Sign out</button></div>'
@@ -10815,7 +10822,7 @@ const BIZ_PANELS = {
     if (!stCanTeam()) return '<p class="resourceIntro">Business Tools come with Founding Breeder, Premium Breeder and Rescue plans.</p><button class="action" onclick="openPanel(\'Plans\')">See plans</button>';
     const t = (name, title, sub) => '<button class="resourceTile" onclick="openPanel(\'' + name + '\')"><strong>' + title + "</strong><small>" + sub + "</small></button>";
     return '<p class="resourceIntro">Tools for running your breeding business or rescue.</p>' +
-      t("Team Logins", "♡ Team logins", "Invite up to 2 people to share your journal (3 logins total).") +
+      t("Team Logins", "♡ Team logins", "Invite up to " + (stLogins() - 1) + " people to share your journal (" + stLogins() + " logins total).") +
       t("Inbox", "✉ Inbox" + (bizUnread ? " · " + bizUnread + " new" : ""), "Inquiries from your public page and website.") +
       (stIsRescue() ? t("Rescue Animals", "♧ Rescue animals", "Intake, quarantine, medical, available, adopted. New intakes start here.") : "") +
       t("Sales", "$ Listings &amp; sales", "Listed, holds and deposits, sold, shipped and received. Expo mode for shows.") +
@@ -10827,15 +10834,25 @@ const BIZ_PANELS = {
       t("My Public Page", "✦ Public page &amp; social links", "Your inquiry link for your website, Facebook and Instagram bio.") +
       (stIsRescue() ? t("Rescue Layout", "⚙ Racks or enclosures", "Currently: " + (accountPrefs?.rescueLayout === "racks" ? "racks layout" : "enclosures layout") + ". Change how your home screen is set up.") : "") +
       (stIsRescue() ? t("Rescue Profile", "♧ Rescue profile &amp; intake", "Your Scale Hub listing, intake open/full, and 501(c)(3) verification.") : "") +
+      (stIsRescue() ? t("Fosters", "⌂ Foster homes", "Who is fostering which animal, with their own login.") + t("Adoption Contract", "✍ Adoption contracts", "Adopters sign on their phone. Signed copies are saved.") +
+        t("Impact Report", "★ Year-end impact report", "Intakes, adoptions and vet costs for grants and donors.") + t("Donate Button", "♡ Donate button", "Add a donate link to your public page.") : "") +
+      (stIsPremium() ? '<h3 class="sectionTitle">Premium tools</h3>' + t("Genetics Calculator", "🧬 Genetics calculator", "Pick two animals and see the possible babies.") +
+        t("Invoices", "🧾 Invoices &amp; receipts", "Branded invoices with deposits taken off. Download or email.") + t("Bulk Import", "⇩ Bulk import", "Add a whole collection from a spreadsheet or MorphMarket export.") +
+        t("Ship Weather", "🌡 Shipping weather check", "Is it safe to ship on that day, at both ends?") + t("Waitlist", "⏳ Waitlist", "Buyers waiting on a pairing, first come first served.") +
+        t("Sales Summary", "📈 Sales summary", "Sales by month and species, average price and repeat buyers.")
+        : bizIsBreeder() ? '<p class="lcSmall">Premium Breeder adds a genetics calculator, invoices, bulk import, shipping weather check, waitlist and sales summary.</p>' : "") +
       (stCanBrand() ? t("Branding", "❦ Your logo &amp; colors", "Shows in the app and on Care Binder printouts.") + t("MorphMarket Export", "⇪ MorphMarket export", "Download your animals in MorphMarket’s bulk-import format.")
         : '<p class="lcSmall">Premium Breeder adds your logo &amp; colors and MorphMarket export.</p>');
   },
   "Team Logins": () => {
-    const mem = stTeam?.members || [];
-    return '<p class="resourceIntro">Invite up to 2 people (3 logins total, including you). They sign in with their own email and password and share your journal: animals, racks, logs, reminders and photos.</p>' +
+    if (stTeam?.role === "member")
+      return '<p class="resourceIntro">You’re sharing <b>' + esc(stTeam.owner_email || "their") + '</b>’s journal: animals, logs, reminders and photos.</p><button class="action secondary" onclick="bizLeaveTeam()">Leave this journal</button><p id="bizMsg" class="helperLine" role="status"></p>';
+    const mem = stTeam?.members || [], L = stLogins(), back = stCanTeam() ? bizBack() : '<button class="action secondary" onclick="openPanel(\'Menu\')">← Menu</button>';
+    if (L < 2) return '<p class="resourceIntro">Share your journal with family or helpers. Founding Keeper includes 3 logins; $29.99 plans include 5.</p><button class="action" onclick="openPanel(\'Plans\')">See plans</button>' + back;
+    return '<p class="resourceIntro">Invite up to ' + (L - 1) + ' people (' + L + ' logins total, including you). They sign in with their own email and password and share your journal: animals, logs, reminders and photos.</p>' +
       (mem.length ? mem.map((m) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(m.email) + "</b><span>" + (m.status === "active" ? "✓ Joined" : "Invite sent") + '</span></div><div class="recordActions"><button onclick="bizRemoveMember(' + Number(m.id) + ')">Remove</button></div></div>').join("") : '<p class="helperLine">No one invited yet.</p>') +
-      (mem.length < 2 ? '<label>Their email<input id="bizInvite" type="email" maxlength="254" placeholder="helper@example.com"></label><button class="action" onclick="bizInviteMember()">Send invite</button>' : '<p class="lcSmall">Your team is full (3 logins).</p>') +
-      '<p class="lcSmall">They’ll get an email. Once they sign in or create an account with that email, your journal opens for them automatically. Your plan covers them; they don’t need their own.</p><p id="bizMsg" class="helperLine" role="status">' + esc(bizMsg) + "</p>" + bizBack();
+      (mem.length < L - 1 ? '<label>Their email<input id="bizInvite" type="email" maxlength="254" placeholder="helper@example.com"></label><button class="action" onclick="bizInviteMember()">Send invite</button>' : '<p class="lcSmall">You’re using all ' + L + ' logins.</p>') +
+      '<p class="lcSmall">They’ll get an email. Once they sign in or create an account with that email, your journal opens for them automatically. Your plan covers them; they don’t need their own.</p><p id="bizMsg" class="helperLine" role="status">' + esc(bizMsg) + "</p>" + back;
   },
   Inbox: () => '<p class="resourceIntro">Messages sent from your public page. Replies are emailed from Scale &amp; Tell, and their replies come straight to your email.</p><div id="bizInbox"><p class="helperLine">Loading…</p></div><p id="bizMsg" class="helperLine" role="status"></p>' + bizBack(),
   "My Public Page": () => {
@@ -10896,7 +10913,7 @@ async function bizInviteMember() {
   try {
     const { data, error } = await cloudClient.rpc("invite_team_member", { p_email: email });
     if (error) throw error;
-    const msgs = { plan: "Team logins come with breeder and rescue plans.", invalid: "Enter a valid email.", self: "That’s your own email.", limit: "Your team is full (3 logins)." };
+    const msgs = { plan: "Sharing comes with Founding Keeper and every paid plan.", invalid: "Enter a valid email.", self: "That’s your own email.", limit: "You’re using all " + stLogins() + " logins." };
     if (data !== "ok") { bizMsg = msgs[data] || "Couldn’t invite."; return render(); }
     try { await hubInvoke({ action: "team_invite_email", email }); } catch (e) {}
     bizMsg = "Invite sent to " + email + " ♡";
@@ -11471,6 +11488,7 @@ BIZ_PANELS["Rescue Record"] = () => {
     '<label>Public note for your page<input id="rrPublic" maxlength="300" value="' + esc(r.publicNote || "") + '" placeholder="Shy at first, eating f/t weekly, great beginner snake"></label>' +
     '<h3 class="sectionTitle">Intake details</h3><p class="lcSmall">' + esc([r.source, r.surrenderedBy ? "from " + r.surrenderedBy : "", r.contact, r.condition ? "condition: " + r.condition : ""].filter(Boolean).join(" · ") || "Not recorded") + "</p>" +
     (r.issues ? '<p class="lcSmall">' + esc(r.issues) + "</p>" : "") +
+    '<h3 class="sectionTitle">Vet costs</h3><p class="lcSmall">' + bizMoney(vetCostOf(a)) + ' so far <button class="authLink" onclick="vetCostAdd(\'' + esc(a).replace(/'/g, "\\'") + '\')">＋ Add vet cost</button></p>' +
     '<h3 class="sectionTitle">Medications</h3>' + (meds.length ? meds.map((m) => '<div class="deviceCard"><div class="deviceHeading"><b>💊 ' + esc(m.drug) + " " + esc(m.dose || "") + "</b><span>" + (m.end && m.end < today() ? "finished" : "every " + (m.everyDays > 1 ? m.everyDays + " days" : "day") + " · " + esc((m.times || []).join(", "))) + '</span></div><div class="recordActions"><button onclick="medGiven(\'' + esc(m.id) + '\')">Dose given</button><button onclick="medEditId=\'' + esc(m.id) + '\';openPanel(\'Medication\')">Edit</button></div></div>').join("") : '<p class="helperLine">No medications.</p>') +
     '<button class="action secondary" onclick="medEditId=\'\';openPanel(\'Medication\')">＋ Add medication</button>' +
     '<div class="inlineActions"><button class="action" onclick="rescueSaveRecord()">Save</button><button class="action secondary" onclick="packetOpen(rescueAnimal,\'adoption\')">Adoption packet</button><button class="action secondary" onclick="transferAsk(rescueAnimal)">Send records to adopter</button><button class="action secondary" onclick="openPanel(rescueAnimal)">Open ' + esc(a) + "</button></div>" +
@@ -11933,7 +11951,7 @@ function bizQueueAuto() {
 function bizSyncAuto() {
   if (bizAutoBusy) return;
   try {
-    if (!(homeBusinessMode() || stIsRescue() || bizIsBreeder())) return;
+    if (!(homeBusinessMode() || stIsRescue() || bizIsBreeder() || stCanUsePack())) return;
   } catch (e) { return; }
   bizAutoBusy = true;
   try {
@@ -11961,6 +11979,9 @@ function bizSyncAuto() {
         const q = rescueQuarantine(a);
         if (q && r.status === "Quarantine") add("quar:" + a + ":" + q.end, "quarantine", { animal: a, detail: "⏳ Quarantine finished: ready to move to Available?", date: q.end });
         if (r.vetDue) add("vet:" + a + ":" + r.vetDue, "vet", { animal: a, detail: "🩺 Vet follow-up due", date: r.vetDue });
+      }
+      if (!r && p.vetDue && stCanUsePack()) add("vet:" + a + ":" + p.vetDue, "vet", { animal: a, detail: "🩺 Vet follow-up" + (p.vetNote ? ": " + p.vetNote : ""), date: p.vetDue });
+      if (r) {
         if (r.status === "Adopted" && r.adoptedDate) add("adopt:" + a + ":" + r.adoptedDate, "adoptFollow", { animal: a, detail: "🏠 Check in with " + (r.adopter || "the adopter"), date: advanceDate(r.adoptedDate, 14) });
       }
     });
@@ -12134,3 +12155,703 @@ BIZ_PANELS["Send Update Email"] = () => {
     '<p class="helperLine" id="mailMsg" role="status">' + esc(stMailState.msg) + "</p>" +
     (st?.past?.length ? '<h3 class="sectionTitle">Sent before</h3>' + st.past.map((x) => '<div class="deviceCard"><b>' + esc(x.subject) + '</b><p class="lcSmall">' + niceDate(String(x.created_at).slice(0, 10)) + " · " + x.recipients + " people</p></div>").join("") : "");
 };
+
+/* =====================================================================
+   V3.57 · Logins by plan, keeper tools, Premium Breeder tools, rescue tools
+   ===================================================================== */
+function stLogins() {
+  if (stSkus.some((k) => k === "premium_breeder" || k === "rescue")) return 5;
+  if (stSkus.some((k) => k === "founding_keeper" || k === "founding_breeder")) return 3;
+  return 1;
+}
+function stTeamIsBiz() {
+  return (stTeam?.skus || stSkus).some((k) => BIZ_TEAM_SKUS.includes(k));
+}
+function stIsPremium() {
+  return stSkus.includes("premium_breeder") || stSkus.includes("rescue");
+}
+const v57Back = (to, label) => '<button class="action secondary" onclick="openPanel(\'' + to + '\')">← ' + (label || to) + "</button>";
+const v57Msg = (t) => { const m = document.getElementById("bizMsg"); if (m) m.textContent = t; };
+function v57AnimalSelect(id, val, filter) {
+  const list = animals.filter(filter || (() => true));
+  return '<select id="' + id + '">' + list.map((a) => "<option" + (a === val ? " selected" : "") + ">" + esc(a) + "</option>").join("") + "</select>";
+}
+function v57Download(name, blob) {
+  const u = URL.createObjectURL(blob), l = document.createElement("a");
+  l.href = u; l.download = name; document.body.appendChild(l); l.click(); l.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 4000);
+}
+async function v57ShareCanvas(c, name, title) {
+  const blob = await new Promise((ok) => c.toBlob(ok, "image/png"));
+  if (!blob) return;
+  try {
+    const f = new File([blob], name, { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title }); return; }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  v57Download(name, blob);
+}
+
+/* ---------- Brumation (every plan) ---------- */
+function brumationOf(a) { return profiles[a]?.brumation || null; }
+function brumationStart(a) {
+  if (!animals.includes(a) || brumationOf(a)) return;
+  const isFeed = (e) => e.section === "Calendar" && e.animal === a && !e.done && (/feed/i.test(e.detail || "") || e.category === "feeding" || e.autoFeeding);
+  const saved = entries.filter(isFeed).map((e) => ({ ...e }));
+  entries = entries.filter((e) => !isFeed(e));
+  profiles[a] = { ...(profiles[a] || {}), brumation: { since: today(), saved } };
+  bizSaveProfiles();
+  save();
+  stToast("💤 " + a + " is in brumation. Feeding reminders are paused.");
+  render();
+}
+function brumationEnd(a) {
+  const b = brumationOf(a);
+  if (!b) return;
+  const t = today();
+  (b.saved || []).forEach((e) => entries.push({ ...e, date: e.date > t ? e.date : t, done: false }));
+  const p = { ...(profiles[a] || {}) };
+  delete p.brumation;
+  profiles[a] = p;
+  entries.push({ section: "Observations", animal: a, detail: "Out of brumation", date: t, notes: "Brumated since " + niceDate(b.since) });
+  bizSaveProfiles();
+  save();
+  stToast("☀ Welcome back, " + a + "! Feeding reminders are back on.");
+  render();
+}
+
+/* ---------- Shed prediction (Founding Keeper +) ---------- */
+function shedPredict(a) {
+  const d = entries.filter((e) => e.animal === a && e.section === "Shed History").map((e) => e.date).filter(validDate).sort();
+  const u = [...new Set(d)];
+  if (u.length < 3) return null;
+  const gaps = [];
+  for (let i = 1; i < u.length; i++) { const g = bizDays(u[i - 1], u[i]); if (g >= 7 && g <= 365) gaps.push(g); }
+  if (gaps.length < 2) return null;
+  const recent = gaps.slice(-6).sort((x, y) => x - y), mid = recent[Math.floor(recent.length / 2)];
+  const last = u[u.length - 1], next = advanceDate(last, mid);
+  return { every: mid, last, next, count: u.length };
+}
+function keeperExtrasMarkup(a) {
+  let h = "";
+  const b = brumationOf(a);
+  if (b) h += '<div class="v57Card v57Brum"><b>💤 In brumation since ' + esc(niceDate(b.since)) + '</b><p>Feeding reminders are paused.</p><button class="action secondary" onclick="brumationEnd(\'' + esc(a).replace(/'/g, "\\'") + '\')">☀ End brumation</button></div>';
+  if (stCanUsePack()) {
+    const sp = shedPredict(a);
+    const word = animalCareType(a) === "invertebrate" ? "molt" : "shed";
+    if (sp && !stNoShed(a)) {
+      const left = bizDays(today(), sp.next);
+      h += '<div class="v57Card"><b>✨ Next ' + word + ' around ' + esc(niceDate(sp.next)) + "</b><p>" + esc(a) + " usually " + word + "s every ~" + (sp.every >= 14 ? Math.round(sp.every / 7) + " weeks" : sp.every + " days") +
+        " (from " + sp.count + " logged " + word + "s). " + (left > 0 ? "About " + left + " days to go." : left === 0 ? "Due about now." : "Running " + -left + " days past the usual.") + "</p></div>";
+    }
+    const p = profiles[a] || {};
+    if (p.vetDue) h += '<div class="v57Card"><b>🩺 Vet follow-up ' + esc(niceDate(p.vetDue)) + "</b>" + (p.vetNote ? "<p>" + esc(p.vetNote) + "</p>" : "") + "</div>";
+  }
+  return h;
+}
+function keeperMoreButtons() {
+  const q = "'" + esc(selectedAnimal).replace(/'/g, "\\'") + "'";
+  return (brumationOf(selectedAnimal) ? '<button onclick="brumationEnd(' + q + ')">☀ End brumation</button>' : '<button onclick="if(confirm(\'Pause feeding reminders while ' + esc(selectedAnimal).replace(/'/g, "\\'") + ' brumates?\'))brumationStart(' + q + ')">💤 Pause for brumation</button>') +
+    (stCanUsePack() ? '<button onclick="vetAnimal=' + q + ';openPanel(\'Vet Follow-up\')">🩺 Vet follow-up</button><button onclick="progressAnimal=' + q + ';openPanel(\'Photo Progress\')">📷 Photo progress</button>' : "");
+}
+(function () {
+  const base = profileOverviewMarkup;
+  profileOverviewMarkup = function (a) { return keeperExtrasMarkup(a) + base(a); };
+})();
+
+/* ---------- Keeper Tools hub (Founding Keeper +) ---------- */
+let vetAnimal = "", progressAnimal = "";
+BIZ_PANELS["Keeper Tools"] = () => {
+  if (!stCanUsePack()) return '<p class="resourceIntro">Keeper Tools come with Founding Keeper ($14.99 once) and every paid plan.</p><button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>';
+  const t = (name, title, sub) => '<button class="resourceTile" onclick="' + name + '"><strong>' + title + "</strong><small>" + sub + "</small></button>";
+  const preds = animals.map((a) => [a, shedPredict(a)]).filter(([a, x]) => x && !stNoShed(a)).sort((x, y) => x[1].next.localeCompare(y[1].next)).slice(0, 6);
+  const meds = animals.flatMap((a) => (profiles[a]?.meds || []).filter((m) => !m.end || m.end >= today()).map((m) => a + ": " + m.drug));
+  const vets = animals.filter((a) => profiles[a]?.vetDue >= today()).map((a) => a + ": " + niceDate(profiles[a].vetDue));
+  return '<p class="resourceIntro">Extra care tools for Founding Keepers ♡</p>' +
+    t("vetAnimal=selectedAnimal||animals[0]||'';openPanel('Vet Follow-up')", "🩺 Vet follow-ups &amp; medication", vets.length || meds.length ? esc([...vets, ...meds].slice(0, 4).join(" · ")) : "Set a vet follow-up date or a medication schedule. Reminders go to your phone.") +
+    t("progressAnimal=selectedAnimal||animals[0]||'';openPanel('Photo Progress')", "📷 Photo progress", "Side-by-side growth photos, ready to share.") +
+    t("openPanel('Emergency Card')", "🚨 Emergency card", "A printable card and lock-screen image with your animals, vet and emergency contact.") +
+    '<h3 class="sectionTitle">Shed predictions</h3>' +
+    (preds.length ? preds.map(([a, x]) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(a) + "</b><span>~" + esc(niceDate(x.next)) + '</span></div><p class="lcSmall">Every ~' + (x.every >= 14 ? Math.round(x.every / 7) + " weeks" : x.every + " days") + " · last " + esc(niceDate(x.last)) + "</p></div>").join("")
+      : '<p class="helperLine">Log at least 3 sheds for an animal and its next shed is predicted here.</p>') +
+    '<p class="lcSmall">💤 Brumation: open an animal → More profile options → Pause for brumation.</p>' + v57Back("Menu");
+};
+
+/* ---------- Vet follow-up + medications ---------- */
+BIZ_PANELS["Vet Follow-up"] = () => {
+  const a = animals.includes(vetAnimal) ? vetAnimal : animals[0];
+  if (!a) return '<p class="helperLine">Add an animal first.</p>';
+  const p = profiles[a] || {}, meds = p.meds || [];
+  return '<label>Animal<select onchange="vetAnimal=this.value;render()">' + animals.map((x) => "<option" + (x === a ? " selected" : "") + ">" + esc(x) + "</option>").join("") + "</select></label>" +
+    '<h3 class="sectionTitle">Vet follow-up</h3><div class="saleGrid">' + bizField("vfDate", "Follow-up date", p.vetDue, "date") + bizField("vfNote", "What for", p.vetNote, "text", "Recheck mites, fecal test…") + "</div>" +
+    '<div class="inlineActions"><button class="action" onclick="vetSave()">Save follow-up</button>' + (p.vetDue ? '<button class="action secondary" onclick="vetClear()">Clear</button>' : "") + "</div>" +
+    '<h3 class="sectionTitle">Medications</h3>' +
+    (meds.length ? meds.map((m) => '<div class="deviceCard"><div class="deviceHeading"><b>💊 ' + esc(m.drug) + " " + esc(m.dose || "") + "</b><span>" + (m.end && m.end < today() ? "finished" : "every " + (m.everyDays > 1 ? m.everyDays + " days" : "day")) +
+      '</span></div><div class="recordActions"><button onclick="rescueAnimal=\'' + esc(a).replace(/'/g, "\\'") + '\';medGiven(\'' + m.id + '\')">Log dose</button><button onclick="rescueAnimal=\'' + esc(a).replace(/'/g, "\\'") + '\';medEditId=\'' + m.id + '\';openPanel(\'Medication\')">Edit</button></div></div>').join("") : '<p class="helperLine">No medications.</p>') +
+    '<button class="action secondary" onclick="rescueAnimal=\'' + esc(a).replace(/'/g, "\\'") + '\';medEditId=\'\';openPanel(\'Medication\')">＋ Add medication</button>' +
+    '<p class="lcSmall">Turn on phone reminders in My Account to get dose and vet reminders.</p><p id="bizMsg" class="helperLine" role="status"></p>' + v57Back("Keeper Tools");
+};
+function vetSave() {
+  const a = animals.includes(vetAnimal) ? vetAnimal : animals[0];
+  const d = bizD("vfDate");
+  if (!d) return v57Msg("Choose a date.");
+  profiles[a] = { ...(profiles[a] || {}), vetDue: d, vetNote: bizV("vfNote").slice(0, 120) };
+  bizSaveProfiles(); save();
+  stToast("🩺 Vet follow-up saved for " + niceDate(d));
+  render();
+}
+function vetClear() {
+  const a = animals.includes(vetAnimal) ? vetAnimal : animals[0], p = { ...(profiles[a] || {}) };
+  delete p.vetDue; delete p.vetNote;
+  profiles[a] = p; bizSaveProfiles(); save(); render();
+}
+
+/* ---------- Photo progress ---------- */
+let progressPick = [];
+BIZ_PANELS["Photo Progress"] = () => {
+  const a = animals.includes(progressAnimal) ? progressAnimal : animals[0];
+  if (!a) return '<p class="helperLine">Add an animal first.</p>';
+  const g = (photos[a] || []).map((p, i) => ({ ...p, i })).filter((p) => p.src).sort((x, y) => String(x.date).localeCompare(String(y.date)));
+  if (progressPick.length !== 2 || !progressPick.every((i) => g.some((p) => p.i === i))) progressPick = g.length >= 2 ? [g[0].i, g[g.length - 1].i] : [];
+  setTimeout(progressDraw, 0);
+  return '<label>Animal<select onchange="progressAnimal=this.value;progressPick=[];render()">' + animals.map((x) => "<option" + (x === a ? " selected" : "") + ">" + esc(x) + "</option>").join("") + "</select></label>" +
+    (g.length < 2 ? '<p class="helperLine">Add at least 2 photos of ' + esc(a) + ' in the Photo Journal to compare them.</p>' :
+      '<p class="lcSmall">Tap two photos: before, then after.</p><div class="v57Pick">' + g.map((p) => '<button class="' + (progressPick.includes(p.i) ? "on" : "") + '" onclick="progressToggle(' + p.i + ')"><img loading="lazy" src="' + p.src + '" alt=""><small>' + esc(niceDate(p.date)) + "</small></button>").join("") + "</div>" +
+      '<canvas id="progressCanvas" class="v57Canvas" width="1080" height="1350"></canvas><div class="inlineActions"><button class="action" onclick="progressShare()">Share / save image</button></div>') +
+    v57Back("Keeper Tools");
+};
+function progressToggle(i) {
+  progressPick = progressPick.includes(i) ? progressPick.filter((x) => x !== i) : [...progressPick, i].slice(-2);
+  render();
+}
+function weightNear(a, date) {
+  const w = entries.filter((e) => e.animal === a && e.section === "Weight Tracker" && validDate(e.date)).map((e) => ({ d: e.date, g: parseFloat(String(e.detail).replace(/[^\d.]/g, "")) })).filter((x) => x.g > 0);
+  if (!w.length || !validDate(date)) return "";
+  w.sort((x, y) => Math.abs(bizDays(x.d, date)) - Math.abs(bizDays(y.d, date)));
+  return Math.abs(bizDays(w[0].d, date)) <= 21 ? (w[0].g >= 1000 ? (w[0].g / 1000).toFixed(2) + " kg" : Math.round(w[0].g) + " g") : "";
+}
+async function progressDraw() {
+  const c = document.getElementById("progressCanvas"), a = animals.includes(progressAnimal) ? progressAnimal : animals[0];
+  if (!c || progressPick.length !== 2) return;
+  const pics = progressPick.map((i) => photos[a]?.[i]).filter(Boolean).sort((x, y) => String(x.date).localeCompare(String(y.date)));
+  const g = c.getContext("2d"), W = 1080, H = 1350;
+  g.fillStyle = "#f6effa"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#45205b"; g.textAlign = "center"; g.font = "italic 700 64px Georgia, serif"; g.fillText(a, W / 2, 110);
+  const span = validDate(pics[0]?.date) && validDate(pics[1]?.date) ? bizDays(pics[0].date, pics[1].date) : 0;
+  g.font = "34px Arial, sans-serif"; g.fillStyle = "#5b4566";
+  g.fillText(span > 0 ? (span >= 60 ? Math.round(span / 30.4) + " months" : span + " days") + " of growing ♡" : "Then & now ♡", W / 2, 165);
+  const load = (src) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = src; });
+  for (let k = 0; k < 2; k++) {
+    const p = pics[k], im = p && (await load(p.src)), x = 40 + k * 520, y = 210, w = 480, h = 860;
+    g.fillStyle = "#fff"; g.fillRect(x - 8, y - 8, w + 16, h + 16);
+    if (im) { const r = Math.max(w / im.width, h / im.height), sw = w / r, sh = h / r; g.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, x, y, w, h); }
+    g.fillStyle = "#45205b"; g.font = "700 40px Arial, sans-serif"; g.fillText(k ? "NOW" : "THEN", x + w / 2, y + h + 70);
+    g.font = "32px Arial, sans-serif"; g.fillStyle = "#34213f";
+    g.fillText([p?.date ? niceDate(p.date) : "", weightNear(a, p?.date)].filter(Boolean).join(" · "), x + w / 2, y + h + 118);
+  }
+  g.font = "italic 30px Georgia, serif"; g.fillStyle = "#79538e"; g.fillText("Scale & Tell ♡ every scale, every shed, every milestone", W / 2, H - 40);
+}
+function progressShare() {
+  const c = document.getElementById("progressCanvas");
+  if (c) v57ShareCanvas(c, "progress.png", (progressAnimal || "My reptile") + " then & now");
+}
+
+/* ---------- Emergency card ---------- */
+BIZ_PANELS["Emergency Card"] = () => {
+  const e = accountPrefs?.emergency || {};
+  return '<p class="resourceIntro">One card with your animals, your vet and who to call. Print it for your enclosure room or wallet, or save it as your lock screen so first responders and pet-sitters can see it.</p>' +
+    '<div class="saleGrid">' + bizField("emName", "Emergency contact", e.name, "text", "Name") + bizField("emPhone", "Their phone", e.phone, "tel", "555-555-5555") + bizField("emOwner", "Your name", e.owner, "text") + bizField("emOwnerPhone", "Your phone", e.ownerPhone, "tel") + "</div>" +
+    '<label>Notes for responders<input id="emNotes" maxlength="160" value="' + esc(e.notes || "") + '" placeholder="Venomous: none · Feeders in garage freezer · Key under the mat"></label>' +
+    '<p class="lcSmall">Vet: <b>' + esc(savedVet.name || "not set") + "</b>" + (savedVet.phone ? " · " + esc(savedVet.phone) : "") + (savedVet.emergencyName ? " · Emergency: " + esc(savedVet.emergencyName) + " " + esc(savedVet.emergencyPhone || "") : "") +
+    ' <button class="authLink" onclick="openPanel(\'Find a Vet\')">Change</button></p>' +
+    '<div class="inlineActions"><button class="action" onclick="emSave();emPrint()">🖨 Printable card</button><button class="action" onclick="emSave();emLock()">📱 Lock-screen image</button></div><p id="bizMsg" class="helperLine" role="status"></p>' + v57Back("Keeper Tools");
+};
+function emSave() {
+  accountPrefsSet("emergency", { name: bizV("emName").slice(0, 60), phone: bizV("emPhone").slice(0, 30), owner: bizV("emOwner").slice(0, 60), ownerPhone: bizV("emOwnerPhone").slice(0, 30), notes: bizV("emNotes").slice(0, 160) });
+  try { save(); } catch (e) {}
+}
+function emLines() {
+  const e = accountPrefs?.emergency || {};
+  return {
+    e, list: animals.slice(0, 40).map((a) => a + " · " + (species[a] || "")),
+    vet: [savedVet.name, savedVet.phone].filter(Boolean).join(" · "), er: [savedVet.emergencyName, savedVet.emergencyPhone].filter(Boolean).join(" · "),
+  };
+}
+function emPrint() {
+  const { e, list, vet, er } = emLines();
+  const html = '<!doctype html><html><head><meta charset="utf-8"><title>Emergency card</title><style>body{font:15px/1.45 Arial,sans-serif;color:#222;max-width:720px;margin:0 auto;padding:24px}h1{color:#b3261e;font-size:30px;margin:0 0 4px}.box{border:3px solid #b3261e;border-radius:14px;padding:16px 20px;margin:14px 0}h2{font-size:17px;margin:0 0 6px;color:#45205b}ul{columns:2;padding-left:18px;margin:0}small{color:#666}</style></head><body>' +
+    "<h1>🚨 Animals live here</h1><small>Emergency information · Scale &amp; Tell</small>" +
+    '<div class="box"><h2>Emergency contact</h2><b>' + esc(e.name || "—") + "</b> " + esc(e.phone || "") + "<br>Owner: " + esc(e.owner || "—") + " " + esc(e.ownerPhone || "") + "</div>" +
+    '<div class="box"><h2>Veterinarian</h2>' + esc(vet || "—") + (er ? "<br>Emergency clinic: " + esc(er) : "") + "</div>" +
+    '<div class="box"><h2>' + list.length + " animal" + (list.length === 1 ? "" : "s") + "</h2><ul>" + list.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul></div>" +
+    (e.notes ? '<div class="box"><h2>Notes</h2>' + esc(e.notes) + "</div>" : "") + "</body></html>";
+  reportShow("Emergency card", html);
+}
+function emLock() {
+  const { e, list, vet, er } = emLines();
+  const c = document.createElement("canvas"); c.width = 1170; c.height = 2532;
+  const g = c.getContext("2d");
+  g.fillStyle = "#1d1424"; g.fillRect(0, 0, c.width, c.height);
+  g.textAlign = "center"; g.fillStyle = "#fff";
+  let y = 980;
+  const line = (t, font, color, step) => { g.font = font; g.fillStyle = color; g.fillText(t, 585, y); y += step; };
+  line("🚨 IN CASE OF EMERGENCY", "700 64px Arial, sans-serif", "#ff8a80", 90);
+  line("Animals live here", "italic 52px Georgia, serif", "#e7d3f0", 110);
+  if (e.name) line("Call " + e.name + "  " + (e.phone || ""), "700 50px Arial, sans-serif", "#fff", 80);
+  if (e.owner) line("Owner: " + e.owner + "  " + (e.ownerPhone || ""), "44px Arial, sans-serif", "#fff", 80);
+  if (vet) line("Vet: " + vet, "42px Arial, sans-serif", "#e7d3f0", 70);
+  if (er) line("ER: " + er, "42px Arial, sans-serif", "#e7d3f0", 90);
+  line(list.length + " animal" + (list.length === 1 ? "" : "s") + ": " + list.slice(0, 3).map((x) => x.split(" · ")[0]).join(", ") + (list.length > 3 ? "…" : ""), "40px Arial, sans-serif", "#bba8c4", 70);
+  if (e.notes) line(e.notes.slice(0, 60), "38px Arial, sans-serif", "#bba8c4", 70);
+  v57ShareCanvas(c, "emergency-lock-screen.png", "Emergency lock screen");
+}
+
+/* ---------- Premium: genetics calculator ---------- */
+const GENE_TYPES = {
+  // Recessive (r), incomplete dominant (i), dominant (d). Common ball python, corn snake, leopard gecko and boa genes.
+  clown: "r", piebald: "r", pied: "r", albino: "r", axanthic: "r", "red axanthic": "r", hypo: "r", ghost: "r", "desert ghost": "r", "lavender albino": "r", "genetic stripe": "r", ultramel: "r", caramel: "r",
+  monsoon: "r", puzzle: "r", "candy": "r", toffee: "r", "ivory": "r", amel: "r", anery: "r", anerythristic: "r", charcoal: "r", lavender: "r", motley: "r", stripe: "r", bloodred: "r", diffused: "r", "hypo lux": "r",
+  sunkissed: "r", "tremper albino": "r", "bell albino": "r", rainwater: "r", eclipse: "r", blizzard: "r", "murphy patternless": "r", marble: "r", "sunglow": "r", kahl: "r", sharp: "r", "anery a": "r",
+  pastel: "i", enchi: "i", fire: "i", "yellow belly": "i", mojave: "i", lesser: "i", butter: "i", cinnamon: "i", "black pastel": "i", mystic: "i", special: "i", "orange dream": "i", banana: "i", "coral glow": "i",
+  "het red axanthic": "i", leopard: "i", gravel: "i", asphalt: "i", "spotnose": "i", "black head": "i", "mack snow": "i", "lemon frost": "i", phantom: "i", "huffman": "i", hypo_boa: "i", jungle: "i", "het daddy": "i",
+  spider: "d", "gHI": "d", ghi: "d", pinstripe: "d", "woma": "d", "calico": "d", "bongo": "d", "enigma": "d", "white and yellow": "d", "w&y": "d", tessera: "d", "palmetto": "d", "motley boa": "i",
+};
+const GENE_TYPE_NAMES = { r: "Recessive", i: "Incomplete dominant", d: "Dominant" };
+let geneOverrides = {}, genePair = { a: "", b: "", ta: "", tb: "" };
+function geneParse(text) {
+  // Returns { gene: { visual: 0/1/2 copies or null, het: probability of carrying one copy } }
+  const out = {};
+  let t = " " + String(text || "").toLowerCase().replace(/[,;/+|]+/g, " ").replace(/\s+/g, " ") + " ";
+  const names = Object.keys(GENE_TYPES).concat(Object.keys(geneOverrides)).sort((x, y) => y.length - x.length);
+  // "66% het pied", "pos het clown", "het clown"
+  t = t.replace(/(\d{2,3})\s*%\s*(?:poss(?:ible)?\s*)?het\s+([a-z&]+(?:\s[a-z&]+)?)/g, (m, pc, g) => { const n = names.find((x) => (g + " ").startsWith(x + " ")) || g.split(" ")[0]; out[n] = { copies: 1, p: Math.min(1, Number(pc) / 100) }; return " "; });
+  t = t.replace(/(?:pos(?:sible)?|ph)\s+het\s+([a-z&]+(?:\s[a-z&]+)?)/g, (m, g) => { const n = names.find((x) => (g + " ").startsWith(x + " ")) || g.split(" ")[0]; out[n] = { copies: 1, p: 0.5 }; return " "; });
+  t = t.replace(/\bhet\s+([a-z&]+(?:\s[a-z&]+)?)/g, (m, g) => { const n = names.find((x) => (g + " ").startsWith(x + " ")) || g.split(" ")[0]; out[n] = { copies: 1, p: 1 }; return " "; });
+  t = t.replace(/\bsuper\s+([a-z&]+(?:\s[a-z&]+)?)/g, (m, g) => { const n = names.find((x) => (g + " ").startsWith(x + " ")) || g.split(" ")[0]; out[n] = { copies: 2, p: 1 }; return " "; });
+  for (const n of names) {
+    const re = new RegExp("(^|\\s)" + n.replace(/[.*+?^${}()|[\]\\&]/g, "\\$&") + "(?=\\s)", "g");
+    if (re.test(t)) {
+      t = t.replace(re, " ");
+      const ty = geneTypeOf(n);
+      if (!out[n]) out[n] = { copies: ty === "r" ? 2 : 1, p: 1 };
+    }
+  }
+  t.split(" ").filter((w) => w.length > 2 && !/^(normal|classic|wild|type|het|pos|possible|male|female|the|and|het)$/.test(w)).forEach((w) => { if (!out[w]) out[w] = { copies: 1, p: 1, unknown: true }; });
+  return out;
+}
+function geneTypeOf(n) { return geneOverrides[n] || GENE_TYPES[n] || "i"; }
+function geneLabel(n, copies) {
+  const ty = geneTypeOf(n), N = n.replace(/\b\w/g, (c) => c.toUpperCase());
+  if (ty === "r") return copies === 2 ? N : copies === 1 ? "het " + N : "";
+  if (ty === "d") return copies ? N : "";
+  return copies === 2 ? "Super " + N : copies === 1 ? N : "";
+}
+function geneCross(pa, pb) {
+  const genes = [...new Set([...Object.keys(pa), ...Object.keys(pb)])].slice(0, 10);
+  // Per gene: distribution over offspring copies 0/1/2.
+  const per = genes.map((g) => {
+    const passP = (x) => (x ? (x.copies === 2 ? 1 : 0.5) * x.p : 0);
+    const a = passP(pa[g]), b = passP(pb[g]);
+    return { g, d: [(1 - a) * (1 - b), a * (1 - b) + (1 - a) * b, a * b] };
+  });
+  let combos = [{ labels: [], hets: [], p: 1 }];
+  per.forEach(({ g, d }) => {
+    const next = [];
+    combos.forEach((c) => d.forEach((pr, copies) => { if (pr > 1e-9) next.push({ labels: [...c.labels, geneLabel(g, copies)].filter(Boolean), p: c.p * pr }); }));
+    combos = next;
+  });
+  const merged = new Map();
+  combos.forEach((c) => { const ty = (l) => /^het /.test(l); const vis = c.labels.filter((l) => !ty(l)), het = c.labels.filter(ty); const k = (vis.join(" ") || "Normal") + (het.length ? " " + het.join(" ") : ""); merged.set(k, (merged.get(k) || 0) + c.p); });
+  return { genes: per.map((x) => x.g), out: [...merged.entries()].sort((x, y) => y[1] - x[1]) };
+}
+BIZ_PANELS["Genetics Calculator"] = () => {
+  if (!stIsPremium()) return '<p class="resourceIntro">The genetics calculator comes with Premium Breeder.</p><button class="action" onclick="openPanel(\'Plans\')">See plans</button>';
+  const females = animals.filter((a) => v57Sex(a) !== "male"), males = animals.filter((a) => v57Sex(a) !== "female");
+  const txt = (a) => [profiles[a]?.genes, profiles[a]?.morph].filter(Boolean).join(" ");
+  if (!genePair.ta && genePair.a) genePair.ta = txt(genePair.a);
+  if (!genePair.tb && genePair.b) genePair.tb = txt(genePair.b);
+  const pa = geneParse(genePair.ta), pb = geneParse(genePair.tb), r = geneCross(pa, pb);
+  const pick = (k, list) => '<select onchange="genePair.' + k + '=this.value;genePair.t' + k + '=\'\';render()"><option value="">Type genes instead</option>' + list.map((a) => '<option' + (a === genePair[k] ? " selected" : "") + ">" + esc(a) + "</option>").join("") + "</select>";
+  return '<p class="resourceIntro">Pick two animals or type their genes, like <i>Pastel Enchi het Clown</i> or <i>66% het Pied</i>.</p>' +
+    '<div class="saleGrid"><label>Female' + pick("a", females) + '<input id="gnA" value="' + esc(genePair.ta) + '" placeholder="Pastel het Clown" onchange="genePair.ta=this.value;render()"></label>' +
+    '<label>Male' + pick("b", males) + '<input id="gnB" value="' + esc(genePair.tb) + '" placeholder="Clown" onchange="genePair.tb=this.value;render()"></label></div>' +
+    (r.genes.length ? '<details class="compactDisclosure"><summary>Gene types (' + r.genes.length + ")</summary>" + r.genes.map((g) => '<label class="v57Gene">' + esc(g) + ' <select onchange="geneOverrides[\'' + esc(g).replace(/'/g, "\\'") + '\']=this.value;render()">' +
+      Object.entries(GENE_TYPE_NAMES).map(([k, v]) => '<option value="' + k + '"' + (geneTypeOf(g) === k ? " selected" : "") + ">" + v + "</option>").join("") + "</select>" + (!GENE_TYPES[g] && !geneOverrides[g] ? " <small>⚠ check</small>" : "") + "</label>").join("") + "</details>" : "") +
+    (r.genes.length ? '<h3 class="sectionTitle">Possible babies</h3><table class="v57Table"><tr><th>Outcome</th><th>Chance</th></tr>' +
+      r.out.slice(0, 40).map(([k, p]) => "<tr><td>" + esc(k) + "</td><td>" + (p * 100 >= 1 ? Math.round(p * 1000) / 10 : (p * 100).toFixed(2)) + "%</td></tr>").join("") + "</table>" +
+      (r.out.length > 40 ? '<p class="lcSmall">Showing the 40 most likely of ' + r.out.length + " outcomes.</p>" : "")
+      : '<p class="helperLine">Add genes for at least one parent.</p>') +
+    '<p class="lcSmall">Odds are per baby. Possible hets are averaged in. Polygenic traits and line-bred looks aren’t predictable. Check any gene marked ⚠.</p>' + bizBack();
+};
+function v57Sex(a) { const s = String(profiles[a]?.sex || "").toLowerCase(); return /^f|female/.test(s) ? "female" : /^m|male/.test(s) ? "male" : "unknown"; }
+
+/* ---------- Premium: invoices & receipts ---------- */
+let invoiceAnimal = "";
+BIZ_PANELS.Invoices = () => {
+  if (!stIsPremium()) return '<p class="resourceIntro">Invoices come with Premium Breeder.</p>' + bizBack();
+  const sold = animals.filter((a) => Number(saleOf(a).price) > 0 && saleStage(saleOf(a)) !== "Not listed");
+  if (!sold.length) return '<p class="helperLine">Add a price and buyer on an animal’s Listing &amp; sale first.</p>' + bizBack();
+  const a = sold.includes(invoiceAnimal) ? invoiceAnimal : sold[0], s = saleOf(a);
+  return '<label>Animal<select onchange="invoiceAnimal=this.value;render()">' + sold.map((x) => "<option" + (x === a ? " selected" : "") + ">" + esc(x) + " · " + esc(saleStage(saleOf(x))) + "</option>").join("") + "</select></label>" +
+    '<div class="saleGrid">' + bizField("ivBuyer", "Buyer", s.buyer || s.holdFor) + bizField("ivEmail", "Buyer email", (String(s.buyerContact || "").match(/[^@\s]+@[^@\s]+\.[^@\s]+/) || [""])[0], "email") +
+    bizField("ivShip", "Shipping ($)", s.shipFee || "", "number", "0") + bizField("ivTax", "Tax ($)", s.tax || "", "number", "0") + "</div>" +
+    '<label>Note on invoice<input id="ivNote" maxlength="200" value="' + esc(s.invoiceNote || "") + '" placeholder="Thank you! Live arrival guaranteed with overnight shipping."></label>' +
+    '<div class="inlineActions"><button class="action" onclick="invoiceMake(false)">🧾 Invoice</button><button class="action secondary" onclick="invoiceMake(true)">✓ Paid receipt</button></div>' + bizBack();
+};
+function invoiceMake(paid) {
+  const a = invoiceAnimal && animals.includes(invoiceAnimal) ? invoiceAnimal : animals.find((x) => Number(saleOf(x).price) > 0);
+  if (!a) return;
+  const s = { ...saleOf(a) };
+  const shipFee = Math.max(0, Number(bizV("ivShip")) || 0), tax = Math.max(0, Number(bizV("ivTax")) || 0), buyer = bizV("ivBuyer"), email = bizV("ivEmail"), note = bizV("ivNote");
+  const no = s.invoiceNo || "INV-" + new Date().getFullYear() + "-" + String(Date.now()).slice(-5);
+  profiles[a] = { ...(profiles[a] || {}), sale: { ...s, invoiceNo: no, shipFee: shipFee || "", tax: tax || "", invoiceNote: note, buyer: s.buyer || buyer } };
+  bizSaveProfiles(); save();
+  const price = Number(s.price) || 0, dep = Number(s.deposit) || 0, total = price + shipFee + tax, due = paid ? 0 : Math.max(0, total - dep);
+  const biz = bizBrand?.business_name || "", p = profiles[a] || {};
+  const row = (l, v, b) => "<tr><td>" + l + '</td><td style="text-align:right">' + (b ? "<b>" + v + "</b>" : v) + "</td></tr>";
+  const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + (paid ? "Receipt" : "Invoice") + " " + esc(no) + '</title><style>body{font:15px/1.5 Arial,sans-serif;color:#34263b;max-width:720px;margin:0 auto;padding:28px}h1{font:italic 34px Georgia,serif;color:#45205b;margin:0}table{width:100%;border-collapse:collapse;margin:14px 0}td{padding:8px 4px;border-bottom:1px solid #eee}.paid{display:inline-block;border:3px solid #2f6a1c;color:#2f6a1c;font-weight:700;padding:4px 14px;border-radius:8px;transform:rotate(-4deg)}small{color:#777}</style></head><body>' +
+    "<h1>" + (paid ? "Receipt" : "Invoice") + "</h1><p><b>" + esc(biz || "Scale & Tell keeper") + "</b><br><small>" + esc(no) + " · " + esc(niceDate(today())) + "</small></p>" +
+    "<p>Bill to: <b>" + esc(buyer || "—") + "</b>" + (email ? "<br>" + esc(email) : "") + "</p>" +
+    "<table>" + row(esc(a) + " · " + esc([species[a], p.sex, p.genes || p.morph].filter(Boolean).join(" · ")), bizMoney(price)) + (shipFee ? row("Shipping", bizMoney(shipFee)) : "") + (tax ? row("Tax", bizMoney(tax)) : "") +
+    row("Total", bizMoney(total), true) + (dep && !paid ? row("Deposit received" + (s.depositDate ? " " + esc(niceDate(s.depositDate)) : ""), "−" + bizMoney(dep)) : "") +
+    (paid ? row("Paid in full", bizMoney(total), true) : row("Balance due" + (s.balanceDue ? " by " + esc(niceDate(s.balanceDue)) : ""), bizMoney(due), true)) + "</table>" +
+    (paid ? '<p class="paid">PAID</p>' : "") + (note ? "<p>" + esc(note) + "</p>" : "") + "<p><small>Made with Scale &amp; Tell ♡</small></p></body></html>";
+  reportShow((paid ? "Receipt " : "Invoice ") + no + " · " + a, bizBrandPrint(html), email);
+}
+
+/* ---------- Premium: bulk import ---------- */
+let bulkRows = [];
+BIZ_PANELS["Bulk Import"] = () => {
+  if (!stIsPremium()) return '<p class="resourceIntro">Bulk import comes with Premium Breeder.</p>' + bizBack();
+  const room = stAnimalLimit() - animals.length;
+  return '<p class="resourceIntro">Add many animals at once from a spreadsheet (CSV). Works with a MorphMarket export, or columns like <b>Name, Species, Sex, Traits, Birth date, Weight, Price, Status, ID</b>.</p>' +
+    '<input type="file" accept=".csv,text/csv" onchange="bulkRead(this)"><p class="lcSmall">Room for ' + Math.max(0, room) + " more animals on your plan. Names already in your journal are skipped.</p>" +
+    (bulkRows.length ? '<h3 class="sectionTitle">' + bulkRows.length + ' ready to add</h3><table class="v57Table"><tr><th>Name</th><th>Species</th><th>Sex</th><th>Traits</th></tr>' +
+      bulkRows.slice(0, 50).map((r) => "<tr><td>" + esc(r.name) + "</td><td>" + esc(r.species) + "</td><td>" + esc(r.sex) + "</td><td>" + esc(r.genes) + "</td></tr>").join("") + "</table>" +
+      (bulkRows.length > 50 ? '<p class="lcSmall">…and ' + (bulkRows.length - 50) + " more.</p>" : "") +
+      '<div class="inlineActions"><button class="action" onclick="bulkAdd()">Add ' + Math.min(bulkRows.length, Math.max(0, room)) + ' animals</button><button class="action secondary" onclick="bulkRows=[];render()">Cancel</button></div>' : "") +
+    '<p id="bizMsg" class="helperLine" role="status"></p>' + bizBack();
+};
+function bulkCsv(text) {
+  const rows = [];
+  let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n" || ch === "\r") { if (ch === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((c) => c.trim()));
+}
+function bulkRead(input) {
+  const f = input.files?.[0];
+  if (!f) return;
+  if (f.size > 3e6) return v57Msg("That file is too big (3 MB max).");
+  const fr = new FileReader();
+  fr.onload = () => {
+    const rows = bulkCsv(String(fr.result || ""));
+    if (rows.length < 2) return v57Msg("No rows found.");
+    const h = rows[0].map((x) => x.toLowerCase().trim());
+    const col = (...names) => h.findIndex((x) => names.some((n) => x === n || x.includes(n)));
+    const ci = { name: col("name", "title", "animal"), id: col("animal_id", "id", "code"), species: col("species", "category"), sex: col("sex", "gender"), traits: col("traits", "genes", "morph"),
+      dob: col("dob", "birth", "hatch"), weight: col("weight"), price: col("price"), status: col("state", "status") };
+    const seen = new Set(animals.map((a) => a.toLowerCase()));
+    bulkRows = rows.slice(1).map((r) => {
+      const g = (k) => (ci[k] >= 0 ? String(r[ci[k]] || "").trim() : "");
+      let name = (g("name") || g("id")).slice(0, 50);
+      const dob = g("dob"), d = /^\d{4}-\d{2}-\d{2}/.test(dob) ? dob.slice(0, 10) : (() => { const m = dob.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/); return m ? (m[3].length === 2 ? "20" + m[3] : m[3]) + "-" + m[1].padStart(2, "0") + "-" + m[2].padStart(2, "0") : ""; })();
+      const sx = g("sex").toLowerCase();
+      return { name, code: g("id").slice(0, 30), species: g("species").replace(/^\w/, (c) => c.toUpperCase()).slice(0, 60) || "Other", sex: /^(f|female|0\.1)/.test(sx) ? "Female" : /^(m|male|1\.0)/.test(sx) ? "Male" : "Unknown",
+        genes: g("traits").slice(0, 200), hatchDate: validDate(d) ? d : "", weight: parseFloat(g("weight")) || 0, price: g("price").replace(/[^\d.]/g, "").slice(0, 10), status: /sold/i.test(g("status")) ? "Sold" : /hold|pending/i.test(g("status")) ? "Pending" : g("price") ? "Listed" : "" };
+    }).filter((r) => r.name && !seen.has(r.name.toLowerCase()) && (seen.add(r.name.toLowerCase()), true)).slice(0, 500);
+    render();
+    if (!bulkRows.length) setTimeout(() => v57Msg("No new animals found (names may already exist)."), 50);
+  };
+  fr.readAsText(f);
+}
+function bulkAdd() {
+  const room = Math.max(0, stAnimalLimit() - animals.length), list = bulkRows.slice(0, room);
+  if (!list.length) return v57Msg("No room left on your plan.");
+  if (!confirm("Add " + list.length + " animals to your journal?")) return;
+  list.forEach((r) => {
+    animals.push(r.name);
+    species[r.name] = r.species;
+    profiles[r.name] = { ...(profiles[r.name] || {}), sex: r.sex, genes: r.genes, ...(r.hatchDate ? { hatchDate: r.hatchDate } : {}), ...(r.code ? { code: r.code } : {}),
+      ...(r.status ? { sale: { status: r.status, price: r.price, updated: today(), site: "MorphMarket" } } : {}) };
+    if (r.weight > 0) entries.push({ section: "Weight Tracker", animal: r.name, date: today(), detail: String(r.weight), notes: "Imported" });
+  });
+  saveRoster(); bizSaveProfiles(); save();
+  stToast("Added " + list.length + " animals ♡");
+  bulkRows = [];
+  render();
+}
+
+/* ---------- Premium: shipping weather check (Open-Meteo, no key) ---------- */
+let shipWx = { from: "", to: "", date: "", out: "" };
+BIZ_PANELS["Ship Weather"] = () => {
+  if (!stIsPremium()) return '<p class="resourceIntro">The shipping weather check comes with Premium Breeder.</p>' + bizBack();
+  if (!shipWx.from) shipWx.from = accountPrefs?.shipFrom || "";
+  if (!shipWx.date) shipWx.date = advanceDate(today(), 1);
+  return '<p class="resourceIntro">Checks the forecast high and low at both ends on ship day and the day it arrives. Most keepers ship between about 40°F and 90°F with heat or cold packs.</p>' +
+    '<div class="saleGrid">' + bizField("swFrom", "Shipping from (city or ZIP)", shipWx.from, "text", "Tampa, FL") + bizField("swTo", "Shipping to (city or ZIP)", shipWx.to, "text", "Denver, CO") + bizField("swDate", "Ship date", shipWx.date, "date") + "</div>" +
+    '<button class="action" onclick="shipCheck()">Check weather</button><div id="swOut">' + shipWx.out + '</div><p class="lcSmall">Forecasts go out about 2 weeks. Weather data from Open-Meteo.</p>' + bizBack();
+};
+async function shipGeo(q) {
+  const zip = /^\d{5}$/.test(q.trim());
+  const u = "https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name=" + encodeURIComponent(zip ? q.trim() : q.split(",")[0].trim()) + (zip ? "&countryCode=US" : "");
+  const j = await (await fetch(u)).json();
+  const r = j?.results?.[0];
+  if (!r) throw Error("Couldn’t find “" + q + "”.");
+  return { lat: r.latitude, lon: r.longitude, name: r.name + (r.admin1 ? ", " + r.admin1 : "") };
+}
+async function shipCheck() {
+  shipWx.from = bizV("swFrom"); shipWx.to = bizV("swTo"); shipWx.date = bizD("swDate") || shipWx.date;
+  accountPrefsSet("shipFrom", shipWx.from);
+  const out = document.getElementById("swOut");
+  if (!shipWx.from || !shipWx.to) { if (out) out.innerHTML = '<p class="helperLine">Add both places.</p>'; return; }
+  if (out) out.innerHTML = '<p class="helperLine">Checking…</p>';
+  try {
+    const end = advanceDate(shipWx.date, 1);
+    const places = await Promise.all([shipGeo(shipWx.from), shipGeo(shipWx.to)]);
+    const fc = await Promise.all(places.map((p) => fetch("https://api.open-meteo.com/v1/forecast?latitude=" + p.lat + "&longitude=" + p.lon + "&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto&start_date=" + shipWx.date + "&end_date=" + end).then((r) => r.json())));
+    let bad = false;
+    const rows = places.map((p, i) => {
+      const d = fc[i]?.daily;
+      if (!d?.time?.length) throw Error("No forecast for that date yet. Try a date within the next 2 weeks.");
+      return d.time.map((t, k) => {
+        const hi = Math.round(d.temperature_2m_max[k]), lo = Math.round(d.temperature_2m_min[k]), warn = hi > 90 ? "🔥 Too hot" : lo < 40 ? "❄ Too cold" : hi > 85 ? "⚠ Warm, use a cold pack" : lo < 50 ? "⚠ Cool, use a heat pack" : "✓ OK";
+        if (/Too/.test(warn)) bad = true;
+        return "<tr><td>" + esc(p.name) + "</td><td>" + esc(niceDate(t)) + "</td><td>" + lo + "° / " + hi + "°F</td><td>" + warn + "</td></tr>";
+      }).join("");
+    }).join("");
+    shipWx.out = '<p class="v57Card"><b>' + (bad ? "🚫 Not a good day to ship." : "✓ Looks OK to ship.") + '</b></p><table class="v57Table"><tr><th>Place</th><th>Day</th><th>Low / high</th><th></th></tr>' + rows + "</table>";
+  } catch (e) { shipWx.out = '<p class="helperLine">' + esc(e.message || "Couldn’t get the forecast.") + "</p>"; }
+  if (current === "Ship Weather") render();
+}
+
+/* ---------- Premium: waitlist ---------- */
+BIZ_PANELS.Waitlist = () => {
+  if (!stIsPremium()) return '<p class="resourceIntro">The waitlist comes with Premium Breeder.</p>' + bizBack();
+  const list = (accountPrefs?.waitlist || []).slice().sort((x, y) => (x.done ? 1 : 0) - (y.done ? 1 : 0) || String(x.date).localeCompare(String(y.date)));
+  return '<p class="resourceIntro">Buyers waiting on babies, in the order they asked. Tap Offered when you reach out and Done when they’ve bought or passed.</p>' +
+    (list.length ? list.map((w, i) => '<div class="deviceCard' + (w.done ? " v57Done" : "") + '"><div class="deviceHeading"><b>' + (w.done ? "" : "#" + (list.filter((x) => !x.done).indexOf(w) + 1) + " ") + esc(w.name) + "</b><span>" + esc(w.status || "Waiting") + "</span></div>" +
+      '<p class="lcSmall">' + esc([w.wants, w.contact, w.deposit ? "deposit " + bizMoney(w.deposit) : "", "since " + niceDate(w.date)].filter(Boolean).join(" · ")) + '</p><div class="recordActions">' +
+      (w.done ? "" : '<button onclick="waitSet(\'' + w.id + '\',\'Offered\')">Offered</button><button onclick="waitSet(\'' + w.id + '\',\'Done\')">Done</button>') + '<button onclick="waitDel(\'' + w.id + '\')">Remove</button></div></div>').join("")
+      : '<p class="helperLine">No one waiting yet.</p>') +
+    '<h3 class="sectionTitle">Add someone</h3><div class="saleGrid">' + bizField("wlName", "Name") + bizField("wlContact", "Email or phone") + bizField("wlWants", "What they want", "", "text", "Clown female from Roux × Kane") + bizField("wlDep", "Deposit ($)", "", "number") + "</div>" +
+    '<button class="action" onclick="waitAdd()">＋ Add to waitlist</button><p id="bizMsg" class="helperLine" role="status"></p>' + bizBack();
+};
+function waitAdd() {
+  if (!bizV("wlName")) return v57Msg("Add their name.");
+  const w = { id: bizUid("wl"), name: bizV("wlName").slice(0, 80), contact: bizV("wlContact").slice(0, 120), wants: bizV("wlWants").slice(0, 160), deposit: bizV("wlDep").replace(/[^\d.]/g, "").slice(0, 10), date: today(), status: "Waiting" };
+  accountPrefsSet("waitlist", [...(accountPrefs?.waitlist || []), w].slice(-300)); save(); render();
+}
+function waitSet(id, st) { accountPrefsSet("waitlist", (accountPrefs?.waitlist || []).map((w) => (w.id === id ? { ...w, status: st, done: st === "Done" } : w))); save(); render(); }
+function waitDel(id) { if (!confirm("Remove from the waitlist?")) return; accountPrefsSet("waitlist", (accountPrefs?.waitlist || []).filter((w) => w.id !== id)); save(); render(); }
+
+/* ---------- Premium: sales summary ---------- */
+BIZ_PANELS["Sales Summary"] = () => {
+  if (!stIsPremium()) return '<p class="resourceIntro">The sales summary comes with Premium Breeder.</p>' + bizBack();
+  const sold = animals.map((a) => ({ a, s: saleOf(a) })).filter((x) => ["Sold", "Shipped", "Received"].includes(saleStage(x.s)) && Number(x.s.price) > 0);
+  const total = sold.reduce((n, x) => n + Number(x.s.price), 0);
+  const by = (f) => { const m = new Map(); sold.forEach((x) => { const k = f(x); const v = m.get(k) || { n: 0, t: 0 }; v.n++; v.t += Number(x.s.price); m.set(k, v); }); return [...m.entries()]; };
+  const months = by((x) => String(x.s.soldDate || x.s.updated || "").slice(0, 7) || "No date").sort((x, y) => y[0].localeCompare(x[0])).slice(0, 12);
+  const sp = by((x) => species[x.a] || "Other").sort((x, y) => y[1].t - x[1].t);
+  const buyers = by((x) => String(x.s.buyer || "").trim().toLowerCase()).filter(([k]) => k);
+  const repeat = buyers.filter(([, v]) => v.n > 1).length;
+  const listed = animals.filter((a) => ["Listed", "Pending"].includes(saleStage(saleOf(a))));
+  const max = Math.max(1, ...months.map(([, v]) => v.t));
+  const ml = (k) => (/^\d{4}-\d{2}$/.test(k) ? new Date(k + "-15").toLocaleDateString("en-US", { month: "short", year: "numeric" }) : k);
+  return '<div class="v57Stats"><div><b>' + bizMoney(total) + "</b><small>total sales</small></div><div><b>" + sold.length + "</b><small>animals sold</small></div><div><b>" + (sold.length ? bizMoney(total / sold.length) : "—") + "</b><small>average price</small></div><div><b>" + repeat + "</b><small>repeat buyers</small></div><div><b>" + listed.length + "</b><small>listed now</small></div></div>" +
+    '<h3 class="sectionTitle">By month</h3>' + (months.length ? months.map(([k, v]) => '<div class="v57Bar"><span>' + esc(ml(k)) + '</span><i style="width:' + Math.max(4, (v.t / max) * 100) + '%"></i><b>' + bizMoney(v.t) + " · " + v.n + "</b></div>").join("") : '<p class="helperLine">No sales yet.</p>') +
+    '<h3 class="sectionTitle">By species</h3><table class="v57Table"><tr><th>Species</th><th>Sold</th><th>Total</th></tr>' + sp.map(([k, v]) => "<tr><td>" + esc(k) + "</td><td>" + v.n + "</td><td>" + bizMoney(v.t) + "</td></tr>").join("") + "</table>" + bizBack();
+};
+
+/* ---------- Rescue: fosters ---------- */
+BIZ_PANELS.Fosters = () => {
+  if (!stIsRescue()) return bizBack();
+  const ra = animals.filter((a) => rescueOf(a) && rescueOf(a).status !== "Adopted");
+  const groups = new Map();
+  ra.forEach((a) => { const r = rescueOf(a), k = (r.foster || "").trim() || "At the rescue"; groups.set(k, [...(groups.get(k) || []), a]); });
+  const mine = String(cloudSession?.user?.email || "").toLowerCase();
+  return '<p class="resourceIntro">Foster homes and the animals with them. Give a foster their own login so they can log feedings, sheds and weights from home.</p>' +
+    [...groups.entries()].sort((x, y) => (x[0] === "At the rescue") - (y[0] === "At the rescue")).map(([k, list]) => {
+      const email = (rescueOf(list[0])?.fosterEmail || "");
+      return '<div class="deviceCard"><div class="deviceHeading"><b>' + (k === "At the rescue" ? "🏠 " : "⌂ ") + esc(k) + "</b><span>" + list.length + " animal" + (list.length > 1 ? "s" : "") + "</span></div>" +
+        '<p class="lcSmall">' + list.map(esc).join(", ") + (email ? " · " + esc(email) : "") + "</p></div>";
+    }).join("") +
+    '<h3 class="sectionTitle">Assign a foster</h3><div class="saleGrid"><label>Animal' + v57AnimalSelect("fsAnimal", "", (a) => rescueOf(a) && rescueOf(a).status !== "Adopted") + "</label>" +
+    bizField("fsName", "Foster’s name") + bizField("fsEmail", "Foster’s email", "", "email") + bizField("fsPhone", "Phone (optional)") + "</div>" +
+    '<label class="emailPref"><input type="checkbox" id="fsInvite" checked> Give them a login (uses 1 of your ' + stLogins() + " logins)</label>" +
+    '<div class="inlineActions"><button class="action" onclick="fosterAssign()">Save foster</button><button class="action secondary" onclick="fosterReturn()">Back at the rescue</button></div>' +
+    '<p class="lcSmall">Fosters with a login see your journal with their animals at the top. They can log care for any animal, so only invite people you trust.</p><p id="bizMsg" class="helperLine" role="status"></p>' + bizBack();
+};
+async function fosterAssign() {
+  const a = bizV("fsAnimal"), name = bizV("fsName"), email = bizV("fsEmail").toLowerCase();
+  if (!animals.includes(a) || !name) return v57Msg("Choose an animal and add the foster’s name.");
+  const r = rescueOf(a) || {};
+  profiles[a] = { ...(profiles[a] || {}), rescue: { ...r, foster: name.slice(0, 80), fosterEmail: email.slice(0, 254), fosterContact: [email, bizV("fsPhone")].filter(Boolean).join(" · ").slice(0, 120), fosterSince: today() } };
+  entries.push({ section: "Observations", animal: a, detail: "Went to foster: " + name, date: today(), notes: "" });
+  bizSaveProfiles(); save();
+  if (document.getElementById("fsInvite")?.checked && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    try {
+      const { data } = await cloudClient.rpc("invite_team_member", { p_email: email });
+      if (data === "ok") { try { await hubInvoke({ action: "team_invite_email", email }); } catch (e) {} stToast("⌂ " + a + " is with " + name + ". Login invite sent ♡"); }
+      else stToast("⌂ Saved. " + (data === "limit" ? "All your logins are in use, so no invite was sent." : "Invite not sent."));
+      const t = await cloudClient.rpc("team_context"); if (!t.error) stTeam = t.data;
+    } catch (e) { stToast("⌂ Saved, but the invite couldn’t be sent."); }
+  } else stToast("⌂ " + a + " is with " + name);
+  render();
+}
+function fosterReturn() {
+  const a = bizV("fsAnimal"), r = rescueOf(a);
+  if (!r || !r.foster) return v57Msg("That animal isn’t with a foster.");
+  entries.push({ section: "Observations", animal: a, detail: "Back from foster: " + r.foster, date: today(), notes: "" });
+  profiles[a] = { ...(profiles[a] || {}), rescue: { ...r, foster: "", fosterEmail: "", fosterContact: "" } };
+  bizSaveProfiles(); save(); render();
+}
+function fosterMine() {
+  const me = String(cloudSession?.user?.email || "").toLowerCase();
+  return me && stTeam?.role === "member" ? animals.filter((a) => String(rescueOf(a)?.fosterEmail || "").toLowerCase() === me) : [];
+}
+BIZ_PANELS["My Foster Animals"] = () => {
+  const list = fosterMine();
+  return '<p class="resourceIntro">Thank you for fostering ♡ These animals are with you.</p>' +
+    (list.length ? list.map((a) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(a) + "</b><span>" + esc(species[a] || "") + '</span></div><div class="recordActions"><button onclick="openQuickLog(\'' + esc(a).replace(/'/g, "\\'") + '\')">＋ Quick Log</button><button onclick="openPanel(\'' + esc(a).replace(/'/g, "\\'") + '\')">Open</button></div></div>').join("") : '<p class="helperLine">No animals are assigned to you right now.</p>');
+};
+setInterval(() => {
+  try {
+    if (window.__fosterShown || !stTeam || stTeam.role !== "member" || document.body.classList.contains("stBooting") || document.body.classList.contains("authLocked")) return;
+    window.__fosterShown = true;
+    if (fosterMine().length && !document.getElementById("sheet")?.classList.contains("on")) openPanel("My Foster Animals");
+  } catch (e) {}
+}, 2500);
+
+/* ---------- Rescue: adoption contracts (e-signature) ---------- */
+const CONTRACT_DEFAULT = "ADOPTION AGREEMENT\n\n{rescue} (\"the Rescue\") agrees to place {animal} ({species}) with {adopter} (\"the Adopter\") on {date} for an adoption fee of {fee}.\n\nThe Adopter agrees to:\n1. Provide appropriate housing, heat, lighting, humidity and diet for this species.\n2. Provide veterinary care when needed.\n3. Not sell, trade, breed or give away this animal without first contacting the Rescue.\n4. Return the animal to the Rescue if they can no longer care for it.\n5. Allow the Rescue to check in on the animal's wellbeing.\n\nThe Rescue has shared all known health and history information. The adoption fee is non-refundable.\n\nBy signing below, the Adopter agrees to these terms.";
+let contractAnimal = "", contractList = null;
+BIZ_PANELS["Adoption Contract"] = () => {
+  if (!stIsRescue()) return bizBack();
+  if (contractList === null) { contractList = []; contractLoad(); }
+  const list = animals.filter((a) => rescueOf(a));
+  const a = list.includes(contractAnimal) ? contractAnimal : list[0] || "";
+  const r = rescueOf(a) || {};
+  return '<p class="resourceIntro">Fill in the adopter, then send them a link to read and sign on their phone, or hand them your phone to sign right now. Signed copies are saved here.</p>' +
+    (a ? '<label>Animal<select onchange="contractAnimal=this.value;render()">' + list.map((x) => "<option" + (x === a ? " selected" : "") + ">" + esc(x) + "</option>").join("") + "</select></label>" +
+      '<div class="saleGrid">' + bizField("ctName", "Adopter’s name", r.adopter) + bizField("ctEmail", "Adopter’s email", (String(r.adopterContact || "").match(/[^@\s]+@[^@\s]+\.[^@\s]+/) || [""])[0], "email") + bizField("ctFee", "Adoption fee ($)", r.fee, "number") + "</div>" +
+      '<details class="compactDisclosure"><summary>Edit your contract wording</summary><textarea id="ctBody" rows="14" maxlength="15000">' + esc(accountPrefs?.contractTpl || CONTRACT_DEFAULT) + '</textarea><p class="lcSmall">Use {animal}, {species}, {adopter}, {fee}, {rescue} and {date}; they fill in automatically. Your wording is saved for next time.</p></details>' +
+      '<div class="inlineActions"><button class="action" onclick="contractSend(false)">✉ Send for signature</button><button class="action secondary" onclick="contractSend(true)">✍ Sign on this phone</button></div>'
+      : '<p class="helperLine">Add a rescue animal first.</p>') +
+    '<p id="bizMsg" class="helperLine" role="status"></p><h3 class="sectionTitle">Contracts</h3><div id="ctList">' + contractListMarkup() + "</div>" +
+    '<p class="lcSmall">Not legal advice. Have a lawyer review your contract wording if you can.</p>' + bizBack();
+};
+function contractListMarkup() {
+  if (!contractList?.length) return '<p class="helperLine">No contracts yet.</p>';
+  return contractList.map((c) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(c.animal) + " · " + esc(c.adopter_name || "") + "</b><span>" + (c.signed_at ? "✓ Signed " + esc(niceDate(String(c.signed_at).slice(0, 10))) : "Waiting for signature") + '</span></div><div class="recordActions">' +
+    '<button onclick="contractCopy(\'' + c.id + "','" + c.token + '\')">Copy link</button><button onclick="window.open(\'sign.html?c=' + c.id + "&t=" + c.token + '\',\'_blank\')">' + (c.signed_at ? "View signed copy" : "Open") + "</button></div></div>").join("");
+}
+async function contractLoad() {
+  try {
+    const { data } = await cloudClient.from("adoption_contracts").select("id,token,animal,adopter_name,signed_at,created_at").eq("owner_id", cloudJournalUid()).order("created_at", { ascending: false }).limit(50);
+    contractList = data || [];
+    const el = document.getElementById("ctList"); if (el) el.innerHTML = contractListMarkup();
+  } catch (e) {}
+}
+function contractCopy(id, t) {
+  const u = location.origin + location.pathname.replace(/[^/]*$/, "") + "sign.html?c=" + id + "&t=" + t;
+  navigator.clipboard?.writeText(u).then(() => stToast("Link copied ♡")).catch(() => prompt("Copy this link", u));
+}
+async function contractSend(here) {
+  const a = contractAnimal && animals.includes(contractAnimal) ? contractAnimal : animals.find((x) => rescueOf(x));
+  const name = bizV("ctName"), email = bizV("ctEmail"), fee = bizV("ctFee");
+  if (!a || !name) return v57Msg("Add the adopter’s name.");
+  const tpl = (document.getElementById("ctBody")?.value || accountPrefs?.contractTpl || CONTRACT_DEFAULT).slice(0, 15000);
+  accountPrefsSet("contractTpl", tpl);
+  const org = bizRescue?.org_name || bizBrand?.business_name || "The Rescue";
+  const body = tpl.replace(/\{animal\}/g, a).replace(/\{species\}/g, species[a] || "reptile").replace(/\{adopter\}/g, name).replace(/\{fee\}/g, fee ? bizMoney(fee) : "$0").replace(/\{rescue\}/g, org).replace(/\{date\}/g, niceDate(today()));
+  const r = rescueOf(a) || {};
+  profiles[a] = { ...(profiles[a] || {}), rescue: { ...r, adopter: name.slice(0, 80), adopterContact: email || r.adopterContact || "", fee: fee || r.fee || "" } };
+  bizSaveProfiles(); save();
+  v57Msg("Creating the contract…");
+  try {
+    const { data, error } = await cloudClient.rpc("contract_create", { p_owner: cloudJournalUid(), p_animal: a, p_org: org, p_adopter: name, p_email: email, p_body: body });
+    if (error) throw error;
+    const u = location.origin + location.pathname.replace(/[^/]*$/, "") + "sign.html?c=" + data.id + "&t=" + data.token;
+    contractList = null;
+    if (here) { location.href = u + "&back=1"; return; }
+    if (navigator.share) { try { await navigator.share({ title: "Adoption contract for " + a, text: "Please read and sign the adoption contract for " + a + " ♡", url: u }); } catch (e) {} }
+    else if (email) location.href = "mailto:" + encodeURIComponent(email) + "?subject=" + encodeURIComponent("Adoption contract for " + a) + "&body=" + encodeURIComponent("Hi " + name + ",\n\nPlease read and sign the adoption contract for " + a + " here:\n" + u + "\n\nThank you ♡\n" + org);
+    else await navigator.clipboard?.writeText(u);
+    stToast("✍ Contract ready. Link shared ♡");
+    render();
+  } catch (e) { v57Msg(e.message || "Couldn’t create the contract."); }
+}
+
+/* ---------- Rescue: vet costs per animal ---------- */
+function vetCostOf(a, year) {
+  return entries.filter((e) => e.section === "Ledger" && e.type === "expense" && e.animal === a && /vet|medic|health/i.test(e.category || "") && (!year || String(e.date).startsWith(year))).reduce((n, e) => n + (Number(e.amount) || 0), 0);
+}
+function vetCostAdd(a) {
+  const amt = Number(prompt("Vet cost for " + a + " ($)") || 0);
+  if (!(amt > 0)) return;
+  const what = (prompt("What was it for? (optional)") || "").slice(0, 100);
+  entries.push({ section: "Ledger", animal: a, type: "expense", amount: Math.round(amt * 100) / 100, category: "Vet care", detail: "Vet: " + (what || a), date: today() });
+  save();
+  stToast("🩺 " + bizMoney(amt) + " added to " + a + "’s vet costs");
+  render();
+}
+
+/* ---------- Rescue: year-end impact report ---------- */
+let impactYear = String(new Date().getFullYear());
+BIZ_PANELS["Impact Report"] = () => {
+  if (!stIsRescue()) return bizBack();
+  const y = impactYear, ra = animals.filter((a) => rescueOf(a));
+  const intakes = ra.filter((a) => String(rescueOf(a).intakeDate || "").startsWith(y)), adopted = ra.filter((a) => String(rescueOf(a).adoptedDate || "").startsWith(y));
+  const inCare = ra.filter((a) => rescueOf(a).status !== "Adopted");
+  const days = adopted.map((a) => { const r = rescueOf(a); return r.intakeDate && r.adoptedDate ? bizDays(r.intakeDate, r.adoptedDate) : null; }).filter((x) => x !== null && x >= 0);
+  const vet = ra.reduce((n, a) => n + vetCostOf(a, y), 0);
+  const fees = ledgerRows().filter((r) => r.type === "income" && String(r.date).startsWith(y) && /adoption/i.test(r.category || r.detail || "")).reduce((n, r) => n + (Number(r.amount) || 0), 0);
+  const spc = new Map(); intakes.forEach((a) => spc.set(species[a] || "Other", (spc.get(species[a] || "Other") || 0) + 1));
+  impactData = { y, intakes, adopted, inCare, days, vet, fees, spc };
+  const years = [...new Set([String(new Date().getFullYear()), ...ra.map((a) => String(rescueOf(a).intakeDate || "").slice(0, 4)).filter((x) => /^\d{4}$/.test(x))])].sort().reverse();
+  return '<label>Year<select onchange="impactYear=this.value;render()">' + years.map((x) => "<option" + (x === y ? " selected" : "") + ">" + x + "</option>").join("") + "</select></label>" +
+    '<div class="v57Stats"><div><b>' + intakes.length + "</b><small>intakes</small></div><div><b>" + adopted.length + "</b><small>adoptions</small></div><div><b>" + inCare.length + "</b><small>in care now</small></div><div><b>" + (days.length ? Math.round(days.reduce((n, x) => n + x, 0) / days.length) : "—") + "</b><small>avg days to adoption</small></div><div><b>" + bizMoney(vet) + "</b><small>vet care</small></div><div><b>" + bizMoney(fees) + "</b><small>adoption fees</small></div></div>" +
+    (spc.size ? '<h3 class="sectionTitle">Species taken in</h3><p class="lcSmall">' + [...spc.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => esc(k) + " " + v).join(" · ") + "</p>" : "") +
+    '<button class="action" onclick="impactPrint()">🖨 Printable report</button><p class="lcSmall">Intakes and adoptions come from each animal’s rescue record. Vet costs come from “Add vet cost” and Income &amp; expenses entries in a vet category.</p>' + bizBack();
+};
+let impactData = null;
+function impactPrint() {
+  const d = impactData;
+  if (!d) return;
+  const org = bizRescue?.org_name || bizBrand?.business_name || "Our rescue";
+  const stat = (n, l) => '<div style="flex:1 1 30%;border:2px solid #e3d4ea;border-radius:14px;padding:14px;text-align:center"><b style="font:700 34px Georgia,serif;color:#45205b">' + n + "</b><br><small>" + l + "</small></div>";
+  const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(org) + " impact " + d.y + '</title><style>body{font:15px/1.5 Arial,sans-serif;color:#34263b;max-width:760px;margin:0 auto;padding:28px}h1{font:italic 36px Georgia,serif;color:#45205b;margin:0}.g{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0}li{margin:2px 0}</style></head><body>' +
+    "<h1>" + esc(org) + "</h1><p><b>" + d.y + " impact report</b></p>" +
+    '<div class="g">' + stat(d.intakes.length, "animals taken in") + stat(d.adopted.length, "adopted into new homes") + stat(d.inCare.length, "in our care now") +
+    stat(d.days.length ? Math.round(d.days.reduce((n, x) => n + x, 0) / d.days.length) : "—", "average days to adoption") + stat(bizMoney(d.vet), "spent on vet care") + stat(bizMoney(d.fees), "adoption fees") + "</div>" +
+    (d.spc.size ? "<h3>Species we helped</h3><ul>" + [...d.spc.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => "<li>" + esc(k) + ": " + v + "</li>").join("") + "</ul>" : "") +
+    (d.adopted.length ? "<h3>Adopted this year</h3><p>" + d.adopted.map(esc).join(", ") + "</p>" : "") +
+    "<p><small>Made with Scale &amp; Tell ♡</small></p></body></html>";
+  reportShow(org + " · " + d.y + " impact report", bizBrandPrint(html));
+}
+
+/* ---------- Rescue: donate button ---------- */
+BIZ_PANELS["Donate Button"] = () => {
+  if (!stIsRescue()) return bizBack();
+  return '<p class="resourceIntro">Add your donation link (PayPal, Venmo, Givebutter, your website…) and a <b>♡ Donate</b> button shows on your public page.</p>' +
+    bizField("dnUrl", "Donation link", accountPrefs?.donateUrl || "", "url", "https://www.paypal.com/donate/?hosted_button_id=…") +
+    '<button class="action" onclick="donateSave()">Save</button><p id="bizMsg" class="helperLine" role="status"></p><p class="lcSmall">Fill in your Rescue profile first so your public page exists.</p>' + bizBack();
+};
+async function donateSave() {
+  const u = bizV("dnUrl");
+  try {
+    const { data, error } = await cloudClient.rpc("set_donate_url", { p_url: u });
+    if (error) throw error;
+    if (data === "invalid") return v57Msg("Use a full link starting with https://");
+    if (data === "profile") return v57Msg("Save your Rescue profile first (Business Tools → Rescue profile).");
+    accountPrefsSet("donateUrl", u); save();
+    v57Msg(u ? "✓ Donate button is on your public page." : "✓ Donate button removed.");
+  } catch (e) { v57Msg(e.message || "Couldn’t save."); }
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#45205b"><meta name="robots" content="noindex"><title>Adoption contract · Scale &amp; Tell</title><link rel="icon" href="icon-192.png">
+<style>
+:root{--ink:#332239;--brand:#45205b;--accent:#79538e;--bg:#f4eef7;--card:#fff;--line:#e3d4ea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Arial,sans-serif}
+main{max-width:680px;margin:auto;padding:20px 16px 48px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:14px}
+h1{font:italic 700 28px Georgia,serif;color:var(--brand);margin:.2em 0}.body{white-space:pre-wrap;font-size:15px}
+label{display:block;font-weight:600;margin:12px 0 4px}input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+canvas{width:100%;height:180px;border:2px dashed var(--line);border-radius:12px;background:#fff;touch-action:none;display:block}
+button{font:700 16px Arial,sans-serif;padding:12px 18px;border:0;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer;margin:10px 8px 0 0}button.sec{background:var(--bg);color:var(--brand);border:1px solid var(--line)}
+.sig{max-width:320px;border-bottom:1px solid #999}.muted{color:#776a80;font-size:13px}#msg{font-weight:600;min-height:1.4em}
+@media print{.noprint{display:none}body{background:#fff}.card{border:0}}
+</style></head><body><main>
+<div class="card" id="doc"><p class="muted">Loading…</p></div>
+<div class="card noprint" id="signBox" hidden>
+  <h2 style="margin:0;color:var(--brand)">Sign</h2>
+  <label for="nm">Your full name</label><input id="nm" autocomplete="name" maxlength="100">
+  <label>Sign with your finger or mouse</label><canvas id="pad" width="1200" height="360"></canvas>
+  <button class="sec" type="button" onclick="clearPad()">Clear</button><button type="button" id="go" onclick="sign()">I agree and sign</button>
+  <p id="msg" role="status"></p><p class="muted">By signing you agree to the contract above. Your name, signature and the date are saved with it.</p>
+</div>
+<p class="noprint" style="text-align:center"><a href="./" id="backLink">Scale &amp; Tell</a></p>
+</main>
+<script>
+const URL_ = "https://fitlubsbesadknkjimqd.supabase.co", KEY = "sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG";
+const q = new URLSearchParams(location.search), id = (q.get("c") || "").replace(/[^0-9a-f-]/gi, ""), tok = (q.get("t") || "").replace(/[^0-9a-f-]/gi, "");
+if (q.get("back")) document.getElementById("backLink").textContent = "← Back to Scale & Tell";
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+const rpc = async (fn, body) => { const r = await fetch(URL_ + "/rest/v1/rpc/" + fn, { method: "POST", headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" }, body: JSON.stringify(body) }); const j = await r.json().catch(() => null); if (!r.ok) throw Error((j && j.message) || "Something went wrong."); return j; };
+let drew = false;
+function show(c) {
+  const signed = !!c.signed_at;
+  document.title = "Adoption contract · " + c.animal;
+  document.getElementById("doc").innerHTML = "<h1>" + esc(c.animal) + "</h1><p class='muted'>" + esc(c.org || "") + (c.adopter ? " · for " + esc(c.adopter) : "") + "</p><div class='body'>" + esc(c.body) + "</div>" +
+    (signed ? "<hr><p><b>Signed by " + esc(c.signed_name) + "</b><br><img class='sig' alt='Signature' src='" + esc(c.signature) + "'><br><span class='muted'>" + esc(new Date(c.signed_at).toLocaleString()) + "</span></p><button class='noprint' onclick='print()'>Print / save PDF</button>" : "");
+  document.getElementById("signBox").hidden = signed;
+  if (!signed && c.adopter) document.getElementById("nm").value = c.adopter;
+}
+(async () => {
+  if (id.length !== 36 || tok.length !== 36) { document.getElementById("doc").innerHTML = "<p>This link isn’t complete. Ask the rescue to send it again.</p>"; return; }
+  try { const c = await rpc("contract_get", { p_id: id, p_token: tok }); if (!c) throw Error("This contract wasn’t found."); show(c); }
+  catch (e) { document.getElementById("doc").innerHTML = "<p>" + esc(e.message) + "</p>"; }
+})();
+const pad = document.getElementById("pad"), g = pad.getContext("2d");
+g.lineWidth = 6; g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = "#1d1424";
+let down = false;
+const pos = (e) => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) * pad.width / r.width, (e.clientY - r.top) * pad.height / r.height]; };
+pad.addEventListener("pointerdown", (e) => { down = true; pad.setPointerCapture(e.pointerId); g.beginPath(); g.moveTo(...pos(e)); });
+pad.addEventListener("pointermove", (e) => { if (!down) return; g.lineTo(...pos(e)); g.stroke(); drew = true; });
+pad.addEventListener("pointerup", () => (down = false));
+function clearPad() { g.clearRect(0, 0, pad.width, pad.height); drew = false; }
+async function sign() {
+  const name = document.getElementById("nm").value.trim(), m = document.getElementById("msg");
+  if (name.length < 2) return (m.textContent = "Type your full name.");
+  if (!drew) return (m.textContent = "Add your signature in the box.");
+  const c = document.createElement("canvas"); c.width = 600; c.height = 180; c.getContext("2d").drawImage(pad, 0, 0, 600, 180);
+  document.getElementById("go").disabled = true; m.textContent = "Saving…";
+  try {
+    const r = await rpc("contract_sign", { p_id: id, p_token: tok, p_name: name, p_signature: c.toDataURL("image/png") });
+    if (r === "name") throw Error("Type your full name.");
+    if (r === "signature") throw Error("Please sign again.");
+    show(await rpc("contract_get", { p_id: id, p_token: tok }));
+    m.textContent = "";
+    alert("Signed ♡ Thank you! You can print or save a copy now.");
+  } catch (e) { m.textContent = e.message; document.getElementById("go").disabled = false; }
+}
+</script></body></html>

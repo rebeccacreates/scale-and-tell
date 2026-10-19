@@ -18,7 +18,7 @@ label{display:block;margin:10px 0;font-weight:600;font-size:14px}input,textarea{
 button{width:100%;font:700 16px Arial,sans-serif;padding:12px;border:0;border-radius:12px;background:var(--accent);color:#fff;margin-top:6px;cursor:pointer}button:disabled{opacity:.6}
 .muted{color:var(--muted);font-size:13px}.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 #msg{min-height:1.4em;margin:10px 0 0;font-weight:600}
-footer{text-align:center;margin-top:20px}
+footer{text-align:center;margin-top:20px}.donate{display:block;text-align:center;margin-top:14px;background:var(--accent);color:#fff;font-weight:700;padding:12px;border-radius:12px;text-decoration:none}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .item{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
 .item img,.item .ph{width:100%;aspect-ratio:1;object-fit:cover;background:var(--line);display:block}
@@ -96,6 +96,8 @@ async function load() {
     $("profile").innerHTML = '<div class="bar"></div><h1>' + esc(p.display_name) + "</h1>" +
       (p.is_rescue ? '<span class="tag">Reptile rescue</span>' + (p.verified ? '<span class="tag">✓ Verified 501(c)(3)</span>' : "") + '<span class="tag">' + (p.intake_open === false ? "🔴 Intake full" : "🟢 Intake open") + "</span>" : "") +
       (p.bio ? "<p>" + esc(p.bio) + "</p>" : "") + (links ? '<div class="links">' + links + "</div>" : "");
+    if (p.is_rescue) fetch(URL_ + "/rest/v1/rpc/public_donate", { method: "POST", headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_slug: slug }) })
+      .then((r) => r.json()).then((u) => { const s = safe(u); if (s) $("profile").insertAdjacentHTML("beforeend", '<a class="donate" href="' + esc(s) + '" target="_blank" rel="noopener noreferrer">♡ Donate</a>'); }).catch(() => {});
     $("form").hidden = !p.inquiries_on;
     isRescue = !!p.is_rescue;
     setKind("message");
