@@ -703,23 +703,31 @@ function stThemeCacheOk(uid) {
 stSetTheme(stThemeCacheOk(stLastOwner()) ? stSavedTheme : "original");
 /* V3.53 · Launch splash: on a signed-in device, hold one calm loading screen until the account,
    plan, brand colors and journal are ready, so the screen never flips between layouts. */
-(function stBootStart() {
-  let saved = false;
-  try { for (let i = 0; i < localStorage.length; i++) if (/^sb-.*-auth-token$/.test(localStorage.key(i) || "")) saved = true; } catch (e) {}
-  if (!saved) return;
+function stBootBegin(text) {
+  let who = "start";
+  try { who = cloudSession?.user?.id || "start"; } catch (e) {}
+  if (document.body.classList.contains("stBooting") || window.__stBootDoneFor === who) return;
   const go = () => {
+    if (document.getElementById("stBoot")) return;
     document.body.classList.add("stBooting");
     const d = document.createElement("div");
     d.id = "stBoot";
-    d.innerHTML = '<div class="stBootInner"><img alt="" src="icon-192.png"><b>Scale &amp; Tell</b><small>Loading your journal…</small></div>';
+    d.innerHTML = '<div class="stBootInner"><img alt="" src="icon-192.png"><b>Scale &amp; Tell</b><small>' + (text || "Loading your journal…") + '</small></div>';
     document.body.appendChild(d);
     window.__stBootAt = Date.now();
+    clearInterval(window.__stBootTimer);
     window.__stBootTimer = setInterval(stBootCheck, 150);
   };
   if (document.body) go(); else document.addEventListener("DOMContentLoaded", go);
+}
+(function stBootStart() {
+  let saved = false;
+  try { for (let i = 0; i < localStorage.length; i++) if (/^sb-.*-auth-token$/.test(localStorage.key(i) || "")) saved = true; } catch (e) {}
+  if (saved) stBootBegin();
 })();
 function stBootDone() {
   if (!document.body.classList.contains("stBooting")) return;
+  try { window.__stBootDoneFor = cloudSession?.user?.id || "start"; } catch (e) { window.__stBootDoneFor = "start"; }
   clearInterval(window.__stBootTimer);
   document.body.classList.remove("stBooting");
   const d = document.getElementById("stBoot");
@@ -727,12 +735,12 @@ function stBootDone() {
 }
 function stBootCheck() {
   try {
-    if (Date.now() - (window.__stBootAt || 0) > 9000) return stBootDone();
+    if (Date.now() - (window.__stBootAt || 0) > 12000) return stBootDone();
     if (typeof cloudAuthReady === "undefined" || !cloudAuthReady) return;
     if (!cloudSession) return stBootDone();
     if (!stAccessChecked) return;
     if (!stCanUseApp()) return stBootDone();
-    if (!["synced", "empty", "error", "offline", "other-user"].includes(cloudAutoStatus)) return;
+    if (!["synced", "empty", "error", "offline", "other-user", "migration", "choose", "conflict", "merge-review", "remote-ready"].includes(cloudAutoStatus)) return;
     if (!window.__stBrandLoaded) return;
     try { renderHomeCards(); } catch (e) {}
     stBootDone();
@@ -1404,7 +1412,7 @@ function tourDone(action = "") {
 function menuMarkup() {
   // Home, My Reptiles, Calendar, Care Logs and Scale Hub live in the bottom bar, so they are not repeated here.
   let main = [
-    ["Racks & Breeding", "Racks, rack feeding, pairings & clutches ♡"],
+    ...(bizIsBreeder() || accountPrefs?.rescueLayout === "racks" ? [["Racks & Breeding", "Racks, rack feeding, pairings, clutches & litters"]] : []),
     ["Photo Journal", "Photos and profile pictures"],
     ["Import Existing Records", "Bring in old care notes or screenshots"],
     ["Pet-Sitter Sheet", "Care instructions for a helper"],
@@ -1412,13 +1420,14 @@ function menuMarkup() {
     ["Cloud Account", "Account, reminders & settings"],
   ];
   let tools = [
+    ...(bizIsBreeder() || accountPrefs?.rescueLayout === "racks" ? [] : [["Racks & Breeding", "Breeder tools: racks, pairings, clutches & litters"]]),
     ["Data & Backup", "Download a copy of your records"],
     ["Get the App", "Add Scale & Tell to your Home Screen"],
     ["Help & Feedback", "Ideas or something not working"],
     ["Welcome Tour", "Replay the introduction"],
     ["Privacy & Account", "Privacy, and deleting your account"],
   ];
-  if (window.__stIsAdmin) tools.unshift(["Send Update Email", "Email everyone who gets app updates"]);
+  if (window.__stIsAdmin) tools.unshift(["Send Update Email", "Email or in-app banner to keepers, breeders, rescues or everyone"]);
   if (stCanUsePack()) main.unshift(["Keeper Tools", "Vet & meds, shed predictions, photo progress, emergency card"]);
   let tiles = (group) =>
     group
@@ -3958,7 +3967,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.61";
+const SCALE_LC_VERSION = "3.62";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4544,7 +4553,7 @@ function render() {
   }
   if (current === "Scale Hub") {
     el.innerHTML =
-      '<p class="resourceIntro">Herps & Hers · Learn ♡ Share ♡ Grow. Choose the help you need without sorting through duplicated screens.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Reptile Rescues\')"><strong>♧ Reptile Rescues</strong><small>Rescues using Scale &amp; Tell, with their intake status.</small></button><button class="resourceTile" onclick="openPanel(\'Bioactive & DIY\')"><strong>❦ Bioactive & DIY How-Tos</strong><small>Build a bioactive setup, pick a cleanup crew, and make safe hides, backgrounds and decor.</small></button><button class="resourceTile" onclick="openPanel(\'Watch & Learn\')"><strong>▷ Watch &amp; Learn ♡</strong><small>Choose a topic to explore our 48 hand-selected video links. Medical disclaimer included.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Reptile Products</strong><small>First Time Keeper Essentials, our Amazon and Chewy picks, and SensorPush.</small></button>';
+      '<p class="resourceIntro">Herps &amp; Hers · Learn ♡ Share ♡ Grow. Care help, guides, videos and community in one place.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Reptile Rescues\')"><strong>♧ Reptile Rescues</strong><small>Rescues using Scale &amp; Tell, with their intake status.</small></button><button class="resourceTile" onclick="openPanel(\'Bioactive & DIY\')"><strong>❦ Bioactive & DIY How-Tos</strong><small>Build a bioactive setup, pick a cleanup crew, and make safe hides, backgrounds and decor.</small></button><button class="resourceTile" onclick="openPanel(\'Watch & Learn\')"><strong>▷ Watch &amp; Learn ♡</strong><small>Hand-picked videos by topic, from setup to feeding and health.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Reptile Products</strong><small>First Time Keeper Essentials, our Amazon and Chewy picks, and gear that works with the app.</small></button>';
     return;
   }
   if (BIZ_PANELS[current]) {
@@ -7415,6 +7424,7 @@ function stPlanChecking() {
 }
 function updateAuthGate() {
   document.body.classList.toggle("planChecking", stPlanChecking());
+  if (cloudSession && !stAccessChecked && window.__stBootDoneFor !== cloudSession.user.id) stBootBegin("Setting up your account…");
   const gate = document.getElementById("authGate"),
     body = document.getElementById("authGateBody");
   if (!gate || !body) return;
@@ -10372,12 +10382,13 @@ async function stMailSend(test) {
   stMailState.body = document.getElementById("mailBody")?.value.trim() || "";
   const msg = (t) => { stMailState.msg = t; const m = document.getElementById("mailMsg"); if (m) m.textContent = t; };
   if (!stMailState.subject || !stMailState.body) return msg("Add a subject and a message.");
-  if (!test && !confirm("Send “" + stMailState.subject + "” to " + (stMailState.stats?.on ?? "everyone who's subscribed") + " people now?")) return;
+  const grp = stMailState.aud || "all";
+  if (!test && !confirm("Send “" + stMailState.subject + "” to " + (stMailState.stats?.groups?.[grp] ?? "everyone in this group who's subscribed") + " " + (grp === "all" ? "" : grp + " ") + "now?")) return;
   msg(test ? "Sending you a test…" : "Sending…");
   try {
-    const r = await hubInvoke({ action: "email_broadcast", subject: stMailState.subject, body: stMailState.body, test });
-    if (test) msg("✓ Test sent to " + (cloudSession?.user?.email || "you") + ". Check your inbox.");
-    else { stMailState = { subject: "", body: "", msg: "✓ Sent to " + r.sent + " people ♡", stats: null }; render(); }
+    const r = await hubInvoke({ action: "email_broadcast", subject: stMailState.subject, body: stMailState.body, test, audience: stMailState.aud || "all" });
+    if (test) msg("✓ Test sent to " + (r.to || cloudSession?.user?.email || "you") + ". It can take a few minutes; check spam too.");
+    else { stMailState = { subject: "", body: "", msg: "✓ Sent to " + r.sent + " people ♡", stats: null, aud: stMailState.aud }; render(); }
   } catch (e) { msg(e.message); }
 }
 
@@ -10404,7 +10415,7 @@ function goveeMarkup() {
   else {
     const opts = animals.map((a) => '<option>' + esc(a) + "</option>").join("");
     body = '<p class="helperLine">✓ Govee connected.</p>' +
-      (linked.length ? '<h3 class="sectionTitle">Linked sensors</h3>' + linked.map((d) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(d.nickname) + "</b><span>" + esc(d.animal) + " · " + esc(d.placement) + '</span></div><button class="deviceLink" onclick="goveePull(' + devices.indexOf(d) + ')">Pull reading</button></div>').join("") + '<button class="action" onclick="goveePullAll()">Pull all readings now</button>' : "") +
+      (linked.length ? '<h3 class="sectionTitle">Linked sensors</h3>' + linked.map((d) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(d.nickname) + "</b><span>" + esc(d.animal) + " · " + esc(d.placement) + '</span></div><small class="lcSmall">' + esc(sensorAlertText(d)) + '</small><button class="deviceLink" onclick="sensorAlertIdx=' + devices.indexOf(d) + ';openPanel(\'Sensor Alerts\')">🔔 Alert range</button><button class="deviceLink" onclick="goveePull(' + devices.indexOf(d) + ')">Pull reading</button></div>').join("") + '<button class="action" onclick="goveePullAll()">Pull all readings now</button>' : "") +
       '<h3 class="sectionTitle">Your Govee sensors</h3>' +
       (g.devices === null ? '<p class="helperLine">Loading your sensors…</p>'
         : !g.devices.length ? '<p class="helperLine">No Govee thermometers found on this account. Make sure the sensor is set up in the Govee Home app and online.</p>'
@@ -10450,7 +10461,8 @@ function goveeLinkDevice(k) {
   if (!x || !animals.includes(animal)) return;
   saveDevices(devices.concat([{ id: deviceId(), kind: "sensor", animal, nickname: x.name.slice(0, 55), brand: "Govee", model: x.sku, link: "", placement, metrics: "Temperature + humidity", goveeSku: x.sku, goveeDevice: x.device }]));
   goveeState.msg = x.name + " linked to " + animal + " ♡";
-  goveeRerender();
+  sensorAlertIdx = devices.length - 1;
+  openPanel("Sensor Alerts");
 }
 async function goveePull(i, quiet) {
   const d = devices[i];
@@ -10830,28 +10842,33 @@ const BIZ_PANELS = {
         '<button class="action secondary" onclick="bizLeaveTeam()">Leave this team</button><p id="bizMsg" class="helperLine" role="status"></p>';
     if (!stCanTeam()) return '<p class="resourceIntro">Business Tools come with Founding Breeder, Premium Breeder and Rescue plans.</p><button class="action" onclick="openPanel(\'Plans\')">See plans</button>';
     const t = (name, title, sub) => '<button class="resourceTile" onclick="openPanel(\'' + name + '\')"><strong>' + title + "</strong><small>" + sub + "</small></button>";
-    return '<p class="resourceIntro">Tools for running your breeding business or rescue.</p>' +
-      t("Team Logins", "♡ Team logins", "Invite up to " + (stLogins() - 1) + " people to share your journal (" + stLogins() + " logins total).") +
-      t("Inbox", "✉ Inbox" + (bizUnread ? " · " + bizUnread + " new" : ""), "Inquiries from your public page and website.") +
-      (stIsRescue() ? t("Rescue Animals", "♧ Rescue animals", "Intake, quarantine, medical, available, adopted. New intakes start here.") : "") +
-      t("Sales", "$ Listings &amp; sales", "Listed, holds and deposits, sold, shipped and received. Expo mode for shows.") +
-      (bizIsBreeder() ? t("Hatchlings", "🐣 Hatchlings", "Every baby with its first shed, first meal and ready-to-sell checklist.") : "") +
-      t("Money", "◎ Income &amp; expenses", "Track money in and out, profit per clutch, and a spreadsheet for taxes.") +
-      t("Feeders", "🐁 Feeder stock", "Counts go down as you feed. Get a reminder before you run out.") +
-      t("Customers", "♡ Customers", "Buyers and adopters, repeat customers and what they took home.") +
-      t("Alerts", "🔔 Alerts", "Choose which business notifications reach your phone.") +
-      t("My Public Page", "✦ Public page &amp; social links", "Your inquiry link for your website, Facebook and Instagram bio.") +
-      (stIsRescue() ? t("Rescue Layout", "⚙ Racks or enclosures", "Currently: " + (accountPrefs?.rescueLayout === "racks" ? "racks layout" : "enclosures layout") + ". Change how your home screen is set up.") : "") +
-      (stIsRescue() ? t("Rescue Profile", "♧ Rescue profile &amp; intake", "Your Scale Hub listing, intake open/full, and 501(c)(3) verification.") : "") +
-      (stIsRescue() ? t("Fosters", "⌂ Foster homes", "Who is fostering which animal, with their own login.") + t("Adoption Contract", "✍ Adoption contracts", "Adopters sign on their phone. Signed copies are saved.") +
-        t("Impact Report", "★ Year-end impact report", "Intakes, adoptions and vet costs for grants and donors.") + t("Donate Button", "♡ Donate button", "Add a donate link to your public page.") : "") +
-      (stIsPremium() ? '<h3 class="sectionTitle">Premium tools</h3>' + t("Genetics Calculator", "🧬 Genetics calculator", "Pick two animals and see the possible babies.") +
-        t("Invoices", "🧾 Invoices &amp; receipts", "Branded invoices with deposits taken off. Download or email.") + t("Bulk Import", "⇩ Bulk import", "Add a whole collection from a spreadsheet or MorphMarket export.") +
-        t("Ship Weather", "🌡 Shipping weather check", "Is it safe to ship on that day, at both ends?") + t("Waitlist", "⏳ Waitlist", "Buyers waiting on a pairing, first come first served.") +
-        t("Sales Summary", "📈 Sales summary", "Sales by month and species, average price and repeat buyers.")
-        : bizIsBreeder() ? '<p class="lcSmall">Premium Breeder adds a genetics calculator, invoices, bulk import, shipping weather check, waitlist and sales summary.</p>' : "") +
-      (stCanBrand() ? t("Branding", "❦ Your logo &amp; colors", "Shows in the app and on Care Binder printouts.") + t("MorphMarket Export", "⇪ MorphMarket export", "Download your animals in MorphMarket’s bulk-import format.")
-        : '<p class="lcSmall">Premium Breeder adds your logo &amp; colors and MorphMarket export.</p>');
+    const R = stIsRescue(), B = bizIsBreeder(), P = stIsPremium(), h = (x) => '<h3 class="sectionTitle">' + x + "</h3>", RO = R && !B;
+    return '<p class="resourceIntro">Tools for running your ' + (RO ? "rescue" : "breeding business") + '.</p>' +
+      h("Team &amp; messages") +
+      t("Team Logins", "♡ Team logins", "Invite up to " + (stLogins() - 1) + " people (" + stLogins() + " logins total).") +
+      t("Inbox", "✉ Inbox" + (bizUnread ? " · " + bizUnread + " new" : ""), R ? "Messages, adoption applications and surrender requests." : "Inquiries from your public page and website.") +
+      t("My Public Page", "✦ Public page &amp; social links", "Your link for your website, Facebook and Instagram bio.") +
+      t("Alerts", "🔔 Alerts", "Choose which notifications reach your phone.") +
+      (R ? h("Rescue") + t("Rescue Animals", "♧ Rescue animals", "Intake, quarantine, medical, available, adopted.") +
+        t("Fosters", "⌂ Foster homes", "Who is fostering which animal, with their own login.") +
+        t("Adoption Contract", "✍ Adoption contracts", "Adopters sign on their phone. Signed copies are saved.") +
+        t("Impact Report", "★ Year-end impact report", "Intakes, adoptions and vet costs for grants and donors.") +
+        t("Rescue Profile", "♧ Rescue profile &amp; intake", "Your Scale Hub listing, intake open/full and 501(c)(3) verification.") +
+        t("Donate Button", "♡ Donate button", "Add a donate link to your public page.") +
+        t("Rescue Layout", "⚙ Racks or enclosures", "Currently: " + (accountPrefs?.rescueLayout === "racks" ? "racks" : "enclosures") + ".") : "") +
+      h(RO ? "Adoptions &amp; money" : "Sales &amp; money") +
+      t("Sales", RO ? "$ Adoption listings" : "$ Listings &amp; sales", RO ? "Available, pending and adopted, with fees." : "Listed, holds and deposits, sold, shipped and received. Expo mode for shows.") +
+      t("Money", "◎ Income &amp; expenses", "Money in and out, and a spreadsheet for taxes.") +
+      t("Customers", "♡ Customers", RO ? "Adopters and what they took home." : "Buyers, repeat customers and what they took home.") +
+      (P ? t("Invoices", "🧾 Invoices &amp; receipts", "Branded invoices and paid receipts. Download or email.") + t("Sales Summary", "📈 " + (RO ? "Adoption" : "Sales") + " summary", "By month and species, average price and repeat " + (RO ? "adopters" : "buyers") + ".") : "") +
+      (P && !RO ? t("Waitlist", "⏳ Waitlist", "Buyers waiting on a pairing, first come first served.") + t("Ship Weather", "🌡 Shipping weather check", "Is it safe to ship that day, at both ends?") : "") +
+      h("Animals") +
+      (B ? t("Hatchlings", "🐣 Hatchlings &amp; babies", "First shed, first meal and a ready-to-sell checklist.") : "") +
+      (P && !RO ? t("Genetics Calculator", "🧬 Genetics calculator", "Pick two animals and see the possible babies.") : "") +
+      t("Feeders", "🐁 Feeder stock", "Counts go down as you feed. A reminder before you run out.") +
+      (P ? t("Bulk Import", "⇩ Bulk import", "Add many animals from a spreadsheet or MorphMarket export.") : "") +
+      (stCanBrand() ? h("Your brand") + t("Branding", "❦ Your logo &amp; colors", "Shows in the app and on printouts.") + t("MorphMarket Export", "⇪ MorphMarket export", "Download your animals in MorphMarket’s bulk-import format.")
+        : '<p class="lcSmall">Premium Breeder adds a genetics calculator, invoices, bulk import, a shipping weather check, a waitlist, a sales summary, your logo &amp; colors and MorphMarket export.</p>');
   },
   "Team Logins": () => {
     if (stTeam?.role === "member")
@@ -12156,7 +12173,8 @@ BIZ_PANELS["Send Update Email"] = () => {
   if (!stMailState.stats) setTimeout(stMailStats, 0);
   const st = stMailState.stats;
   return '<p class="resourceIntro">Email everyone who has app update emails turned on. Each email has an unsubscribe link.</p>' +
-    '<p class="lcSmall"><b>' + (st ? st.on + " of " + st.all + " accounts" : "…") + "</b> will get this email.</p>" +
+    '<label>Send to<select id="mailAud" onchange="stMailState.aud=this.value;render()">' + [["all", "Everyone"], ["keepers", "Keepers"], ["breeders", "Breeders"], ["rescues", "Rescues"]].map(([k, l]) => '<option value="' + k + '"' + ((stMailState.aud || "all") === k ? " selected" : "") + ">" + l + (st?.groups ? " (" + (st.groups[k] ?? 0) + ")" : "") + "</option>").join("") + "</select></label>" +
+    '<p class="lcSmall"><b>' + (st ? (st.groups?.[stMailState.aud || "all"] ?? st.on) + " people" : "…") + "</b> will get this email (everyone in that group with update emails on).</p>" +
     '<label>Subject<input id="mailSubj" maxlength="140" value="' + esc(stMailState.subject) + '" placeholder="e.g. New in Scale & Tell: Watch & Learn"></label>' +
     '<label>Message<textarea id="mailBody" rows="10" maxlength="8000" placeholder="Hi keepers ♡&#10;&#10;Here’s what’s new…">' + esc(stMailState.body) + "</textarea></label>" +
     '<p class="lcSmall">Leave a blank line between paragraphs. An “Open Scale &amp; Tell” button and the unsubscribe link are added for you.</p>' +
@@ -12910,4 +12928,102 @@ async function stApplySignupEmailChoice() {
     if (!error) { localStorage.removeItem("scaleTellPendingUpdates"); stEmailPref = v === "1"; }
   } catch (e) {}
 }
+
+/* ---------- V3.62 · Sensor alert ranges (Govee). The server checks every 30 minutes and alerts the phone. ---------- */
+let sensorAlertIdx = -1;
+const SENSOR_DEFAULTS = { "Warm side": [85, 95], "Cool side": [72, 82], Ambient: [72, 88] };
+function sensorAlertText(d) {
+  const t = d.alertMin != null || d.alertMax != null ? "Alerts " + (d.alertMin ?? "–") + "–" + (d.alertMax ?? "–") + "°F" : "No temperature alerts";
+  const h = d.humMin != null || d.humMax != null ? " · " + (d.humMin ?? "–") + "–" + (d.humMax ?? "–") + "% RH" : "";
+  return t + h;
+}
+BIZ_PANELS["Sensor Alerts"] = () => {
+  const d = devices[sensorAlertIdx];
+  if (!d) return '<p class="helperLine">Pick a sensor first.</p><button class="action secondary" onclick="openPanel(\'Govee Sensors\')">← Govee sensors</button>';
+  const def = SENSOR_DEFAULTS[d.placement] || [75, 90];
+  const v = (x, dflt) => (x == null ? dflt : x);
+  return '<p class="resourceIntro">Set the safe range for <b>' + esc(d.nickname) + "</b> (" + esc(d.animal) + " · " + esc(d.placement) + "). We check it about every 30 minutes and send your phone an alert if it goes outside the range.</p>" +
+    '<h3 class="sectionTitle">Temperature (°F)</h3><div class="saleGrid">' + bizField("saTmin", "Too cold below", v(d.alertMin, def[0]), "number", "", 'step="0.5"') + bizField("saTmax", "Too hot above", v(d.alertMax, def[1]), "number", "", 'step="0.5"') + "</div>" +
+    '<h3 class="sectionTitle">Humidity (%) <small>optional</small></h3><div class="saleGrid">' + bizField("saHmin", "Too dry below", d.humMin ?? "", "number", "e.g. 50") + bizField("saHmax", "Too humid above", d.humMax ?? "", "number", "e.g. 80") + "</div>" +
+    '<p class="lcSmall">Starting numbers are general guides for the ' + esc(String(d.placement || "").toLowerCase()) + '. Check the right range for your species in the care guides or with your vet.</p>' +
+    '<div class="inlineActions"><button class="action" onclick="sensorAlertSave(true)">Save alerts</button><button class="action secondary" onclick="sensorAlertSave(false)">Turn alerts off</button></div>' +
+    '<p class="lcSmall">Alerts need phone notifications turned on (My Account → reminders).</p><p id="bizMsg" class="helperLine" role="status"></p><button class="action secondary" onclick="openPanel(\'Govee Sensors\')">← Govee sensors</button>';
+};
+function sensorAlertSave(on) {
+  const d = devices[sensorAlertIdx];
+  if (!d) return;
+  const n = (id) => { const x = bizV(id); if (x === "") return null; const v = Number(x); return Number.isFinite(v) ? Math.round(v * 10) / 10 : null; };
+  const next = { ...d };
+  if (on) {
+    const a = n("saTmin"), b = n("saTmax"), c = n("saHmin"), e = n("saHmax");
+    if (a != null && b != null && a >= b) return v57Msg("The too-cold number must be lower than the too-hot number.");
+    if (c != null && e != null && c >= e) return v57Msg("The too-dry number must be lower than the too-humid number.");
+    if ([a, b].some((x) => x != null && (x < 32 || x > 140)) || [c, e].some((x) => x != null && (x < 0 || x > 100))) return v57Msg("Check the numbers.");
+    Object.assign(next, { alertMin: a, alertMax: b, humMin: c, humMax: e });
+  } else ["alertMin", "alertMax", "humMin", "humMax"].forEach((k) => delete next[k]);
+  saveDevices(devices.map((x, i) => (i === sensorAlertIdx ? next : x)));
+  try { save(); } catch (e) {}
+  stToast(on ? "🔔 " + sensorAlertText(next) : "Alerts off for " + d.nickname);
+  openPanel("Govee Sensors");
+}
+
+/* ---------- V3.62 · In-app banners: admins post a short message that shows at the top of Home ---------- */
+let stBanners = [], stBannerAdmin = null;
+async function stBannerLoad() {
+  if (!cloudClient || !cloudSession) return;
+  try { const { data } = await cloudClient.rpc("banners_for_me"); stBanners = data || []; } catch (e) { stBanners = []; }
+  stBannerShow();
+}
+function stBannerShow() {
+  document.getElementById("stBanner")?.remove();
+  let seen = {};
+  try { seen = JSON.parse(localStorage.getItem("scaleTellBannersSeen") || "{}"); } catch (e) {}
+  const b = stBanners.find((x) => !seen[x.id]);
+  const anchor = document.querySelector(".homeHello") || document.getElementById("bizBanner");
+  if (!b || !anchor) return;
+  const el = document.createElement("div");
+  el.id = "stBanner";
+  el.className = "stBanner";
+  el.innerHTML = '<button aria-label="Dismiss" onclick="stBannerHide(\'' + b.id + '\')">×</button><b>' + esc(b.title) + "</b>" + (b.body ? "<p>" + esc(b.body) + "</p>" : "");
+  (document.getElementById("bizBanner") && document.getElementById("bizBanner").style.display !== "none" ? document.getElementById("bizBanner") : anchor).after(el);
+}
+function stBannerHide(id) {
+  try { const s = JSON.parse(localStorage.getItem("scaleTellBannersSeen") || "{}"); s[id] = 1; localStorage.setItem("scaleTellBannersSeen", JSON.stringify(s)); } catch (e) {}
+  document.getElementById("stBanner")?.remove();
+}
+(function () {
+  const base = renderHomeCards;
+  renderHomeCards = function () { const r = base.apply(this, arguments); try { if (stBanners.length) setTimeout(stBannerShow, 0); } catch (e) {} return r; };
+})();
+setInterval(() => { try { if (cloudSession && stAccessChecked && !window.__stBannerLoaded) { window.__stBannerLoaded = true; stBannerLoad(); } } catch (e) {} }, 2000);
+async function stBannerAdminLoad() {
+  try { const { data } = await cloudClient.rpc("banners_admin"); stBannerAdmin = data || []; } catch (e) { stBannerAdmin = []; }
+  const el = document.getElementById("bnList"); if (el) el.innerHTML = stBannerListMarkup();
+}
+function stBannerListMarkup() {
+  const act = (stBannerAdmin || []).filter((b) => b.active && (!b.expires_at || new Date(b.expires_at) > new Date()));
+  return act.length ? act.map((b) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(b.title) + "</b><span>" + esc(b.audience) + '</span></div><p class="lcSmall">Showing until ' + esc(niceDate(String(b.expires_at).slice(0, 10))) + '</p><div class="recordActions"><button onclick="stBannerEnd(\'' + b.id + '\')">Take down</button></div></div>').join("") : '<p class="helperLine">No banners showing.</p>';
+}
+async function stBannerPost() {
+  const title = bizV("bnTitle"), body = bizV("bnBody"), aud = document.getElementById("bnAud")?.value || "all", days = Number(bizV("bnDays")) || 14;
+  if (!title) return v57Msg("Add a headline.");
+  if (!confirm("Show this banner to " + (aud === "all" ? "everyone" : aud) + " for " + days + " days?")) return;
+  try { const { error } = await cloudClient.rpc("banner_save", { p_title: title, p_body: body, p_audience: aud, p_days: days }); if (error) throw error; stToast("📣 Banner is live"); stBannerAdmin = null; window.__stBannerLoaded = false; render(); }
+  catch (e) { v57Msg(e.message || "Couldn’t post the banner."); }
+}
+async function stBannerEnd(id) {
+  try { await cloudClient.rpc("banner_end", { p_id: id }); } catch (e) {}
+  stBannerAdmin = null; render();
+}
+(function () {
+  const base = BIZ_PANELS["Send Update Email"];
+  BIZ_PANELS["Send Update Email"] = function () {
+    if (!window.__stIsAdmin) return base();
+    if (stBannerAdmin === null) { stBannerAdmin = []; setTimeout(stBannerAdminLoad, 0); }
+    return '<h3 class="sectionTitle">📣 In-app banner</h3><p class="lcSmall">Shows at the top of Home until it expires or they close it. Instant, no email needed.</p>' +
+      bizField("bnTitle", "Headline", "", "text", "New: Keeper Tools are here ♡") + '<label>Message (optional)<textarea id="bnBody" rows="3" maxlength="400" placeholder="Vet reminders, shed predictions and more. Menu → Keeper Tools."></textarea></label>' +
+      '<div class="saleGrid"><label>Show to<select id="bnAud"><option value="all">Everyone</option><option value="keepers">Keepers</option><option value="breeders">Breeders</option><option value="rescues">Rescues</option></select></label>' + bizField("bnDays", "Days to show", 14, "number", "", 'min="1" max="90"') + "</div>" +
+      '<button class="action" onclick="stBannerPost()">Post banner</button><div id="bnList">' + stBannerListMarkup() + '</div><h3 class="sectionTitle">✉ Email</h3>' + base();
+  };
+})();
 
