@@ -814,6 +814,7 @@ async function founderRefreshEntitlement() {
       setTimeout(stMaybeShowUpgrade, 1500);
       setTimeout(rescueMaybeAskLayout, 1800);
       setTimeout(stAdminCheck, 1200);
+      setTimeout(stApplySignupEmailChoice, 1400);
       try { renderHomeCards(); } catch (e) {}
       setTimeout(bizQueueAuto, 2500);
       if (!window.__stTransferChecked) { window.__stTransferChecked = true; setTimeout(transferCheck, 3500); }
@@ -1880,8 +1881,8 @@ const RECOMMENDED = [
   {
     brand: "Spyder Robotics",
     name: "Herpstat thermostats",
-    tag: "Connects with Scale & Tell ♡",
-    why: "Proportional thermostats made for reptile keepers and breeders. Your Herpstat can send its live temperatures, humidity and alarms straight into Scale & Tell (Menu → Devices → Connect Herpstat).",
+    tag: "Works with Scale & Tell",
+    why: "Proportional thermostats made for reptile keepers and breeders. Your Herpstat can send its live temperatures, humidity and alarms into Scale & Tell (Menu → Devices → Connect Herpstat). Scale & Tell is not affiliated with, endorsed by or sponsored by Spyder Robotics.",
     url: "https://spyderrobotics.com/",
   },
   {
@@ -3923,7 +3924,7 @@ function habitatMarkup(a) {
   );
 }
 function gaugeComingSoon() {
-  return '<section class="gaugeComingSoon" aria-label="Gauge connections"><strong>✧ Live gauge connections</strong><p><b>Govee:</b> available now. Connect your own Govee account and pull temperature and humidity straight into your habitat log. <button class="linkBtn" onclick="openPanel(\'Govee Sensors\')">Connect Govee →</button></p><p><b>Herpstat (Spyder Robotics):</b> available now. Your Herpstat thermostat sends its temperatures, humidity and power straight to Scale &amp; Tell, with alerts when it goes out of range. <button class="linkBtn" onclick="openPanel(\'Herpstat\')">Connect Herpstat →</button></p><p><b>SensorPush:</b> SensorPush is sending us test equipment so we can build the connection. Coming soon.</p><small>Other brands: assign your gauge and log readings below. They&#39;ll appear in your habitat history.</small></section>';
+  return '<section class="gaugeComingSoon" aria-label="Gauge connections"><strong>✧ Live gauge connections</strong><p><b>Govee:</b> available now. Connect your own Govee account and pull temperature and humidity straight into your habitat log. <button class="linkBtn" onclick="openPanel(\'Govee Sensors\')">Connect Govee →</button></p><p><b>Herpstat:</b> works with Scale &amp; Tell. Your Herpstat thermostat sends its temperatures, humidity and power straight to Scale &amp; Tell, with alerts when it goes out of range. <button class="linkBtn" onclick="openPanel(\'Herpstat\')">Connect Herpstat →</button></p><p><b>SensorPush:</b> SensorPush is sending us test equipment so we can build the connection. Coming soon.</p><small>Other brands: assign your gauge and log readings below. They&#39;ll appear in your habitat history.</small></section>';
 }
 function deviceDirectory() {
   return (
@@ -3957,7 +3958,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.59";
+const SCALE_LC_VERSION = "3.61";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7325,6 +7326,7 @@ function authLogin() {
 function authCreate() {
   authSetStay();
   const code = (document.getElementById("signupMemberCode")?.value || "").trim().slice(0, 40);
+  try { localStorage.setItem("scaleTellPendingUpdates", document.getElementById("signupUpdates")?.checked === false ? "0" : "1"); } catch (e) {}
   try {
     if (code) localStorage.setItem("scaleTellPendingCode", code);
     else localStorage.removeItem("scaleTellPendingCode");
@@ -7491,7 +7493,7 @@ function updateAuthGate() {
         (authStayEnabled() ? "checked" : "") +
         "><span>Keep me signed in on this device</span></label>" +
         (signup
-          ? '<label class="authField" for="signupMemberCode">Member or promo code (optional)</label><input id="signupMemberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Leave blank if you don&#39;t have one">'
+          ? '<label class="authField" for="signupMemberCode">Member or promo code (optional)</label><input id="signupMemberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Leave blank if you don&#39;t have one"><label class="authStay"><input type="checkbox" id="signupUpdates" checked><span>Email me about app updates and new features. Unsubscribe anytime.</span></label>'
           : "")) +
     (reset
       ? '<button class="authButton" onclick="cloudResetEmail()">Send reset link</button><button class="authButton light" onclick="authChooseMode(\'signin\')">Back to Sign In</button>'
@@ -12870,7 +12872,7 @@ BIZ_PANELS.Herpstat = () => {
   if (herpState.devices === null) { herpState.devices = []; setTimeout(herpLoad, 0); }
   const list = herpState.devices.filter((d) => !d.hidden);
   const ago = (t) => { const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 2 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; };
-  return '<p class="resourceIntro">Your Herpstat sends its readings to Scale &amp; Tell every few minutes. You’ll get a phone alert when an output goes past the high or low alarm you set on the Herpstat.</p>' +
+  return '<p class="lcSmall">Scale &amp; Tell is an independent app. It is not affiliated with, endorsed by or sponsored by Spyder Robotics. Herpstat is a product of Spyder Robotics.</p><p class="resourceIntro">Your Herpstat sends its readings to Scale &amp; Tell every few minutes. You’ll get a phone alert when an output goes past the high or low alarm you set on the Herpstat.</p>' +
     (list.length ? list.map((d) => '<div class="deviceCard"><div class="deviceHeading"><b>🌡 ' + esc(d.nickname || d.mac) + "</b><span>" + esc(ago(d.updated_at)) + "</span></div>" +
       (d.outputs || []).map((o) => '<p class="lcSmall"><b>' + esc(o.name) + ":</b> " + (o.temp ?? "—") + "°" + (o.set != null ? " (set " + o.set + "°)" : "") + (o.rh != null ? " · " + o.rh + "% RH" : "") + (o.power != null ? " · power " + o.power + "%" : "") +
         (o.alarm && (o.hi != null || o.lo != null) ? " · alarm " + (o.lo ?? "–") + "–" + (o.hi ?? "–") + "°" : "") + "</p>").join("") +
@@ -12878,7 +12880,7 @@ BIZ_PANELS.Herpstat = () => {
     '<h3 class="sectionTitle">Connect your Herpstat</h3><ol class="goveeSteps"><li>Tap <b>Show my Herpstat key</b> below.</li><li>On your Herpstat’s settings page, turn on <b>database upload</b> (Spyderweb).</li><li>Enter this <b>upload URL</b>:<br><code class="v57Code">' + HERPSTAT_URL + '</code></li><li>Enter your <b>API key</b> from below, then save. Readings show up here within about 10 minutes.</li></ol>' +
     (herpState.key ? '<p class="lcSmall">Your key:</p><code class="v57Code">' + esc(herpState.key) + '</code><div class="inlineActions"><button class="action secondary" onclick="navigator.clipboard.writeText(\'' + esc(herpState.key) + '\').then(()=>stToast(\'Key copied ♡\'))">Copy key</button><button class="action secondary" onclick="navigator.clipboard.writeText(HERPSTAT_URL).then(()=>stToast(\'URL copied ♡\'))">Copy URL</button></div>'
       : '<button class="action" onclick="herpKey()">Show my Herpstat key</button>') +
-    '<p class="lcSmall">Keep your key private: anyone with it could send readings to your account. Not sure where these settings are on your model? Spyder Robotics support can point you to the database upload settings.</p><p id="bizMsg" class="helperLine" role="status">' + esc(herpState.msg) + "</p>" +
+    '<p class="lcSmall">Keep your key private: anyone with it could send readings to your account. Not sure where these settings are on your model? Check your Herpstat manual for the database upload settings. For help with the Herpstat itself, contact Spyder Robotics; for help with Scale &amp; Tell, contact us.</p><p id="bizMsg" class="helperLine" role="status">' + esc(herpState.msg) + "</p>" +
     '<button class="action secondary" onclick="openPanel(\'Devices\')">← Devices</button>';
 };
 async function herpKey() {
@@ -12896,5 +12898,16 @@ async function herpHide(mac) {
   if (!confirm("Remove this Herpstat from Scale & Tell? (Turn off database upload on the Herpstat too.)")) return;
   try { await cloudClient.rpc("herpstat_hide", { p_mac: mac }); } catch (e) {}
   herpState.devices = null; render();
+}
+
+/* V3.60 · The Create Account checkbox for update emails is applied after the first sign-in. */
+async function stApplySignupEmailChoice() {
+  let v = null;
+  try { v = localStorage.getItem("scaleTellPendingUpdates"); } catch (e) {}
+  if (v === null || !cloudClient || !cloudSession) return;
+  try {
+    const { error } = await cloudClient.from("email_prefs").update({ updates: v === "1", updated_at: new Date().toISOString() }).eq("user_id", cloudSession.user.id);
+    if (!error) { localStorage.removeItem("scaleTellPendingUpdates"); stEmailPref = v === "1"; }
+  } catch (e) {}
 }
 
