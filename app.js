@@ -3943,7 +3943,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.55";
+const SCALE_LC_VERSION = "3.56";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7331,8 +7331,7 @@ async function stRedeemPendingCode() {
     if (!error && data !== "limit") localStorage.removeItem("scaleTellPendingCode");
     if (!error && data === "ok") {
       await founderRefreshEntitlement();
-      cloudSetStatus(cloudAutoStatus);
-      stToast(stCodeWelcome());
+      stCodeReload(stCodeWelcome());
     } else if (!error && (data === "invalid" || data === "used")) {
       const st = document.getElementById("memberCodeStatus");
       if (st) st.textContent = data === "used" ? "That code has already been used up. Choose a plan below." : "That code didn't work. Check it and try again, or choose a plan.";
@@ -7375,8 +7374,8 @@ async function accessRedeemCode() {
     if (error) throw error;
     if (data === "ok") {
       await founderRefreshEntitlement();
-      cloudSetStatus(cloudAutoStatus);
-      say("✓ " + stCodeWelcome());
+      say("✓ " + stCodeWelcome() + " Opening your account…");
+      stCodeReload(stCodeWelcome());
     } else if (data === "limit") say("Too many tries. Please wait an hour and try again.");
     else if (data === "used") say("That code has already been used up.");
     else say("That code didn't work. Check it and try again.");
@@ -7384,6 +7383,17 @@ async function accessRedeemCode() {
     say("Could not check the code right now. Please try again.");
   }
 }
+/* After a code unlocks a plan, reload once so every screen, menu and tool opens with the new plan. */
+function stCodeReload(msg) {
+  try { sessionStorage.setItem("scaleTellCodeToast", msg || ""); } catch (e) {}
+  setTimeout(() => location.reload(), 1500);
+}
+setTimeout(() => {
+  try {
+    const m = sessionStorage.getItem("scaleTellCodeToast");
+    if (m) { sessionStorage.removeItem("scaleTellCodeToast"); setTimeout(() => stToast(m), 2500); }
+  } catch (e) {}
+}, 0);
 function stPlanChecking() {
   return !!(cloudSession && !stAccessChecked);
 }
