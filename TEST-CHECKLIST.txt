@@ -1,0 +1,37 @@
+WATCH & LEARN
+[ ] Scale Hub shows a Watch & Learn entry for Keeper, Breeder and Rescue accounts.
+[ ] Initial page shows only eight topic cards, zero video cards, and the medical disclaimer.
+[ ] There is NO All Topics button, and no global combined video list.
+[ ] Selecting a topic shows ONLY its videos with the correct topic-specific count.
+[ ] Search is limited to the selected topic.
+[ ] Browse topics returns to the topic menu with all videos hidden.
+[ ] All eight topic cards work on desktop and mobile small-screen layout.
+[ ] Search by common question and by original submitted video title works.
+[ ] Correct Corn Snake Care URL: krcMrNv5eZc, not the Leopard Gecko duplicate URL.
+[ ] Enrichment URLs KGjxJZYWBzI and fHnWRkn6plQ both appear.
+[ ] Every card opens the exact creator video in a new YouTube tab.
+[ ] Thumbnail failures still allow users to click Watch on YouTube.
+[ ] THIS IS NOT MEDICAL ADVICE is prominent; special notes for veterinary procedure videos.
+[ ] No one is told the 48 video contents have already been independently reviewed.
+
+FEEDING TIMES
+[ ] Feeding Tracker offers date + optional time. Today's time initially matches device locale.
+[ ] Change date to previous day: prefilled time clears and can be manually set.
+[ ] Log a feed with time (e.g., 19:30): history displays 7:30 PM.
+[ ] Log feed with blank time: no guessed time appears.
+[ ] Edit existing feeding entry and save a corrected time; refresh and verify.
+[ ] Existing older feeds with no time still load and edit with blank time.
+[ ] Quick Log Fed / Refused allows selecting date and time, and shows time in history.
+[ ] Switch animals inside Quick Log without losing selected date/time.
+[ ] Breeder rack feeding allows optional time, stored on each selected tub's entry.
+[ ] Save/cancel/refused feeds preserve existing reminder behavior.
+[ ] Sign out and back in / second device sync retains feedingTime.
+[ ] Download/export journal and check feedingTime is preserved; restore a test journal.
+[ ] Vet, photos, PayPal, welcome, notifications and other flows remain unchanged.
+[ ] Installed PWA refreshes to service worker/static cache v3.52.
+
+DEPLOYMENT / RECOVERY
+[ ] Download source-code backup pinned to pre-change Git commit.
+[ ] Confirm Supabase database restorable backup separately.
+[ ] Review staged output and test a non-owner account before promoting.
+[ ] If rollback needed, restore ALL changed files together, especially index.html, app.js and sw.js.
