@@ -2333,6 +2333,7 @@ const QUICK_LOG = [
   { id: "handled", label: "Handled", icon: "🤲", section: "Observations", detail: "Handling" },
 ];
 let quickLogDate = "";
+let quickLogTime = "";
 function openQuickLog(a) {
   if (a && animals.includes(a)) selectedAnimal = a;
   if (!animals.includes(selectedAnimal)) selectedAnimal = animals[0] || "";
@@ -2341,6 +2342,7 @@ function openQuickLog(a) {
     return;
   }
   quickLogDate = today();
+  quickLogTime = stFeedNowTime();
   openPanel("Quick Log", selectedAnimal);
 }
 /* V3.39 · Herps & Hers members (group code) get a friendly upgrade card. */
@@ -2463,6 +2465,27 @@ async function stShareBadge() {
   a.click();
   a.remove();
 }
+/* V3.52 · Feeding event time: local wall-clock HH:MM, independent of record creation timestamp. */
+function stFeedNowTime() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+function stValidFeedingTime(v) {
+  return typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+}
+function stFeedingTimeLabel(v) {
+  if (!stValidFeedingTime(v)) return "";
+  const [h, m] = v.split(":").map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+function quickLogSetDate(v) {
+  quickLogDate = v;
+  if (v !== today()) {
+    quickLogTime = "";
+    const t = document.getElementById("qlTime");
+    if (t) t.value = "";
+  }
+}
 function quickLogMarkup() {
   const a = selectedAnimal;
   return (
@@ -2505,7 +2528,7 @@ function quickLogMarkup() {
     esc(quickLogDate || today()) +
     '" max="' +
     today() +
-    '" onchange="quickLogDate=this.value"></label>' +
+    '" onchange="quickLogSetDate(this.value)"></label><label class="qlDate">Feeding time (optional)<input type="time" id="qlTime" value="' + esc(quickLogTime) + '" onchange="quickLogTime=this.value"></label>' +
     '<p class="qlStatus" id="qlStatus" role="status"></p>' +
     '<button class="action secondary" onclick="openPanel(\'Log Care\',selectedAnimal)">More options (prey, temps, notes…)</button>'
   );
@@ -2520,7 +2543,7 @@ function quickLogEntry(q, extra) {
   let detail = q.detail;
   if (q.id === "shed") detail = animalCareType(selectedAnimal) === "invertebrate" ? "Complete molt" : "Complete shed";
   const e = { section: q.section, animal: selectedAnimal, detail, date, notes: "", ...(extra || {}) };
-  if (q.section === "Feeding Tracker") Object.assign(e, { preyType: "", preyWeight: "", response: detail === "Refused" ? "Refused" : "" });
+  if (q.section === "Feeding Tracker") Object.assign(e, { preyType: "", preyWeight: "", response: detail === "Refused" ? "Refused" : "", ...(stValidFeedingTime(quickLogTime) ? { feedingTime: quickLogTime } : {}) });
   entries.push(e);
   save();
   if (e.section === "Feeding Tracker" && e.detail !== "Refused" && e.preyType) feederUse(e.preyType, 1);
@@ -2660,6 +2683,7 @@ function openPanel(name, animal) {
     panelHistory.push({ name: current, animal: selectedAnimal });
     if (panelHistory.length > 15) panelHistory.shift();
   }
+  if (name === "Watch & Learn" && current !== name) { wlTopic = ""; wlQuery = ""; }
   logPrefillAnimal = name === "Care Logs" && animal ? animal : "";
   if (animal) selectedAnimal = animal;
   else if (animals.includes(name)) selectedAnimal = name;
@@ -3005,6 +3029,7 @@ function toggleReminderForm() {
 }
 function recordMeta(e) {
   return [
+    e.section === "Feeding Tracker" && stValidFeedingTime(e.feedingTime) ? "Time " + stFeedingTimeLabel(e.feedingTime) : "",
     e.vetName ? "Vet " + e.vetName : "",
     e.medication ? "Medication " + e.medication : "",
     e.dose ? "Dose " + e.dose : "",
@@ -3103,7 +3128,7 @@ function careEditMarkup() {
     esc(weight ? parseFloat(e.detail) : e.detail) +
     '"></label>' +
     (feed
-      ? '<label>Food / prey type<input id="careEditPrey" maxlength="60" value="' +
+      ? '<label>Feeding time (optional)<input type="time" id="careEditFeedingTime" value="' + esc(e.feedingTime || '') + '"></label><label>Food / prey type<input id="careEditPrey" maxlength="60" value="' +
         esc(e.preyType || "") +
         '"></label><label>Food / prey weight (g)<input type="number" min="0" max="10000" step="0.1" id="careEditPreyWeight" value="' +
         esc(e.preyWeight || "") +
@@ -3199,6 +3224,9 @@ function saveCareEdit() {
       alert("Enter a valid food weight or leave blank.");
       return;
     }
+    const feedingTime = (document.getElementById("careEditFeedingTime")?.value || "").trim();
+    if (feedingTime && !stValidFeedingTime(feedingTime)) return alert("Enter a valid feeding time or leave it blank.");
+    next.feedingTime = feedingTime;
     next.preyType = document.getElementById("careEditPrey").value.trim().slice(0, 60);
     next.preyWeight = w;
     next.response = document.getElementById("careEditResponse").value.trim().slice(0, 80);
@@ -3873,7 +3901,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.51";
+const SCALE_LC_VERSION = "3.52";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4352,7 +4380,9 @@ function render() {
         : "") +
       '<label>Reptile<select id="animal" onchange="refreshCareOptions()">' +
       animalOptions() +
-      '</select></label><label>Date<input type="date" id="date"></label><label>Entry<select id="detail">' +
+      '</select></label><label>Date<input type="date" id="date"></label>' +
+      (current === "Feeding Tracker" ? '<label>Feeding time (optional)<input type="time" id="feedTime"></label>' : '') +
+      '<label>Entry<select id="detail">' +
       options.map((x) => "<option>" + x + "</option>").join("") +
       "</select></label>" +
       (current === "Calendar"
@@ -4387,6 +4417,12 @@ function render() {
         ? "</div>"
         : "<h3>Saved preview entries</h3>" + logList(entries.filter((e) => e.section === current)));
     document.getElementById("date").value = today();
+    if (current === "Feeding Tracker") {
+      document.getElementById("feedTime").value = stFeedNowTime();
+      document.getElementById("date").addEventListener("change", function () {
+        if (this.value !== today()) document.getElementById("feedTime").value = "";
+      });
+    }
     if (pendingLogDetail) {
       const sel = document.getElementById("detail");
       if (sel && [...sel.options].some((o) => o.value === pendingLogDetail)) sel.value = pendingLogDetail;
@@ -4451,7 +4487,7 @@ function render() {
   }
   if (current === "Scale Hub") {
     el.innerHTML =
-      '<p class="resourceIntro">Herps & Hers · Learn ♡ Share ♡ Grow. Choose the help you need without sorting through duplicated screens.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Reptile Rescues\')"><strong>♧ Reptile Rescues</strong><small>Rescues using Scale &amp; Tell, with their intake status.</small></button><button class="resourceTile" onclick="openPanel(\'Bioactive & DIY\')"><strong>❦ Bioactive & DIY How-Tos</strong><small>Build a bioactive setup, pick a cleanup crew, and make safe hides, backgrounds and decor.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Reptile Products</strong><small>First Time Keeper Essentials, our Amazon and Chewy picks, and SensorPush.</small></button>';
+      '<p class="resourceIntro">Herps & Hers · Learn ♡ Share ♡ Grow. Choose the help you need without sorting through duplicated screens.</p><button class="resourceTile" onclick="openPanel(\'Urgent Help\')"><strong>♡ Urgent Help</strong><small>Warning signs, what to avoid, care-history handoff and veterinary contacts.</small></button><button class="resourceTile" onclick="openPanel(\'Care Library\')"><strong>✧ Herps & Hers Care Guides</strong><small>All 12 original illustrated New Keeper Series guides, right inside the app.</small></button><button class="resourceTile" onclick="openPanel(\'Community\')"><strong>♧ Community & Social Media</strong><small>Join the Facebook community and find the official Herps & Hers accounts.</small></button><button class="resourceTile" onclick="openPanel(\'Find a Vet\')"><strong>✚ Find a Reptile Vet</strong><small>Find a specialist, save your regular and emergency clinic.</small></button><button class="resourceTile" onclick="openPanel(\'Reptile Rescues\')"><strong>♧ Reptile Rescues</strong><small>Rescues using Scale &amp; Tell, with their intake status.</small></button><button class="resourceTile" onclick="openPanel(\'Bioactive & DIY\')"><strong>❦ Bioactive & DIY How-Tos</strong><small>Build a bioactive setup, pick a cleanup crew, and make safe hides, backgrounds and decor.</small></button><button class="resourceTile" onclick="openPanel(\'Watch & Learn\')"><strong>▷ Watch &amp; Learn ♡</strong><small>Choose a topic to explore our 48 hand-selected video links. Medical disclaimer included.</small></button><button class="resourceTile" onclick="openPanel(\'Recommended Products\')"><strong>✦ Reptile Products</strong><small>First Time Keeper Essentials, our Amazon and Chewy picks, and SensorPush.</small></button>';
     return;
   }
   if (BIZ_PANELS[current]) {
@@ -4462,6 +4498,10 @@ function render() {
   if (current === "Govee Sensors") {
     el.innerHTML = goveeMarkup();
     goveeLoad();
+    return;
+  }
+  if (current === "Watch & Learn") {
+    el.innerHTML = watchLearnMarkup();
     return;
   }
   if (current === "Bioactive & DIY") {
@@ -6155,6 +6195,8 @@ function saveEntry() {
     alert("This reptile already has an unfinished " + detail.toLowerCase() + " on that date.");
     return;
   }
+  const feedingTime = current === "Feeding Tracker" ? (document.getElementById("feedTime")?.value || "").trim() : "";
+  if (feedingTime && !stValidFeedingTime(feedingTime)) return alert("Enter a valid feeding time or leave it blank.");
   let preyType = document.getElementById("preyType")?.value.trim() || "",
     preyWeight = document.getElementById("preyWeight")?.value || "",
     response = document.getElementById("feedingResponse")?.value || "",
@@ -6184,7 +6226,7 @@ function saveEntry() {
     detail,
     date,
     notes,
-    ...(current === "Feeding Tracker" ? { preyType, preyWeight, response } : {}),
+    ...(current === "Feeding Tracker" ? { preyType, preyWeight, response, ...(feedingTime ? { feedingTime } : {}) } : {}),
     ...(current === "Enclosure Care" ? { warmTemp, coolTemp, humidity } : {}),
     ...(current === "Calendar"
       ? {
@@ -9733,7 +9775,7 @@ function rackFeedingMarkup() {
   return (
     '<p class="muted">Mark each tub, then save once. Tubs left blank are not logged.</p><label>Feeding date<input type="date" id="rfDate" value="' +
     today() +
-    '"></label><div class="rfAll"><span>Mark all:</span><button type="button" onclick="rackFeedAll(&quot;Ate&quot;)">Ate</button><button type="button" onclick="rackFeedAll(&quot;&quot;)">Clear</button></div>' +
+    '"></label><label>Feeding time (optional, applies to selected tubs)<input type="time" id="rfTime"></label><div class="rfAll"><span>Mark all:</span><button type="button" onclick="rackFeedAll(&quot;Ate&quot;)">Ate</button><button type="button" onclick="rackFeedAll(&quot;&quot;)">Clear</button></div>' +
     rows
       .map((x, n) => {
         const f = lastFeed(x.a);
@@ -9787,6 +9829,8 @@ function saveRackFeeding(n) {
   const r = racks[breederRackId],
     date = document.getElementById("rfDate")?.value;
   if (!r || !validDate(date)) return alert("Choose a valid date.");
+  const feedingTime = (document.getElementById("rfTime")?.value || "").trim();
+  if (feedingTime && !stValidFeedingTime(feedingTime)) return alert("Enter a valid feeding time or leave it blank.");
   const add = [];
   for (let i = 0; i < n; i++) {
     const choice = document.querySelector('input[name="rf' + i + '"]:checked')?.value;
@@ -9798,6 +9842,7 @@ function saveRackFeeding(n) {
       detail: choice,
       date,
       notes: "Rack feeding · " + r.name + " " + prey.dataset.tub,
+      ...(feedingTime ? { feedingTime } : {}),
       ...(choice !== "Skipped feeding" && prey.value.trim() ? { preyType: prey.value.trim().slice(0, 60) } : {}),
     });
   }
