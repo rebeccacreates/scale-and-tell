@@ -701,6 +701,43 @@ function stThemeCacheOk(uid) {
   try { return !!uid && localStorage.getItem("scaleTellThemeUid") === uid; } catch (e) { return false; }
 }
 stSetTheme(stThemeCacheOk(stLastOwner()) ? stSavedTheme : "original");
+/* V3.53 · Launch splash: on a signed-in device, hold one calm loading screen until the account,
+   plan, brand colors and journal are ready, so the screen never flips between layouts. */
+(function stBootStart() {
+  let saved = false;
+  try { for (let i = 0; i < localStorage.length; i++) if (/^sb-.*-auth-token$/.test(localStorage.key(i) || "")) saved = true; } catch (e) {}
+  if (!saved) return;
+  const go = () => {
+    document.body.classList.add("stBooting");
+    const d = document.createElement("div");
+    d.id = "stBoot";
+    d.innerHTML = '<div class="stBootInner"><img alt="" src="icon-192.png"><b>Scale &amp; Tell</b><small>Loading your journal…</small></div>';
+    document.body.appendChild(d);
+    window.__stBootAt = Date.now();
+    window.__stBootTimer = setInterval(stBootCheck, 150);
+  };
+  if (document.body) go(); else document.addEventListener("DOMContentLoaded", go);
+})();
+function stBootDone() {
+  if (!document.body.classList.contains("stBooting")) return;
+  clearInterval(window.__stBootTimer);
+  document.body.classList.remove("stBooting");
+  const d = document.getElementById("stBoot");
+  if (d) { d.classList.add("out"); setTimeout(() => d.remove(), 350); }
+}
+function stBootCheck() {
+  try {
+    if (Date.now() - (window.__stBootAt || 0) > 9000) return stBootDone();
+    if (typeof cloudAuthReady === "undefined" || !cloudAuthReady) return;
+    if (!cloudSession) return stBootDone();
+    if (!stAccessChecked) return;
+    if (!stCanUseApp()) return stBootDone();
+    if (!["synced", "empty", "error", "offline", "other-user"].includes(cloudAutoStatus)) return;
+    if (!window.__stBrandLoaded) return;
+    try { renderHomeCards(); } catch (e) {}
+    stBootDone();
+  } catch (e) { stBootDone(); }
+}
 let stMemberAccess = false,
   stAccessChecked = false,
   stAccessFailed = false;
@@ -2438,7 +2475,7 @@ function plansMarkup() {
       '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>',
     ) +
     '<h3 class="sectionTitle">For breeders &amp; rescues</h3><p class="lcSmall">Breeder plans add racks, rack feeding, pairings, clutches and hatchlings.</p>' +
-    card("founding_breeder", "$14.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
+    card("founding_breeder", "$14.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches & litters", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
     card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "Your logo and colors on the app and printouts", "MorphMarket export"], soon("premium_breeder")) +
     card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>300 animals</b>", "Everything in Premium Breeder: 3 logins, your logo and colors, MorphMarket export, public page and Inbox", "Listing in Scale Hub → Reptile Rescues with an intake open / full switch", "Verified 501(c)(3)? Add your EIN under Business Tools → Rescue profile for the $14.99/yr price"], soon("rescue")) +
     '<p class="lcSmall">Yearly plans renew through PayPal. Cancel anytime in <a href="https://www.paypal.com/myaccount/autopay/" target="_blank" rel="noopener">PayPal → Automatic payments</a>; you keep your plan until the end of the year you paid for.</p><p class="lcSmall">Already have more animals than a plan allows? You keep them all; you just can&#39;t add more until you upgrade.</p>'
@@ -2514,7 +2551,7 @@ function quickLogMarkup() {
         "</div>"
       : "") +
     '<div class="qlGrid">' +
-    QUICK_LOG.map(
+    QUICK_LOG.filter((q) => !(q.id === "shed" && stNoShed(a))).map(
       (q) =>
         '<button class="qlAction" onclick="quickLogDo(\'' +
         q.id +
@@ -3902,7 +3939,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.53";
+const SCALE_LC_VERSION = "3.54";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -5645,9 +5682,9 @@ function logCareChooser() {
     [
       ["Feeding Tracker", "Feeding", "utensils"],
       ["Weight Tracker", "Weight", "scale"],
-      ["Shed History", animalCareType(selectedAnimal) === "invertebrate" ? "Molt" : "Shed", "sparkles"],
+      ...(stNoShed(selectedAnimal) ? [] : [["Shed History", animalCareType(selectedAnimal) === "invertebrate" ? "Molt" : "Shed", "sparkles"]]),
       ["Enclosure Care", "Habitat check", "thermometer"],
-      ["UVB & Lighting", "UVB / lighting", "sun"],
+      ...(stNoShed(selectedAnimal) ? [] : [["UVB & Lighting", "UVB / lighting", "sun"]]),
       ["Supplements", "Supplements", "pill"],
       ["Observations", "Observation", "eye"],
       ["Health & Vet", "Health / Vet", "heart"],
@@ -6257,43 +6294,24 @@ function saveEntry() {
   if (nextFeed) stToast("Saved ♡ Next feeding reminder: " + niceDate(nextFeed));
 }
 
-const PET_SPECIES = [
-  "Ball Python",
-  "Corn Snake",
-  "Kingsnake",
-  "Milk Snake",
-  "Western Hognose",
-  "Garter Snake",
-  "Boa Constrictor",
-  "Reticulated Python",
-  "Green Tree Python",
-  "Carpet Python",
-  "Kenyan Sand Boa",
-  "Rosy Boa",
-  "Bearded Dragon",
-  "Leopard Gecko",
-  "Crested Gecko",
-  "Tokay Gecko",
-  "Day Gecko",
-  "Veiled Chameleon",
-  "Skink",
-  "Blue Tongue Skink",
-  "Sulcata Tortoise",
-  "Tortoise",
-  "Box Turtle",
-  "Aquatic Turtle",
-  "White’s Tree Frog",
-  "African Dwarf Frog",
-  "Pac-Man Frog",
-  "Frog",
-  "Axolotl",
-  "Tarantula",
-  "Jumping Spider",
-  "Scorpion",
-  "Millipede",
-  "Isopod",
-  "Other",
+const SPECIES_GROUPS = [
+  ["Snakes", ["Ball Python", "Corn Snake", "Kingsnake", "Milk Snake", "Western Hognose", "Garter Snake", "Boa Constrictor", "Reticulated Python", "Green Tree Python", "Carpet Python", "Kenyan Sand Boa", "Rosy Boa"]],
+  ["Lizards", ["Bearded Dragon", "Leopard Gecko", "Crested Gecko", "Tokay Gecko", "Day Gecko", "Veiled Chameleon", "Skink", "Blue Tongue Skink"]],
+  ["Turtles & tortoises", ["Sulcata Tortoise", "Tortoise", "Box Turtle", "Aquatic Turtle"]],
+  ["Amphibians", ["White’s Tree Frog", "African Dwarf Frog", "Pac-Man Frog", "Frog", "Axolotl", "Dart Frog", "Tree Frog", "Toad", "Newt", "Salamander"]],
+  ["Invertebrates", ["Tarantula", "Jumping Spider", "Scorpion", "Millipede", "Isopod", "Mantis", "Hermit Crab", "Snail"]],
+  ["Rodents", ["Rat", "Mouse", "Hamster", "Gerbil", "Guinea Pig", "Chinchilla", "Degu", "African Soft-Furred Rat", "Multimammate Mouse", "Spiny Mouse", "Feeder Mice (colony)", "Feeder Rats (colony)"]],
+  ["Small mammals", ["Rabbit", "Hedgehog", "Sugar Glider", "Ferret"]],
+  ["Fish & aquatic", ["Fish", "Betta", "Aquarium / tank"]],
+  ["Birds", ["Bird"]],
 ];
+const PET_SPECIES = SPECIES_GROUPS.flatMap((g) => g[1]).concat("Other");
+/* Breeders see rodents near the top, for pet and feeder rodent breeders alike. */
+function speciesGroupsFor() {
+  const g = SPECIES_GROUPS.slice();
+  try { if (typeof bizIsBreeder === "function" && bizIsBreeder()) { const i = g.findIndex((x) => x[0] === "Rodents"); g.unshift(g.splice(i, 1)[0]); } } catch (e) {}
+  return g;
+}
 let animalEditIndex = -1;
 function editAnimalForm(i) {
   animalEditIndex = i;
@@ -6333,9 +6351,10 @@ function animalSetupMarkup() {
     '</h3><label>Name<input id="animalSetupName" maxlength="50" placeholder="e.g. Kane" value="' +
     esc(name) +
     '"></label><label>Species<select id="speciesChoice" onchange="updateAnimalPortraitPreview()">' +
-    PET_SPECIES.map(
+    speciesGroupsFor().map(([label, list]) => '<optgroup label="' + esc(label) + '">' + list.map(
       (v) => '<option value="' + esc(v) + '" ' + (v === chosen ? "selected" : "") + ">" + esc(v) + "</option>",
-    ).join("") +
+    ).join("") + "</optgroup>").join("") +
+    '<option value="Other" ' + (chosen === "Other" ? "selected" : "") + ">Other</option>" +
     '</select></label><label id="customSpeciesLabel" ' +
     (chosen === "Other" ? "" : "hidden") +
     '>Other species (optional)<input id="customSpecies" maxlength="80" oninput="updateAnimalPortraitPreview()" placeholder="Enter species or type" value="' +
@@ -6759,12 +6778,22 @@ function addPhoto() {
 // V1.8: species-aware care labels, with keeper-set targets rather than invented default ranges.
 function animalCareType(a) {
   let sp = (species[a] || "").toLowerCase();
+  if (/\b(rats?|mouse|mice|hamsters?|gerbils?|guinea pigs?|chinchillas?|degus?|rabbits?|hedgehogs?|sugar gliders?|ferrets?)\b|multimammate|rodent/.test(sp)) return "mammal";
+  if (/\bfish|betta|aquarium/.test(sp)) return "fish";
+  if (/\bbirds?\b|parrot|parakeet|budgie|cockatiel/.test(sp)) return "bird";
   if (/spider|tarantula|scorpion|isopod|millipede|mantis|invertebrate/.test(sp)) return "invertebrate";
   if (/frog|toad|axolotl|newt|salamander/.test(sp)) return "amphibian";
   if (/tortoise|turtle|terrapin/.test(sp)) return "chelonian";
   if (/gecko|dragon|chameleon|skink|anole|iguana|lizard/.test(sp)) return "lizard";
   if (/snake|python|boa|hognose/.test(sp)) return "snake";
   return "other";
+}
+/* Mammals, fish and birds don't shed or need UVB logs; mammals have litters instead of clutches. */
+function stNoShed(a) {
+  return ["mammal", "fish", "bird"].includes(animalCareType(a));
+}
+function stLiveBirth(a) {
+  return animalCareType(a) === "mammal";
 }
 function foodTypeLabel(a) {
   return (
@@ -6774,6 +6803,9 @@ function foodTypeLabel(a) {
       amphibian: "Food / prey offered",
       lizard: "Food / feeder type",
       chelonian: "Food / diet item",
+      mammal: "Food / diet",
+      fish: "Food",
+      bird: "Food / diet",
     }[animalCareType(a)] || "Food / prey offered"
   );
 }
@@ -9641,7 +9673,7 @@ function breederHome() {
     incubating.length +
     " incubating)</h3>" +
     (clutches.length ? '<div class="breedList">' + clutches.slice(0, 20).map(clutchCard).join("") + "</div>" : "") +
-    '<button class="action secondary" onclick="breederOpen(&quot;Clutch&quot;,&quot;&quot;)">+ Log a clutch</button>'
+    '<button class="action secondary" onclick="breederOpen(&quot;Clutch&quot;,&quot;&quot;)">+ Log a clutch or litter</button>'
   );
 }
 function breederOpen(panel, id) {
@@ -9905,7 +9937,7 @@ function pairingMarkup() {
     '</textarea></label><label class="checkLine"><input type="checkbox" id="pairDone"' +
     (p?.status === "done" ? " checked" : "") +
     '> This pairing is finished</label><div class="inlineActions"><button class="action" onclick="savePairing()">Save pairing</button><button class="action secondary" onclick="openPanel(&quot;Racks & Breeding&quot;)">Cancel</button></div>' +
-    (p ? '<button class="action secondary" onclick="breederNewClutchFrom()">+ Log a clutch from this pairing</button>' : "")
+    (p ? '<button class="action secondary" onclick="breederNewClutchFrom()">+ Log a clutch or litter from this pairing</button>' : "")
   );
 }
 function pairEventRow(x) {
@@ -9956,44 +9988,52 @@ function breederNewClutchFrom() {
     const d = document.getElementById("clutchDam"),
       s = document.getElementById("clutchSire");
     if (d && p) d.value = p.animal;
+    try { clutchModeUpdate(); } catch (e) {}
     if (s && p) s.value = p.partner || "";
   }, 0);
 }
 function clutchMarkup() {
   const c = breedRecord();
+  const live = stLiveBirth(c?.animal || animals.find((a) => sexOf(a) !== "male") || "");
+  const L = (egg, lv) => '<span class="eg">' + egg + '</span><span class="lv">' + lv + "</span>";
   return (
+    '<div id="clutchForm" class="' + (live ? "live" : "egg") + '">' +
     "<label>Dam (mother)" +
-    animalSelect("clutchDam", c?.animal, (a) => sexOf(a) !== "male") +
+    animalSelect("clutchDam", c?.animal, (a) => sexOf(a) !== "male").replace("<select", '<select onchange="clutchModeUpdate()"') +
     "</label><label>Sire (father)" +
     animalSelect("clutchSire", c?.partner, (a) => sexOf(a) !== "female") +
-    '</label><label>Laid on<input type="date" id="clutchLaid" value="' +
+    '</label><label>' + L("Laid on", "Paired / bred on") + '<input type="date" id="clutchLaid" value="' +
     esc(c?.date || today()) +
-    '"></label><div class="twoCol"><label>Good eggs<input type="number" id="clutchGood" min="0" max="200" value="' +
+    '"></label><div class="twoCol"><label>' + L("Good eggs", "Pups born alive") + '<input type="number" id="clutchGood" min="0" max="200" value="' +
     esc(c?.good ?? "") +
-    '"></label><label>Slugs / bad eggs<input type="number" id="clutchSlugs" min="0" max="200" value="' +
+    '"></label><label>' + L("Slugs / bad eggs", "Stillborn / lost") + '<input type="number" id="clutchSlugs" min="0" max="200" value="' +
     esc(c?.slugs ?? "") +
-    '"></label></div><label>Incubation temperature (°F)<input type="number" id="clutchTemp" min="60" max="100" step="0.1" value="' +
+    '"></label></div><label class="eg">Incubation temperature (°F)<input type="number" id="clutchTemp" min="60" max="100" step="0.1" value="' +
     esc(c?.incubTemp ?? "") +
-    '"></label><label>Expected hatch date<input type="date" id="clutchDue" value="' +
+    '"></label><label>' + L("Expected hatch date", "Expected birth date") + '<input type="date" id="clutchDue" value="' +
     esc(c?.dueDate || "") +
-    '"></label><p class="helperLine">A Care Schedule reminder is added for the expected hatch date.</p><label>Hatched on<input type="date" id="clutchHatch" value="' +
+    '"></label><p class="helperLine">A Care Schedule reminder is added for the expected ' + L("hatch", "birth") + ' date.</p><label>' + L("Hatched on", "Born on") + '<input type="date" id="clutchHatch" value="' +
     esc(c?.hatchDate || "") +
-    '"></label><label>Number hatched<input type="number" id="clutchHatched" min="0" max="200" value="' +
+    '"></label><label>' + L("Number hatched", "Pups weaned") + '<input type="number" id="clutchHatched" min="0" max="200" value="' +
     esc(c?.hatched ?? "") +
     '"></label><label>Notes<textarea id="clutchNotes" maxlength="600">' +
     esc(c?.notes || "") +
-    '</textarea></label><div class="inlineActions"><button class="action" onclick="saveClutch()">Save clutch</button><button class="action secondary" onclick="openPanel(&quot;Racks & Breeding&quot;)">Cancel</button></div>' +
-    (c ? '<button class="action secondary" onclick="incClutchId=\'' + esc(c.id) + '\';openPanel(\'Incubation\')">🌡 Incubation log' + (c.incLog?.length ? " (" + c.incLog.length + ")" : "") + "</button>" : "") +
+    '</textarea></label><div class="inlineActions"><button class="action" onclick="saveClutch()">Save ' + L("clutch", "litter") + '</button><button class="action secondary" onclick="openPanel(&quot;Racks & Breeding&quot;)">Cancel</button></div>' +
+    (c ? '<button class="action secondary eg" onclick="incClutchId=\'' + esc(c.id) + '\';openPanel(\'Incubation\')">🌡 Incubation log' + (c.incLog?.length ? " (" + c.incLog.length + ")" : "") + "</button>" : "") +
     (c
-      ? '<div class="tubEditor"><h4>Hatchlings</h4>' +
+      ? '<div class="tubEditor"><h4>' + L("Hatchlings", "Pups") + '</h4>' +
         (Array.isArray(c.hatchlings) && c.hatchlings.length
           ? "<p>" + c.hatchlings.map(esc).join(", ") + "</p>"
-          : '<p class="helperLine">Add each baby as its own animal, linked to its parents.</p>') +
+          : '<p class="helperLine">Add each ' + L("hatchling", "pup") + ' as its own animal, linked to its parents.</p>') +
         '<label>How many to add<input type="number" id="hatchCount" min="1" max="50" value="' +
         esc(Math.max(1, (Number(c.hatched) || Number(c.good) || 1) - (c.hatchlings?.length || 0))) +
-        '"></label><button class="action" onclick="addHatchlings()">+ Add hatchlings to My Reptiles</button></div>'
-      : "")
+        '"></label><button class="action" onclick="addHatchlings()">+ Add ' + L("hatchlings", "pups") + ' to My Animals</button></div>'
+      : "") + "</div>"
   );
+}
+function clutchModeUpdate() {
+  const f = document.getElementById("clutchForm"), d = document.getElementById("clutchDam")?.value;
+  if (f) f.className = stLiveBirth(d) ? "live" : "egg";
 }
 function saveClutch() {
   const dam = document.getElementById("clutchDam")?.value,
@@ -10013,7 +10053,8 @@ function saveClutch() {
     temp = num("clutchTemp", 100);
   if (!dam) return alert("Choose the dam (mother).");
   if (sire && !breedSpeciesOk(dam, sire)) return;
-  if (!validDate(laid)) return alert("Choose the date the clutch was laid.");
+  const live = stLiveBirth(dam);
+  if (!validDate(laid)) return alert(live ? "Choose the date they were paired." : "Choose the date the clutch was laid.");
   if ((due && !validDate(due)) || (hatch && !validDate(hatch))) return alert("Check the dates.");
   if ([good, slugs, hatched, temp].some((n) => Number.isNaN(n))) return alert("Check the numbers.");
   const old = breedRecord();
@@ -10023,7 +10064,8 @@ function saveClutch() {
     kind: "clutch",
     animal: dam,
     partner: sire,
-    detail: "Clutch" + (good !== "" ? " · " + good + " good egg" + (good === 1 ? "" : "s") : ""),
+    litter: live || undefined,
+    detail: live ? "Litter" + (good !== "" ? " · " + good + " pup" + (good === 1 ? "" : "s") : "") : "Clutch" + (good !== "" ? " · " + good + " good egg" + (good === 1 ? "" : "s") : ""),
     date: laid,
     good,
     slugs,
@@ -10051,9 +10093,9 @@ function commitBreed(old, rec) {
       entries.push({
         section: "Calendar",
         animal: rec.animal,
-        detail: "Clutch due to hatch",
+        detail: rec.litter ? "Litter due" : "Clutch due to hatch",
         date: rec.dueDate,
-        notes: "Clutch laid " + rec.date,
+        notes: (rec.litter ? "Paired " : "Clutch laid ") + rec.date,
         repeatDays: 0,
         done: false,
         clutchId: rec.id,
@@ -10070,7 +10112,7 @@ function addHatchlings() {
   const c = breedRecord();
   if (!c) return;
   const n = Number(document.getElementById("hatchCount")?.value);
-  if (!Number.isInteger(n) || n < 1 || n > 50) return alert("Add between 1 and 50 hatchlings.");
+  if (!Number.isInteger(n) || n < 1 || n > 50) return alert("Add between 1 and 50 " + (c.litter ? "pups." : "hatchlings."));
   if (animals.length + n > 500) return alert("That would go over the 500-animal limit.");
   const year = (c.hatchDate || today()).slice(0, 4),
     base = (c.animal + (c.partner ? " × " + c.partner : "")).slice(0, 34);
@@ -10092,7 +10134,7 @@ function addHatchlings() {
       hatchDate: c.hatchDate || today(),
       dam: c.animal,
       sire: c.partner || "",
-      notes: "Hatched from " + c.animal + (c.partner ? " × " + c.partner : "") + " clutch laid " + c.date + ".",
+      notes: c.litter ? "Born to " + c.animal + (c.partner ? " × " + c.partner : "") + " litter." : "Hatched from " + c.animal + (c.partner ? " × " + c.partner : "") + " clutch laid " + c.date + ".",
     };
   }
   const updated = { ...c, hatchlings: [...(c.hatchlings || []), ...made] };
@@ -10123,7 +10165,7 @@ function breederHeading() {
   if (current === "Rack Feeding") return r ? "Feed " + r.name : "Rack feeding";
   if (current === "Rack Setup") return r ? "Edit rack" : "New rack";
   if (current === "Pairing") return breederEditId ? "Pairing" : "New pairing";
-  if (current === "Clutch") return breederEditId ? "Clutch" : "Log a clutch";
+  if (current === "Clutch") return breederEditId ? (breedRecord()?.litter ? "Litter" : "Clutch") : "Log a clutch or litter";
   return current;
 }
 /* Keep tubs, partners and parents pointing at the right animal after a rename. */
@@ -10514,6 +10556,7 @@ async function bizLoadBrand() {
   } catch (e) {
     // Offline or slow: keep the colors already showing rather than flashing back to the default.
   }
+  window.__stBrandLoaded = true;
   bizApplyBrand();
 }
 /* Apply the last saved business colors right away on launch; the live copy replaces them a moment later. */
@@ -11204,6 +11247,9 @@ function homeOpenPairings() {
 function rescueMaybeAskLayout() {
   try {
     if (!stIsRescue() || stSkus.some((k) => k === "founding_breeder" || k === "premium_breeder")) return;
+    if (accountPrefs?.rescueLayout) return;
+    // Wait until the account's saved settings have arrived, so a keeper who already chose is never asked again.
+    if (document.body.classList.contains("stBooting") || !["synced", "empty"].includes(cloudAutoStatus)) { setTimeout(rescueMaybeAskLayout, 1500); return; }
     if (accountPrefs?.rescueLayout) return;
     if (document.getElementById("sheet")?.classList.contains("on") || document.body.classList.contains("authLocked")) { setTimeout(rescueMaybeAskLayout, 4000); return; }
     openPanel("Rescue Layout");

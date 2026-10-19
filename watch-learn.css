@@ -3,3 +3,14 @@
 
 /* Topic-first navigation. Hidden panels must stay hidden even in grid layouts. */
 .wlShell [hidden]{display:none!important}.wlPageTitle{font-size:1.13rem;margin:2px 0 12px}.wlTopicGrid{display:grid;gap:11px}.wlTopicCard{text-align:left;display:grid;gap:6px;width:100%;border:1px solid #bba7c8;background:#fff;color:#32263d;border-radius:14px;padding:16px;cursor:pointer;font:inherit;min-height:105px}.wlTopicCard strong{font-weight:750;font-size:1.02rem}.wlTopicCard span{font-size:.87rem;line-height:1.35}.wlTopicCard small{font-size:.8rem;color:#6e3a83;font-weight:750}.wlTopicCard:focus-visible,.wlBack:focus-visible{outline:3px solid #7a51af;outline-offset:3px}.wlBack{justify-self:start;background:transparent;border:0;text-decoration:underline;color:inherit;cursor:pointer;font:inherit;font-weight:750;padding:8px 0}.wlBack:hover,.wlTopicCard:hover{filter:brightness(.97)}#wlDetail{display:grid;gap:12px}@media(min-width:650px){.wlTopicGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(prefers-color-scheme:dark){.wlTopicCard{background:#302638;color:#f8f0fc;border-color:#7b608c}.wlTopicCard small{color:#e9c8fc}}
+
+/* V3.53 launch splash */
+#stBoot{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;background:#f4eef7;transition:opacity .3s}
+#stBoot.out{opacity:0;pointer-events:none}
+#stBoot .stBootInner{display:flex;flex-direction:column;align-items:center;gap:10px;color:#45205b;font-family:Arial,sans-serif}
+#stBoot img{width:96px;height:96px;border-radius:24px;box-shadow:0 8px 24px rgba(69,32,91,.2);animation:stBootPulse 1.4s ease-in-out infinite}
+#stBoot b{font:italic 700 30px Georgia,serif}#stBoot small{font-size:15px;opacity:.8}
+@keyframes stBootPulse{50%{transform:scale(.94);opacity:.85}}
+@media (prefers-reduced-motion:reduce){#stBoot img{animation:none}}
+
+#clutchForm.egg .lv,#clutchForm.live .eg{display:none!important}
