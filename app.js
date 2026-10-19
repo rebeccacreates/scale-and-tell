@@ -1803,56 +1803,34 @@ const RECOMMENDED = [
   {
     brand: "Amazon",
     name: "First Time Keeper Essentials",
-    why: "New to reptiles? Start here. The basics for a safe, ready setup before your animal comes home: heat with a thermostat, a thermometer and hygrometer, hides, water bowl, substrate and feeding supplies.",
+    why: "New to reptiles? Start here: heat with a thermostat, a thermometer and hygrometer, hides, water bowl, substrate and feeding supplies.",
     url: "https://amzn.to/4efIVOu",
     affiliate: true,
   },
   {
     brand: "Amazon",
     name: "Reptile Recommendations",
-    why: "Products we love and use: heat and UVB, monitoring, hides and décor, substrate, supplements and feeding supplies. Shopping through these links supports Herps & Hers and Scale & Tell at no extra cost to you.",
+    why: "Products we love and use: heat and UVB, monitoring, hides and décor, substrate, supplements, grow-out tubs and tools.",
     url: "https://amzn.to/4yQVGY9",
     affiliate: true,
   },
   {
     brand: "Chewy",
     name: "Herps & Hers Chewy picks",
-    why: "Substrate, heat and UVB, hides, décor, feeding supplies and more, with autoship on the things you buy every month. Shopping through this link supports Herps & Hers and Scale & Tell at no extra cost to you.",
+    why: "Our favorite supplies, with autoship on the things you buy every month.",
     url: CHEWY_STOREFRONT,
     affiliate: true,
   },
   {
-    brand: "Amazon",
-    name: "Budget grow-out & temporary enclosures",
-    tag: "Keeper tested ♡",
-    why: "In our Reptile Recommendations list. Verified by a keeper who uses them: affordable, not terribly priced, and easy to put together. Great as grow-out, quarantine or temporary homes.",
-    url: "https://amzn.to/4yQVGY9",
-    affiliate: true,
-  },
-  {
-    brand: "Amazon",
-    name: "Cordless power screwdriver",
-    tag: "Saves your hands ♡",
-    why: "In our Reptile Recommendations list. Keeper tested: a dream for screwing enclosures together and a real hand-saver when you're building or breaking down several at once.",
-    url: "https://amzn.to/4yQVGY9",
-    affiliate: true,
-  },
-  {
     brand: "SensorPush",
-    name: "Temperature & humidity smart sensors",
-    why: "Small wireless sensors that sit inside the enclosure and log temperature and humidity around the clock to your phone. Pair one with each tub or tank you want to watch.",
-    url: "https://www.sensorpush.com/products",
-  },
-  {
-    brand: "SensorPush",
-    name: "WiFi Gateway",
-    why: "Sends your sensor readings to the cloud so you can check your animals' enclosures from anywhere, with alerts when readings drift. Needed for live readings in Scale & Tell (coming soon; we're building it with SensorPush's test equipment).",
+    name: "Smart sensors & WiFi Gateway",
+    why: "Wireless sensors log each enclosure's temperature and humidity to your phone. Add the WiFi Gateway to check them from anywhere and get alerts when readings drift. Live readings in Scale & Tell are coming soon.",
     url: "https://www.sensorpush.com/products",
   },
 ];
 function recommendedMarkup() {
   return (
-    '<p class="resourceIntro">Reptile Products we love and recommend for your animals and their enclosures.</p>' +
+    '<p class="resourceIntro">Reptile products we love and recommend.</p>' +
     RECOMMENDED.map(
       (p) =>
         '<div class="productCard"><span class="productBrand">' +
@@ -1867,7 +1845,8 @@ function recommendedMarkup() {
         esc(p.brand) +
         " ↗</a></div>",
     ).join("") +
-    '<p class="resourceMuted">Some links are affiliate links: Herps &amp; Hers may earn a small commission on purchases, at no extra cost to you. As an Amazon Associate I earn from qualifying purchases. Every paid plan supports the Herps &amp; Hers community&#39;s growth and future projects, and Scale &amp; Tell&#39;s growth. 10% of paid-plan profits are donated to a nonprofit reptile rescue.</p><p class="resourceMuted">Coming soon: connect a SensorPush account to see live readings on each animal and rack.</p><button class="action secondary" onclick="openPanel(\'Scale Hub\')">Back to Scale Hub</button>'
+    '<p class="resourceMuted">Some links are affiliate links, at no extra cost to you. As an Amazon Associate I earn from qualifying purchases. Purchases support Herps &amp; Hers and Scale &amp; Tell, and 10% of paid-plan profits go to a nonprofit reptile rescue.</p>' +
+    '<button class="action secondary" onclick="openPanel(\'Scale Hub\')">Back to Scale Hub</button>'
   );
 }
 function communityMarkup() {
