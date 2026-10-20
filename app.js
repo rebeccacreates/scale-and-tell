@@ -1105,7 +1105,7 @@ function menuMarkup() {
     ...(bizIsBreeder() || accountPrefs?.rescueLayout === "racks" ? [["Racks & Breeding", "Racks, rack feeding, pairings, clutches & litters"]] : []),
     ["Photo Journal", "Photos and profile pictures"],
     ["Import Existing Records", "Bring in old care notes or screenshots"],
-    ["Pet-Sitter Sheet", "Care instructions for a helper"],
+    ["Pet-Sitter Sheet", "Care sheet for a pet-sitter or new home"],
     ["Devices", "Sensors and camera shortcuts"],
     ["Cloud Account", "Account, reminders & settings"],
   ];
@@ -3651,7 +3651,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.68";
+const SCALE_LC_VERSION = "3.69";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -5917,6 +5917,7 @@ function editProfile(a) {
 }
 function saveProfile() {
   profiles[selectedAnimal] = {
+    ...(profiles[selectedAnimal] || {}),
     weight: document.getElementById("weight").value.trim(),
     enclosure: document.getElementById("enclosure").value.trim(),
     notes: document.getElementById("profileNotes").value.trim(),
@@ -6004,6 +6005,7 @@ function saveEntry() {
       : {}),
   });
   let nextFeed = current === "Feeding Tracker" ? autoNextFeeding(selectedAnimal, date) : "";
+  if (current === "Feeding Tracker" && detail === "Ate" && preyType) try { feederUse(preyType, 1); } catch (e) {}
   save();
   render();
   if (nextFeed) stToast("Saved ♡ Next feeding reminder: " + niceDate(nextFeed));
@@ -6558,7 +6560,7 @@ function careOptions(section, a) {
       ? ["Complete molt", "Incomplete molt", "Premolt", "Molt observation"]
       : ["Complete shed", "Incomplete shed", "In blue", "Shed observation"];
   if (section === "Enclosure Care") {
-    let base = ["Spot clean", "Water change", "Substrate change", "Temperature / humidity check", "Enclosure refresh"];
+    let base = ["Spot clean", "Water change", "Full cleanout", "Substrate change", "Temperature / humidity check", "Enclosure refresh"];
     if (type === "invertebrate" || type === "amphibian") base.splice(1, 0, "Misting");
     if (type === "chelonian" || type === "lizard") base.push("Lighting / UVB check");
     return base;
@@ -12764,8 +12766,13 @@ function helpMarkup() {
 }
 
 /* What's new: one screen the first time someone opens a new version. */
-const WHATS_NEW_VER = "3.63";
+const WHATS_NEW_VER = "3.69";
 const WHATS_NEW = [
+  ["🍽", "Feed Day", "Check off everyone who ate and save once. Find it on Home under Today’s Care."],
+  ["💌", "Cuter care sheets", "For a pet-sitter or a new home. Print, save a PDF, email it or copy it as text."],
+  ["🏡", "Enclosure setup", "Substrate, heat and UVB on each animal’s Habitat tab, with UVB bulb and cleanout reminders."],
+  ["🧊", "Feeder freezer", "What’s on hand, cost per meal and when to reorder (Founding Keeper)."],
+  ["🏷", "Enclosure labels", "Print a QR label for any animal from its profile."],
   ["⏳", "Smoother start", "One loading screen, then your own layout and colors. No more flashing."],
   ["🩺", "Keeper Tools", "Vet and medication reminders, shed predictions, then-and-now photos and an emergency card (Founding Keeper)."],
   ["♡", "Family sharing", "Founding Keeper includes 3 logins; $29.99 plans include 5."],
@@ -12952,3 +12959,567 @@ function landingBottom() {
     '<p class="landFoot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="mailto:support@scaleandtell.app">Contact</a></p></section>';
 }
 
+/* =====================================================================
+   V3.69 · Care Sheet (pet-sitter or new home) with print / PDF / email,
+   Feed Day checklist, feeder freezer stock with cost & reorder date,
+   enclosure setup (substrate, heat, lighting, UVB) with bulb & cleanout
+   reminders, profile "at a glance" and a QR enclosure label.
+   ===================================================================== */
+
+/* ---------- Shared little helpers ---------- */
+const v69Num = (v) => { const n = parseFloat(String(v ?? "").replace(/[^0-9.]/g, "")); return Number.isFinite(n) ? n : null; };
+const v69Q = (s) => String(s ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+function v69Latest(a, section, test) {
+  return entries.filter((e) => e.animal === a && e.section === section && (!test || test(e)))
+    .sort((x, y) => y.date.localeCompare(x.date) || entries.indexOf(y) - entries.indexOf(x))[0] || null;
+}
+function v69Ago(date) {
+  if (!date) return "";
+  const d = daysSince(date);
+  return d === 0 ? "today" : d === 1 ? "yesterday" : d < 60 ? d + " days ago" : Math.round(d / 30.4) + " months ago";
+}
+function v69Age(date) {
+  if (!validDate(date)) return "";
+  const m = Math.floor(bizDays(date, today()) / 30.44);
+  if (m < 1) return bizDays(date, today()) + " days old";
+  if (m < 24) return m + " month" + (m === 1 ? "" : "s") + " old";
+  return Math.floor(m / 12) + " years old";
+}
+const CLEAN_DETAILS = ["Full cleanout", "Substrate change", "Enclosure refresh"];
+function v69LastWeight(a) {
+  const w = entries.filter((e) => e.animal === a && e.section === "Weight Tracker" && v69Num(e.detail) !== null)
+    .sort((x, y) => y.date.localeCompare(x.date) || entries.indexOf(y) - entries.indexOf(x));
+  if (!w.length) return null;
+  const g = v69Num(w[0].detail), prev = w[1] ? v69Num(w[1].detail) : null;
+  return { g, date: w[0].date, change: prev !== null ? Math.round((g - prev) * 10) / 10 : null };
+}
+function v69Grams(g) {
+  if (g === null || g === undefined) return "";
+  return g >= 1000 ? (Math.round(g / 10) / 100) + " kg (" + Math.round(g) + " g)" : Math.round(g * 10) / 10 + " g";
+}
+
+/* ---------- Enclosure setup (stored on the animal's profile) ---------- */
+const SUBSTRATES = ["Aspen shavings", "Cypress mulch", "Coconut husk / chips", "Coco fiber (eco earth)", "Bioactive soil mix", "Topsoil / sand mix", "Excavator clay", "Orchid bark", "Sphagnum moss", "Paper towel / newspaper", "Reptile carpet", "Tile / slate", "Paper bedding", "Hemp bedding", "Water (aquatic)", "Other"];
+const HEAT_SOURCES = ["Heat mat / heat tape", "Deep heat projector", "Halogen flood bulb", "Ceramic heat emitter", "Radiant heat panel", "Basking bulb", "Room heat only", "None needed", "Other"];
+const UVB_TYPES = [["", "Not set"], ["none", "No UVB"], ["t5", "T5 HO linear"], ["t8", "T8 linear"], ["compact", "Compact / coil"], ["mvb", "Mercury vapor (MVB)"], ["led", "LED only (no UVB)"], ["other", "Other UVB"]];
+const UVB_STRENGTHS = ["", "2.4% / shade dweller", "5–7% / forest", "10–12% / desert", "14%"];
+const UVB_MONTHS = { t5: 12, mvb: 12, t8: 6, compact: 6, other: 12 };
+const v69HasUvb = (s) => !!s && ["t5", "t8", "compact", "mvb", "other"].includes(s.uvbType);
+function setupOf(a) { return (profiles[a] && profiles[a].setup) || {}; }
+function v69UvbLabel(s) {
+  const t = (UVB_TYPES.find((x) => x[0] === s.uvbType) || ["", ""])[1];
+  return [t, s.uvbPct, s.uvbBrand].filter(Boolean).join(" · ");
+}
+/* Last time something happened: a logged care entry, or a matching reminder the keeper ticked off. */
+function v69LastEvent(a, kind) {
+  let dates = [];
+  const s = setupOf(a);
+  if (kind === "uvb") {
+    const e = v69Latest(a, "UVB & Lighting", (x) => x.detail === "UVB bulb change");
+    if (e) dates.push(e.date);
+    if (validDate(s.uvbInstalled)) dates.push(s.uvbInstalled);
+  } else if (kind === "clean") {
+    const e = v69Latest(a, "Enclosure Care", (x) => CLEAN_DETAILS.includes(x.detail));
+    if (e) dates.push(e.date);
+    if (validDate(s.cleanSince)) dates.push(s.cleanSince);
+  } else if (kind === "spot") {
+    const e = v69Latest(a, "Enclosure Care", (x) => x.detail === "Spot clean" || CLEAN_DETAILS.includes(x.detail));
+    if (e) dates.push(e.date);
+    if (validDate(s.cleanSince)) dates.push(s.cleanSince);
+  } else if (kind === "water") {
+    const e = v69Latest(a, "Enclosure Care", (x) => x.detail === "Water change");
+    if (e) dates.push(e.date);
+  }
+  entries.filter((e) => e.section === "Calendar" && e.done && e.animal === a && String(e.habKey || "").startsWith(kind + ":") && e.completedAt)
+    .forEach((e) => dates.push(String(e.completedAt).slice(0, 10)));
+  dates = dates.filter(validDate).sort();
+  return dates.pop() || "";
+}
+function v69Due(a, kind) {
+  const s = setupOf(a), last = v69LastEvent(a, kind);
+  if (kind === "uvb") {
+    if (!v69HasUvb(s) || !last) return null;
+    const months = Number(s.uvbMonths) || UVB_MONTHS[s.uvbType] || 12;
+    return { last, due: advanceMonths(last, months), every: months + " months" };
+  }
+  const days = Number(kind === "clean" ? s.cleanDays : s.spotDays) || 0;
+  if (!days || !last) return null;
+  return { last, due: advanceDate(last, days), every: days === 1 ? "day" : days + " days" };
+}
+function v69DueText(d) {
+  if (!d) return "";
+  const left = bizDays(today(), d.due);
+  return left > 1 ? "due " + niceDate(d.due) + " (in " + left + " days)" : left === 1 ? "due tomorrow" : left === 0 ? "due today" : "overdue " + -left + (left === -1 ? " day" : " days");
+}
+const HAB_REM = {
+  uvb: ["☀ Replace UVB bulb", "UVB & Lighting", "UVB bulb change", "remUvb"],
+  clean: ["🧽 Full cleanout / substrate change", "Enclosure Care", "Full cleanout", "remClean"],
+  spot: ["🧽 Spot clean", "Enclosure Care", "Spot clean", "remSpot"],
+};
+Object.values(HAB_REM).forEach(([d, sec, det]) => (REMINDER_LOG[d] = [sec, det]));
+
+/* Bulb and cleanout reminders live in the Calendar like any reminder (so they reach phones). Tagged habKey. */
+let habSyncT = null;
+function habSync() {
+  try {
+    const want = new Map();
+    animals.forEach((a) => {
+      const s = setupOf(a);
+      Object.entries(HAB_REM).forEach(([kind, [detail, , , flag]]) => {
+        if (s[flag] === false) return;
+        const d = v69Due(a, kind);
+        if (!d) return;
+        const k = kind + ":" + a + ":" + d.due;
+        want.set(k, { section: "Calendar", animal: a, detail, date: d.due, notes: "", repeatDays: 0, done: false, habKey: k });
+      });
+    });
+    const before = entries.length, have = new Set(entries.filter((e) => e.habKey).map((e) => e.habKey));
+    entries = entries.filter((e) => !e.habKey || e.done || want.has(e.habKey));
+    let changed = entries.length !== before;
+    want.forEach((e, k) => { if (!have.has(k)) { entries.push(e); changed = true; } });
+    if (changed) { syncStampEntries(); scaleStoreSet("scaleTellApprovedPreview", JSON.stringify(entries)); try { updateStats(); } catch (e) {} }
+  } catch (e) {}
+}
+(function () {
+  const base = bizQueueAuto;
+  bizQueueAuto = function () { base.apply(this, arguments); clearTimeout(habSyncT); habSyncT = setTimeout(habSync, 900); };
+  setTimeout(habSync, 4000);
+})();
+
+let habEditOpen = "";
+function habRefresh() { if (animals.includes(current)) profileTab("Habitat"); else render(); }
+function habSetupCard(a) {
+  const s = setupOf(a), p = profiles[a] || {};
+  if (habEditOpen === a) return habSetupForm(a);
+  const uvb = v69Due(a, "uvb"), clean = v69Due(a, "clean"), spot = v69Due(a, "spot");
+  const row = (icon, label, val) => '<div class="v69Row"><span>' + icon + "</span><b>" + label + "</b><em>" + (val ? esc(val) : '<i class="v69None">not set</i>') + "</em></div>";
+  const dueRow = (icon, label, d, kind, btn) => d ? '<div class="v69Due' + (bizDays(today(), d.due) < 0 ? " late" : bizDays(today(), d.due) <= 3 ? " soon" : "") + '"><span>' + icon + "</span><div><b>" + label + "</b><small>Every " + esc(d.every) + " · last " + esc(niceDate(d.last)) + " · " + esc(v69DueText(d)) + '</small></div><button onclick="habDone(\'' + kind + "')\">" + btn + "</button></div>" : "";
+  const any = p.enclosure || s.substrate || s.heat || s.uvbType || s.lightHours;
+  return '<div class="v69Setup"><div class="v69SetupHead"><h3>🏡 Enclosure setup</h3><button class="authLink" onclick="habEditOpen=selectedAnimal;habRefresh()">' + (any ? "Edit" : "Set up") + "</button></div>" +
+    (any ? row("📐", "Enclosure", p.enclosure) + row("🪵", "Substrate", s.substrate === "Other" ? s.substrateOther || "Other" : s.substrate) + row("🔥", "Heat", s.heat) +
+      row("☀", "Lighting / UVB", s.uvbType ? v69UvbLabel(s) : "") + (s.lightHours ? row("🕗", "Lights on", s.lightHours + " hours a day") : "") +
+      (s.decor ? row("🌿", "Hides & décor", s.decor) : "")
+      : '<p class="lcSmall">Add the enclosure size, substrate, heat and UVB so it shows on care sheets, and get reminders when the UVB bulb or a full cleanout is due.</p>') +
+    dueRow("☀", "UVB bulb", uvb, "uvb", "Changed today") + dueRow("🧽", "Full cleanout", clean, "clean", "Done today") + dueRow("✨", "Spot clean", spot, "spot", "Done today") +
+    (v69HasUvb(s) && !uvb ? '<p class="lcSmall">Add the date this UVB bulb went in (Edit) to get a replacement reminder.</p>' : "") + "</div>";
+}
+function habSetupForm(a) {
+  const s = setupOf(a), p = profiles[a] || {};
+  const sel = (id, opts, val) => '<select id="' + id + '">' + opts.map((o) => { const [v, t] = Array.isArray(o) ? o : [o, o || "Not set"]; return '<option value="' + esc(v) + '"' + (v === (val || "") ? " selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>";
+  const chk = (id, on, label) => '<label class="checkLine"><input type="checkbox" id="' + id + '"' + (on !== false ? " checked" : "") + "> " + label + "</label>";
+  return '<div class="v69Setup"><div class="v69SetupHead"><h3>🏡 Enclosure setup</h3></div>' +
+    '<label>Enclosure size / type<input id="hsEnc" maxlength="70" value="' + esc(p.enclosure || "") + '" placeholder="e.g. 4×2×2 PVC, 41 qt tub"></label>' +
+    '<div class="saleGrid"><label>Substrate' + sel("hsSub", [""].concat(SUBSTRATES), s.substrate) + '</label><label>If other<input id="hsSubO" maxlength="60" value="' + esc(s.substrateOther || "") + '"></label></div>' +
+    '<label>Main heat source' + sel("hsHeat", [""].concat(HEAT_SOURCES), s.heat) + "</label>" +
+    '<div class="saleGrid"><label>UVB / lighting' + sel("hsUvb", UVB_TYPES, s.uvbType) + '</label><label>UVB strength' + sel("hsPct", UVB_STRENGTHS, s.uvbPct) + "</label></div>" +
+    '<div class="saleGrid"><label>Bulb brand / model<input id="hsBrand" maxlength="60" value="' + esc(s.uvbBrand || "") + '" placeholder="e.g. Arcadia T5 12%"></label><label>Bulb put in on<input id="hsInst" type="date" max="' + today() + '" value="' + esc(s.uvbInstalled || "") + '"></label></div>' +
+    '<div class="saleGrid"><label>Replace UVB every (months)<input id="hsMonths" type="number" min="1" max="24" value="' + esc(s.uvbMonths || "") + '" placeholder="T5/MVB 12 · T8/coil 6"></label><label>Lights on (hours a day)<input id="hsHours" type="number" min="0" max="24" value="' + esc(s.lightHours || "") + '" placeholder="e.g. 12"></label></div>' +
+    '<label>Hides &amp; décor (optional)<input id="hsDecor" maxlength="120" value="' + esc(s.decor || "") + '" placeholder="2 hides, water bowl, climbing branch"></label>' +
+    '<h3 class="sectionTitle">Cleaning schedule</h3><div class="saleGrid"><label>Spot clean every (days)<input id="hsSpot" type="number" min="0" max="60" value="' + esc(s.spotDays || "") + '" placeholder="Leave blank for no reminder"></label><label>Full cleanout every (days)<input id="hsClean" type="number" min="0" max="365" value="' + esc(s.cleanDays || "") + '" placeholder="e.g. 90"></label></div>' +
+    '<label>Last full cleanout<input id="hsSince" type="date" max="' + today() + '" value="' + esc(v69LastEvent(a, "clean") || "") + '"></label>' +
+    chk("hsRemUvb", s.remUvb, "Remind me when the UVB bulb is due") + chk("hsRemClean", s.remClean, "Remind me when a full cleanout is due") + chk("hsRemSpot", s.remSpot, "Remind me to spot clean") +
+    '<p class="lcSmall">Reminders show in your Calendar and on your phone if phone reminders are on. Bulb timing is a general guide: follow your bulb maker’s replacement advice.</p>' +
+    '<div class="inlineActions"><button class="action" onclick="habSaveSetup()">Save setup</button><button class="action secondary" onclick="habEditOpen=\'\';habRefresh()">Cancel</button></div></div>';
+}
+function habSaveSetup() {
+  const a = selectedAnimal;
+  if (!animals.includes(a)) return;
+  const n = (id, lo, hi) => { const v = Number(bizV(id)); return bizV(id) !== "" && Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v) : ""; };
+  const ck = (id) => !!document.getElementById(id)?.checked;
+  const s = {
+    substrate: bizV("hsSub"), substrateOther: bizV("hsSubO").slice(0, 60), heat: bizV("hsHeat"), uvbType: bizV("hsUvb"), uvbPct: bizV("hsPct"),
+    uvbBrand: bizV("hsBrand").slice(0, 60), uvbInstalled: bizD("hsInst"), uvbMonths: n("hsMonths", 1, 24), lightHours: n("hsHours", 0, 24),
+    decor: bizV("hsDecor").slice(0, 120), spotDays: n("hsSpot", 1, 60), cleanDays: n("hsClean", 1, 365), cleanSince: bizD("hsSince"),
+    remUvb: ck("hsRemUvb"), remClean: ck("hsRemClean"), remSpot: ck("hsRemSpot"),
+  };
+  profiles[a] = { ...(profiles[a] || {}), enclosure: bizV("hsEnc").slice(0, 70), setup: s };
+  bizSaveProfiles();
+  habEditOpen = "";
+  habSync();
+  save();
+  stToast("Setup saved ♡");
+  habRefresh();
+}
+function habDone(kind) {
+  const a = selectedAnimal;
+  if (!animals.includes(a)) return;
+  const s = setupOf(a), t = today();
+  const [, section, detail] = HAB_REM[kind];
+  entries.push({ section, animal: a, detail, date: t, notes: "", ...(kind === "uvb" ? { bulb: [s.uvbBrand, s.uvbPct].filter(Boolean).join(" ").slice(0, 80) } : {}) });
+  if (kind === "uvb") profiles[a] = { ...(profiles[a] || {}), setup: { ...s, uvbInstalled: t } };
+  // Tick off any open reminder for this.
+  entries.forEach((e) => { if (e.section === "Calendar" && !e.done && e.animal === a && String(e.habKey || "").startsWith(kind + ":") && e.date <= advanceDate(t, 7)) { e.done = true; e.completedAt = new Date().toISOString(); } });
+  bizSaveProfiles();
+  save();
+  habSync();
+  stToast("Logged ♡ " + a + " · " + detail);
+  habRefresh();
+}
+(function () {
+  const base = habitatMarkup;
+  habitatMarkup = function (a) { if (habEditOpen && habEditOpen !== a) habEditOpen = ""; return habSetupCard(a) + base(a); };
+})();
+
+/* ---------- Profile: at a glance + enclosure label ---------- */
+function glanceMarkup(a) {
+  const tile = (icon, label, val, sub) => '<div class="v69Tile"><span>' + icon + "</span><b>" + (val ? esc(val) : '<i class="v69None">—</i>') + "</b><small>" + label + (sub ? " · " + esc(sub) : "") + "</small></div>";
+  const f = lastFeed(a), w = v69LastWeight(a), s = setupOf(a);
+  const sh = stNoShed(a) ? null : v69Latest(a, "Shed History");
+  const poop = v69Latest(a, "Observations", (e) => /poop|urate/i.test(e.detail || ""));
+  const water = v69LastEvent(a, "water"), clean = v69LastEvent(a, "clean"), uvb = v69HasUvb(s) || v69Latest(a, "UVB & Lighting", (e) => e.detail === "UVB bulb change") ? v69LastEvent(a, "uvb") : null;
+  const sub = s.substrate === "Other" ? s.substrateOther : s.substrate;
+  const n = Number(carePlans[a]?.feedDays) || 0;
+  // Last feeding and weight are already in the profile header, so they aren't repeated here.
+  let tiles = (stNoShed(a) ? "" : tile("✨", "Last shed", sh ? v69Ago(sh.date) : "", sh?.detail && sh.detail !== "Complete shed" ? sh.detail : "")) +
+    tile("💧", "Water changed", water ? v69Ago(water) : "") + tile("🧽", "Full cleanout", clean ? v69Ago(clean) : "") +
+    (uvb !== null ? tile("☀", "UVB bulb", uvb ? v69Ago(uvb).replace(" ago", " old") : "", "") : "") +
+    tile("💩", "Last poop", poop ? v69Ago(poop.date) : "") + (sub ? tile("🪵", "Substrate", sub) : "");
+  return '<div class="v69Glance">' + tiles + '</div><div class="v69GlanceBtns"><button onclick="encLabelOpen(selectedAnimal)">🏷 Enclosure label (QR)</button><button onclick="sitterMode=\'rehome\';openPanel(\'Pet-Sitter Sheet\',selectedAnimal)">💌 Care sheet</button></div>';
+}
+(function () {
+  const base = profileOverviewMarkup;
+  profileOverviewMarkup = function (a) { let g = ""; try { g = glanceMarkup(a); } catch (e) {} return g + base(a); };
+})();
+function encLabelOpen(a) {
+  if (!animals.includes(a)) return;
+  const p = profiles[a] || {}, tab = window.open("", "_blank");
+  if (!tab) return alert("Allow pop-ups to open the label.");
+  const url = location.origin + location.pathname + "?animal=" + encodeURIComponent(a);
+  const sex = /^m/i.test(p.sex || "") ? "♂" : /^f/i.test(p.sex || "") ? "♀" : "";
+  const lines = [species[a], p.genes || p.morph, p.hatchDate ? "Hatched " + niceDate(p.hatchDate) : p.acquiredDate ? "Since " + niceDate(p.acquiredDate) : ""].filter(Boolean);
+  tab.document.open();
+  tab.document.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(a) + ' · label</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><style>body{font:14px Arial,sans-serif;margin:16px;color:#34213f;background:#fff}.bar{display:flex;gap:10px;align-items:center;margin-bottom:14px}.bar button{background:#45205b;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:bold}.lb{display:flex;gap:14px;align-items:center;border:2.5px solid #79538e;border-radius:16px;padding:14px 16px;max-width:430px;background:linear-gradient(120deg,#fbf6fd,#fff)}.lb h1{font:italic 700 28px Georgia,serif;margin:0 0 4px;color:#45205b;overflow-wrap:anywhere}.lb p{margin:2px 0;font-size:14px}.q{width:110px;height:110px;flex:none}.q img,.q canvas{width:110px!important;height:110px!important}.k{font:bold 10px Arial;letter-spacing:2px;color:#586c38}.sx{color:#79538e}small{color:#776a80}@media print{.bar{display:none}body{margin:0}}</style></head><body><div class="bar"><button onclick="window.print()">Print</button><small>Tape it to the enclosure. Scanning it with your phone camera opens ' + esc(a) + ' in Scale &amp; Tell.</small></div>' +
+    '<div class="lb"><div class="q" id="q"></div><div><div class="k">SCALE &amp; TELL ♡</div><h1>' + esc(a) + ' <span class="sx">' + sex + "</span></h1>" + lines.map((x) => "<p>" + esc(x) + "</p>").join("") + (p.code ? "<p><b>" + esc(p.code) + "</b></p>" : "") + "</div></div>" +
+    "<script>window.onload=function(){new QRCode(document.getElementById('q'),{text:" + JSON.stringify(url) + ",width:220,height:220,correctLevel:QRCode.CorrectLevel.M})}<\/script></body></html>");
+  tab.document.close();
+}
+
+/* ---------- Feeder freezer: stock, cost, how long it lasts, when to order ---------- */
+function feederMatch(f, prey) {
+  const a = String(f?.name || "").toLowerCase().trim(), b = String(prey || "").toLowerCase().trim();
+  return !!a && !!b && (a === b || b.includes(a) || a.includes(b));
+}
+function feederUsage(f, days = 60) {
+  const since = advanceDate(today(), -days);
+  return entries.filter((e) => e.section === "Feeding Tracker" && e.detail === "Ate" && e.date >= since && feederMatch(f, e.preyType)).length;
+}
+function feederForecast(f) {
+  const used = feederUsage(f, 60), perDay = used / 60, count = Number(f.count) || 0;
+  if (!used) return { used, text: "Not fed out in the last 2 months" };
+  const left = Math.floor(count / perDay);
+  const orderDays = Math.max(0, Math.floor((count - (Number(f.low) || 0)) / perDay));
+  return { used, left, order: advanceDate(today(), orderDays), text: count ? "Lasts about " + (left >= 14 ? Math.round(left / 7) + " weeks" : left + " days") + " · order by " + niceDate(advanceDate(today(), orderDays)) : "Out of stock" };
+}
+let feederEditIdx = -1;
+BIZ_PANELS.Feeders = () => {
+  if (!stCanUsePack()) return '<p class="resourceIntro">Feeder freezer tracking comes with Founding Keeper ($14.99 once) and every paid plan: counts go down as you feed, it shows what each meal costs and tells you when to reorder.</p><button class="action" onclick="openPanel(\'Founding Keeper Studio\')">See Founding Keeper</button>' + v57Back("Feed Day");
+  const list = feederList(), money = (n) => bizMoney(Math.round((Number(n) || 0) * 100) / 100);
+  const value = list.reduce((s, f) => s + (Number(f.count) || 0) * (Number(f.cost) || 0), 0);
+  const month = list.reduce((s, f) => s + feederUsage(f, 30) * (Number(f.cost) || 0), 0);
+  const back = bizIsBreeder() || stIsRescue() ? v57Back("Business Tools") : v57Back("Keeper Tools");
+  return '<p class="resourceIntro">Your feeder freezer 🧊 Counts go down by themselves when you log a feeding with that prey (Feed Day, Quick Log, rack feeding or a care log).</p>' +
+    (list.length ? '<div class="v69Sum"><div><b>' + list.reduce((s, f) => s + (Number(f.count) || 0), 0) + "</b><small>feeders on hand</small></div><div><b>" + money(value) + "</b><small>worth in the freezer</small></div><div><b>" + money(month) + "</b><small>fed out in 30 days</small></div></div>" : "") +
+    (list.length ? list.map((f, i) => {
+      const fc = feederForecast(f), low = Number(f.count) <= Number(f.low);
+      if (feederEditIdx === i) return '<div class="deviceCard"><div class="saleGrid">' + bizField("feN", "Prey", f.name, "text") + bizField("feC", "On hand", f.count, "number", "", 'min="0"') + bizField("feP", "Cost each ($)", f.cost || "", "number", "1.25", 'min="0" step="0.01"') + bizField("feL", "Remind me at", f.low, "number", "", 'min="0"') + '</div><div class="inlineActions"><button class="action" onclick="feederSaveEdit(' + i + ')">Save</button><button class="action secondary" onclick="feederEditIdx=-1;render()">Cancel</button></div></div>';
+      return '<div class="deviceCard v69Feeder' + (low ? " low" : "") + '"><div class="deviceHeading"><b>' + esc(f.name) + "</b><span>" + (low ? '<span class="salePill saleSold">Low</span> ' : "") + (Number(f.count) || 0) + " left</span></div>" +
+        '<p class="lcSmall">' + esc(fc.text) + (f.cost ? " · " + money(f.cost) + " each" : " · add a cost to see spending") + (fc.used ? " · " + fc.used + " fed in 60 days" : "") + "</p>" +
+        '<div class="recordActions"><button onclick="feederAdj(' + i + ',-1)">−1</button><button onclick="feederAdj(' + i + ',1)">+1</button><button onclick="feederBoxOpen(' + i + ')">+ Box</button><button onclick="feederEditIdx=' + i + ';render()" aria-label="Edit">✎</button><button onclick="if(confirm(\'Remove ' + esc(v69Q(f.name)) + '?\'))feederAdj(' + i + ',\'x\')" aria-label="Remove">✕</button></div>' +
+        '<div id="feBox' + i + '" class="v69Box" hidden><div class="saleGrid">' + bizField("fbQ" + i, "How many in the box", "", "number", "25", 'min="1"') + bizField("fbP" + i, "Box price ($, optional)", "", "number", "30.00", 'min="0" step="0.01"') + "</div>" +
+        (bizIsBreeder() || stIsRescue() ? '<label class="checkLine"><input type="checkbox" id="fbL' + i + '" checked> Add the cost to Income &amp; expenses</label>' : "") +
+        '<button class="action" onclick="feederBoxAdd(' + i + ')">Add to freezer</button></div></div>';
+    }).join("") : '<p class="helperLine">No feeders yet. Add what’s in your freezer below.</p>') +
+    '<h3 class="sectionTitle">Add a feeder</h3><div class="saleGrid">' + bizField("fdName", "Prey (as you log it)", "", "text", "Small rat") + bizField("fdCount", "How many you have", "", "number", "", 'min="0"') + bizField("fdCost", "Cost each ($)", "", "number", "1.25", 'min="0" step="0.01"') + bizField("fdLow", "Remind me at", 10, "number", "", 'min="0"') + "</div>" +
+    '<button class="action" onclick="feederAddNew()">Add feeder</button><p class="lcSmall">Tip: name it the way you log it (e.g. “Small rat”). A feeding logged as “small rat f/t” still counts.</p>' + back;
+};
+feederAddNew = function () {
+  const name = bizV("fdName").slice(0, 60);
+  if (!name) return stToast("Type the prey name first.");
+  const cost = Number(bizV("fdCost"));
+  accountPrefsSet("feeders", [...feederList(), { name, count: Math.max(0, Number(bizV("fdCount")) || 0), low: Math.max(0, Number(bizV("fdLow")) || 0), cost: cost > 0 ? Math.round(cost * 100) / 100 : "" }]);
+  try { save(); } catch (e) {}
+  render();
+};
+function feederSaveEdit(i) {
+  const list = feederList().map((f) => ({ ...f }));
+  if (!list[i]) return;
+  const cost = Number(bizV("feP"));
+  list[i] = { ...list[i], name: bizV("feN").slice(0, 60) || list[i].name, count: Math.max(0, Number(bizV("feC")) || 0), low: Math.max(0, Number(bizV("feL")) || 0), cost: cost > 0 ? Math.round(cost * 100) / 100 : "" };
+  accountPrefsSet("feeders", list);
+  feederEditIdx = -1;
+  try { save(); } catch (e) {}
+  render();
+}
+function feederBoxOpen(i) { const b = document.getElementById("feBox" + i); if (b) b.hidden = !b.hidden; }
+function feederBoxAdd(i) {
+  const list = feederList().map((f) => ({ ...f })), f = list[i];
+  const q = Math.round(Number(bizV("fbQ" + i))), price = Number(bizV("fbP" + i));
+  if (!f || !(q > 0 && q <= 5000)) return stToast("Enter how many are in the box.");
+  f.count = (Number(f.count) || 0) + q;
+  if (price > 0) f.cost = Math.round((price / q) * 100) / 100;
+  accountPrefsSet("feeders", list);
+  if (price > 0 && document.getElementById("fbL" + i)?.checked) entries.push({ section: "Ledger", animal: "", type: "expense", amount: Math.round(price * 100) / 100, category: "Feeders", detail: q + " × " + f.name, date: today(), clutchId: "" });
+  try { save(); } catch (e) {}
+  stToast("+" + q + " " + f.name + (price > 0 ? " · " + bizMoney(f.cost) + " each" : ""));
+  render();
+}
+
+/* ---------- Feed Day: mark everyone who ate, save once ---------- */
+let feedDayFilter = "", feedDayRows = [];
+function feedDayDue(a) {
+  if (brumationOf(a)) return false;
+  const f = lastFeed(a), n = Number(carePlans[a]?.feedDays) || 0;
+  if (entries.some((e) => e.section === "Calendar" && !e.done && e.animal === a && /feed/i.test(e.detail || "") && e.date <= today())) return true;
+  return !!n && (!f || daysSince(f.date) >= n);
+}
+BIZ_PANELS["Feed Day"] = () => {
+  if (!animals.length) return '<p class="helperLine">Add an animal first.</p>';
+  const due = animals.filter(feedDayDue), sps = [...new Set(animals.map((a) => species[a] || "Other"))].sort();
+  if (!feedDayFilter) feedDayFilter = due.length ? "due" : "all";
+  const shown = animals.filter((a) => feedDayFilter === "all" || (feedDayFilter === "due" ? due.includes(a) : (species[a] || "Other") === feedDayFilter));
+  feedDayRows = shown.slice(0, 200);
+  const chip = (k, label) => '<button class="chip' + (feedDayFilter === k ? " on" : "") + '" onclick="feedDayFilter=\'' + v69Q(k) + '\';render()">' + esc(label) + "</button>";
+  const feeders = feederList();
+  return '<p class="resourceIntro">Mark everyone who ate, then save once. Animals you leave blank aren’t logged.</p>' +
+    '<div class="chipRow">' + chip("due", "Due now " + due.length) + chip("all", "All " + animals.length) + (sps.length > 1 ? sps.map((x) => chip(x, x + " " + animals.filter((a) => (species[a] || "Other") === x).length)).join("") : "") + "</div>" +
+    '<div class="saleGrid"><label>Date<input type="date" id="fdDate" value="' + today() + '" max="' + today() + '"></label><label>Time (optional)<input type="time" id="fdTime"></label></div>' +
+    (feedDayRows.length ? '<div class="rfAll"><span>Mark all:</span><button type="button" onclick="rackFeedAll(&quot;Ate&quot;)">Ate</button><button type="button" onclick="rackFeedAll(&quot;&quot;)">Clear</button></div>' +
+      (feeders.length ? '<datalist id="fdPreyList">' + feeders.map((f) => '<option value="' + esc(f.name) + '">').join("") + "</datalist>" : "") +
+      feedDayRows.map((a, n) => {
+        const f = lastFeed(a), st = rosterStatus(a);
+        return '<div class="rfRow"><div class="rfName"><b>' + esc(a) + "</b><small" + (st.cls ? ' class="' + st.cls + '"' : "") + ">" + esc(st.text) + '</small></div><div class="rfChoice" role="radiogroup" aria-label="' + esc(a) + '">' +
+          ["Ate", "Refused", "Skipped feeding"].map((o) => '<label><input type="radio" name="rf' + n + '" value="' + o + '"><span>' + (o === "Skipped feeding" ? "Skip" : o) + "</span></label>").join("") +
+          '</div><input class="rfPrey" id="fdPrey' + n + '" maxlength="60" list="fdPreyList" placeholder="Prey (optional)" value="' + esc(f?.preyType || "") + '"></div>';
+      }).join("") +
+      '<button class="action" onclick="feedDaySave()">Save feedings</button>'
+      : '<p class="helperLine">' + (feedDayFilter === "due" ? "Nobody is due right now ♡ Tap All to log anyway." : "No animals here.") + "</p>") +
+    '<p class="lcSmall">Each animal’s next feeding reminder moves forward automatically when you’ve set a feeding interval.' + (stCanUsePack() ? ' <button class="authLink" onclick="openPanel(\'Feeders\')">🧊 Feeder freezer</button>' : "") + "</p>";
+};
+function feedDaySave() {
+  const date = document.getElementById("fdDate")?.value, time = (document.getElementById("fdTime")?.value || "").trim();
+  if (!validDate(date) || date > today()) return alert("Choose a valid date.");
+  if (time && !stValidFeedingTime(time)) return alert("Enter a valid time or leave it blank.");
+  const add = [];
+  feedDayRows.forEach((a, n) => {
+    const choice = document.querySelector('input[name="rf' + n + '"]:checked')?.value;
+    if (!choice || !animals.includes(a)) return;
+    const prey = (document.getElementById("fdPrey" + n)?.value || "").trim().slice(0, 60);
+    add.push({ section: "Feeding Tracker", animal: a, detail: choice, date, notes: "", preyType: choice === "Skipped feeding" ? "" : prey, preyWeight: "", response: choice === "Refused" ? "Refused" : "", ...(time ? { feedingTime: time } : {}) });
+  });
+  if (!add.length) return alert("Mark at least one animal first.");
+  const before = entries;
+  entries = [...entries, ...add];
+  try { save(); } catch (e) { entries = before; return alert("Couldn’t save these feedings. Nothing was added."); }
+  const used = {};
+  add.filter((e) => e.detail === "Ate" && e.preyType).forEach((e) => (used[e.preyType] = (used[e.preyType] || 0) + 1));
+  Object.entries(used).forEach(([p, k]) => feederUse(p, k));
+  add.filter((e) => e.detail !== "Skipped feeding").forEach((e) => { try { autoNextFeeding(e.animal, date); } catch (x) {} });
+  const ate = add.filter((e) => e.detail === "Ate").length;
+  const lowNow = feederList().filter((f) => Object.keys(used).some((p) => feederMatch(f, p)) && Number(f.count) <= Number(f.low));
+  stToast("✓ Logged " + add.length + " feeding" + (add.length === 1 ? "" : "s") + (ate !== add.length ? " (" + ate + " ate)" : "") + (lowNow.length ? " · " + lowNow.map((f) => f.name + ": " + f.count + " left").join(", ") : ""));
+  feedDayFilter = "";
+  try { closePanel(); } catch (e) {}
+  render();
+}
+/* Home "Today's Care" card gets a Feed Day button. */
+(function () {
+  const base = renderHomeToday;
+  renderHomeToday = function () {
+    const r = base.apply(this, arguments);
+    try {
+      const acts = document.querySelector("#homeToday .homeTodayActions");
+      if (acts && animals.length > 1 && !acts.querySelector(".v69Feed")) {
+        const b = document.createElement("button");
+        b.className = "v69Feed";
+        b.textContent = "🍽 Feed Day";
+        b.onclick = () => openPanel("Feed Day");
+        acts.insertBefore(b, acts.children[1] || null);
+      }
+    } catch (e) {}
+    return r;
+  };
+})();
+/* Keeper Tools: feeder freezer tile. */
+(function () {
+  const base = BIZ_PANELS["Keeper Tools"];
+  BIZ_PANELS["Keeper Tools"] = function () {
+    const h = base.apply(this, arguments);
+    if (!stCanUsePack()) return h;
+    const n = feederList().length, low = feederList().filter((f) => Number(f.count) <= Number(f.low)).length;
+    const tile = '<button class="resourceTile" onclick="openPanel(\'Feeders\')"><strong>🧊 Feeder freezer</strong><small>' + (n ? n + " feeder" + (n === 1 ? "" : "s") + " tracked" + (low ? " · " + low + " low" : "") : "Counts go down as you feed, shows what each meal costs and when to reorder.") + "</small></button>" +
+      '<button class="resourceTile" onclick="openPanel(\'Feed Day\')"><strong>🍽 Feed Day</strong><small>Check off everyone who ate and save once.</small></button>';
+    return h.replace('<h3 class="sectionTitle">Shed predictions</h3>', tile + '<h3 class="sectionTitle">Shed predictions</h3>');
+  };
+})();
+
+/* ---------- Care sheet: for a pet-sitter or a new home. Pretty page + plain text ---------- */
+let sitterMode = "sitter";
+sitterMarkup = function () {
+  const re = sitterMode === "rehome";
+  const pick = (a) => (re ? a === selectedAnimal || (!animals.includes(selectedAnimal) && a === animals[0]) : true);
+  return '<p class="resourceIntro">A cute, easy-to-read care sheet from your records. Print it, save a PDF, email it, or copy it as text.</p>' +
+    '<div class="v69Mode"><button class="' + (re ? "" : "on") + '" onclick="sitterMode=\'sitter\';render()">🏖 Pet-sitter</button><button class="' + (re ? "on" : "") + '" onclick="sitterMode=\'rehome\';render()">🏡 New home</button></div>' +
+    '<p class="lcSmall">' + (re ? "For rehoming or a sale: care, setup and history so the new keeper starts off right." : "For someone looking after your animals while you’re away: who to call, feeding and a daily checklist.") + "</p>" +
+    '<div class="sitterForm"><label>Your name (optional)<input id="sitKeeper" maxlength="160" value="' + esc(sitterSettings.keeper) + '"></label><label>Your phone (optional)<input id="sitPhone" maxlength="160" value="' + esc(sitterSettings.phone) + '"></label>' +
+    (re ? "" : '<label>Backup contact (optional)<input id="sitAlternate" maxlength="160" value="' + esc(sitterSettings.alternate) + '" placeholder="Name and phone"></label>') +
+    "<label>" + (re ? "A note for the new keeper" : "House notes for the sitter") + '<textarea id="sitGeneral" maxlength="1200" placeholder="' + (re ? "She loves her warm hide and eats best at night ♡" : "Feeders are in the garage freezer. Thermostats are set, please don’t change them.") + '">' + esc(sitterSettings.general) + "</textarea></label>" +
+    '<h3 class="sectionTitle">Animals</h3>' + (animals.length > 3 ? '<div class="rfAll"><button type="button" onclick="document.querySelectorAll(\'.sitterAnimal\').forEach(x=>x.checked=true)">All</button><button type="button" onclick="document.querySelectorAll(\'.sitterAnimal\').forEach(x=>x.checked=false)">None</button></div>' : "") +
+    animals.map((a, i) => '<label class="sitterCheck"><input type="checkbox" class="sitterAnimal" value="' + i + '"' + (pick(a) ? " checked" : "") + "> " + esc(a) + " · " + esc(species[a] || "Other") + "</label>").join("") +
+    (re ? '<label class="sitterCheck"><input type="checkbox" id="sitHistory" checked> Include care history (weights, feedings, sheds)</label>' : "") +
+    '<label class="sitterCheck"><input type="checkbox" id="sitIncludeHealth"> Include recent health / vet records (private, optional)</label>' +
+    '<button class="action" onclick="sitterMakePretty()">💌 Make my care sheet</button><p class="lcSmall">Next you can view &amp; print it, download a PDF, or email it.</p>' +
+    '<details class="compactDisclosure"><summary>Plain text version (to copy into a text message)</summary><textarea id="sitterPreview" class="handoffText" readonly placeholder="Tap Make text"></textarea><div class="inlineActions"><button class="action secondary" onclick="generateSitterSheet()">Make text</button><button class="action secondary" onclick="copySitterSheet()">Copy text</button><button class="action secondary" onclick="downloadSitterSheet()">Download .txt</button></div></details>' +
+    '<p id="sitterStatus" class="helperLine" role="status"></p><p class="lcSmall">Care instructions and handling notes come from each animal’s Edit details. Setup comes from the Habitat tab. Your vet comes from Find a Vet.</p></div>';
+};
+function sitterReadForm() {
+  const ids = { keeper: "sitKeeper", phone: "sitPhone", alternate: "sitAlternate", general: "sitGeneral" };
+  for (const k of Object.keys(SITTER_DEFAULT)) { const el = document.getElementById(ids[k]); if (el) sitterSettings[k] = (el.value || "").trim().slice(0, k === "general" ? 1200 : 160); }
+  try { scaleStoreSet("scaleTellSitter18", JSON.stringify(sitterSettings)); } catch (e) {}
+  return {
+    names: [...document.querySelectorAll(".sitterAnimal:checked")].map((e) => animals[Number(e.value)]).filter(Boolean),
+    health: !!document.getElementById("sitIncludeHealth")?.checked,
+    history: sitterMode === "rehome" && !!document.getElementById("sitHistory")?.checked,
+  };
+}
+function sitterFacts(a) {
+  const p = profiles[a] || {}, plan = carePlans[a] || {}, s = setupOf(a), f = v69Latest(a, "Feeding Tracker", (e) => e.detail === "Ate"), w = v69LastWeight(a);
+  const range = (lo, hi, u) => (lo !== undefined && lo !== "") || (hi !== undefined && hi !== "") ? (lo !== undefined && lo !== "" ? lo : "…") + "–" + (hi !== undefined && hi !== "" ? hi : "…") + u : "";
+  const prey = entries.filter((e) => e.animal === a && e.section === "Feeding Tracker" && e.preyType).sort((x, y) => y.date.localeCompare(x.date))[0]?.preyType || "";
+  return {
+    p, s, w, prey, sex: p.sex && !/unknown/i.test(p.sex) ? p.sex : "", morph: p.genes || p.morph || "", age: v69Age(p.hatchDate),
+    feedEvery: Number(plan.feedDays) ? "Every " + plan.feedDays + " days" : "", lastFed: f ? niceDate(f.date) + " (" + v69Ago(f.date) + ")" : "",
+    warm: range(plan.warmMin, plan.warmMax, "°F"), cool: range(plan.coolMin, plan.coolMax, "°F"), hum: range(plan.humidityMin, plan.humidityMax, "%"),
+    substrate: s.substrate === "Other" ? s.substrateOther : s.substrate || "", uvb: v69HasUvb(s) || s.uvbType ? v69UvbLabel(s) : "",
+    shed: stNoShed(a) ? "" : (v69Latest(a, "Shed History") ? niceDate(v69Latest(a, "Shed History").date) : ""),
+  };
+}
+/* Plain text (for texting) */
+sitterDocument = function (names, includeHealth, withHistory) {
+  const re = sitterMode === "rehome", L = [];
+  L.push(re ? "♡ CARE SHEET FOR " + (names.length === 1 ? names[0].toUpperCase() + "’S" : "YOUR") + " NEW HOME ♡" : "♡ PET-SITTER CARE SHEET ♡", "");
+  if (sitterSettings.keeper || sitterSettings.phone) L.push((re ? "From: " : "Owner: ") + [sitterSettings.keeper, sitterSettings.phone].filter(Boolean).join(" · "));
+  if (!re && sitterSettings.alternate) L.push("Backup: " + sitterSettings.alternate);
+  if (!re && (savedVet.name || savedVet.phone)) L.push("Vet: " + [savedVet.name, savedVet.phone].filter(Boolean).join(" · ") + (savedVet.emergencyPhone ? " · Emergency: " + [savedVet.emergencyName, savedVet.emergencyPhone].filter(Boolean).join(" ") : ""));
+  if (sitterSettings.general) L.push("", sitterSettings.general);
+  for (const a of names) {
+    const x = sitterFacts(a);
+    L.push("", "— " + a + " —", [species[a], x.sex, x.morph, x.age].filter(Boolean).join(" · "));
+    [["Feeds", [x.feedEvery, x.prey].filter(Boolean).join(" · ")], ["Last fed", x.lastFed], ["Weight", x.w ? v69Grams(x.w.g) : ""], ["Warm side", x.warm], ["Cool side", x.cool], ["Humidity", x.hum],
+      ["Enclosure", x.p.enclosure], ["Substrate", x.substrate], ["Heat", x.s.heat], ["UVB", x.uvb], ["Lights", x.s.lightHours ? x.s.lightHours + " hrs/day" : ""], ["Care", x.p.sitterInstructions || x.p.notes], ["Handling", x.p.handlingNotes]]
+      .filter((r) => r[1]).forEach((r) => L.push(r[0] + ": " + r[1]));
+    if (!re) {
+      const up = entries.filter((e) => e.animal === a && e.section === "Calendar" && !e.done).sort((p, q) => p.date.localeCompare(q.date)).slice(0, 4);
+      if (up.length) L.push("Coming up: " + up.map((e) => niceDate(e.date) + " " + e.detail).join(" · "));
+    }
+    if (withHistory) {
+      const w = sortedAnimalEntries(a, "Weight Tracker").slice(-6).reverse();
+      if (w.length) L.push("Weights: " + w.map((e) => niceDate(e.date) + " " + e.detail + " g").join(" · "));
+      const fd = sortedAnimalEntries(a, "Feeding Tracker").slice(-6).reverse();
+      if (fd.length) L.push("Feedings: " + fd.map((e) => niceDate(e.date) + " " + e.detail + (e.preyType ? " " + e.preyType : "")).join(" · "));
+    }
+    if (includeHealth) {
+      const h = sortedAnimalEntries(a, "Health & Vet").slice(-3).reverse();
+      if (h.length) L.push("Health: " + h.map((e) => niceDate(e.date) + " " + e.detail + (e.medication ? " · " + e.medication : "") + (e.notes ? " · " + e.notes : "")).join(" | "));
+    }
+  }
+  L.push("", "Made with Scale & Tell ♡ Records are keeper-entered. When in doubt, call a reptile vet.");
+  return L.join("\n");
+};
+generateSitterSheet = function () {
+  const o = sitterReadForm(), status = document.getElementById("sitterStatus"), box = document.getElementById("sitterPreview");
+  if (!o.names.length) { if (status) status.textContent = "Choose at least one animal."; return; }
+  if (box) { box.value = sitterDocument(o.names, o.health, o.history); box.closest("details")?.setAttribute("open", ""); }
+  if (status) status.textContent = "✓ Text ready for " + o.names.length + " animal" + (o.names.length === 1 ? "" : "s") + ". Review before sharing.";
+};
+/* Small square photo for the sheet: a downsized copy so the page (and its email link) stays light. */
+function v69Thumb(a) {
+  const src = portraitForAnimal(a).src;
+  return new Promise((ok) => {
+    const im = new Image();
+    if (/^https?:/.test(src) && !src.startsWith(location.origin)) im.crossOrigin = "anonymous";
+    const fallback = () => ok(/^[a-z0-9-]+\.webp$/.test(src) ? new URL(src, location.href).href : "");
+    im.onload = () => {
+      try {
+        const c = document.createElement("canvas"), S = 220, r = Math.max(S / im.width, S / im.height), w = S / r, h = S / r;
+        c.width = c.height = S;
+        c.getContext("2d").drawImage(im, (im.width - w) / 2, (im.height - h) / 2, w, h, 0, 0, S, S);
+        ok(c.toDataURL("image/jpeg", 0.82));
+      } catch (e) { fallback(); }
+    };
+    im.onerror = fallback;
+    im.src = src;
+    setTimeout(fallback, 4000);
+  });
+}
+async function sitterMakePretty() {
+  const o = sitterReadForm(), status = document.getElementById("sitterStatus");
+  if (!o.names.length) { if (status) status.textContent = "Choose at least one animal."; return; }
+  if (status) status.textContent = "Making your care sheet…";
+  const re = sitterMode === "rehome", thumbs = {};
+  for (const a of o.names.slice(0, 60)) thumbs[a] = await v69Thumb(a);
+  const T = (v) => esc(String(v ?? ""));
+  const fact = (icon, label, val) => val ? '<div class="f"><span>' + icon + "</span><div><small>" + label + "</small><b>" + T(val) + "</b></div></div>" : "";
+  const cards = o.names.map((a) => {
+    const x = sitterFacts(a);
+    const up = re ? [] : entries.filter((e) => e.animal === a && e.section === "Calendar" && !e.done).sort((p, q) => p.date.localeCompare(q.date)).slice(0, 5);
+    const facts = fact("🍽", "Feeding", [x.feedEvery, x.prey].filter(Boolean).join(" · ")) + fact("🗓", "Last meal", x.lastFed) + fact("⚖", "Weight", x.w ? v69Grams(x.w.g) + " · " + niceDate(x.w.date) : "") +
+      fact("🔥", "Warm side", x.warm) + fact("❄", "Cool side", x.cool) + fact("💧", "Humidity", x.hum) + fact("✨", "Last shed", x.shed);
+    const setup = fact("📐", "Enclosure", x.p.enclosure) + fact("🪵", "Substrate", x.substrate) + fact("🔥", "Heat", x.s.heat) + fact("☀", "UVB / lighting", x.uvb) + fact("🕗", "Lights on", x.s.lightHours ? x.s.lightHours + " hours a day" : "") + fact("🌿", "Hides & décor", x.s.decor);
+    const hist = (list, f) => list.length ? "<table>" + list.map(f).join("") + "</table>" : "";
+    let history = "";
+    if (o.history) {
+      const w = sortedAnimalEntries(a, "Weight Tracker").slice(-8).reverse(), fd = sortedAnimalEntries(a, "Feeding Tracker").slice(-10).reverse(), sh = stNoShed(a) ? [] : sortedAnimalEntries(a, "Shed History").slice(-5).reverse();
+      history = (w.length || fd.length || sh.length) ? '<h3>📖 History</h3><div class="hist">' +
+        (fd.length ? "<div><h4>Feedings</h4>" + hist(fd, (e) => "<tr><td>" + T(niceDate(e.date)) + "</td><td>" + T(e.detail + (e.preyType ? " · " + e.preyType : "")) + "</td></tr>") + "</div>" : "") +
+        (w.length ? "<div><h4>Weights</h4>" + hist(w, (e) => "<tr><td>" + T(niceDate(e.date)) + "</td><td>" + T(e.detail) + " g</td></tr>") + "</div>" : "") +
+        (sh.length ? "<div><h4>Sheds</h4>" + hist(sh, (e) => "<tr><td>" + T(niceDate(e.date)) + "</td><td>" + T(e.detail) + "</td></tr>") + "</div>" : "") + "</div>" : "";
+    }
+    const health = o.health ? sortedAnimalEntries(a, "Health & Vet").slice(-3).reverse() : [];
+    return '<section class="pet"><div class="petHead">' + (thumbs[a] ? '<img src="' + T(thumbs[a]) + '" alt="">' : '<div class="ph">♡</div>') + "<div><h2>" + T(a) + "</h2><p>" +
+      [species[a], x.sex, x.morph, x.age].filter(Boolean).map((v) => '<span class="chip">' + T(v) + "</span>").join(" ") + "</p></div></div>" +
+      (facts ? '<div class="facts">' + facts + "</div>" : "") +
+      (x.p.sitterInstructions || x.p.notes ? '<div class="note"><b>💜 How to care for ' + T(a) + "</b><p>" + T(x.p.sitterInstructions || x.p.notes) + "</p></div>" : "") +
+      (x.p.handlingNotes ? '<div class="note warn"><b>✋ Handling</b><p>' + T(x.p.handlingNotes) + "</p></div>" : "") +
+      (setup ? "<h3>🏡 Setup</h3><div class=\"facts\">" + setup + "</div>" : "") +
+      (up.length ? "<h3>📅 Coming up</h3><ul class=\"up\">" + up.map((e) => "<li><b>" + T(niceDate(e.date)) + "</b> " + T(e.detail) + "</li>").join("") + "</ul>" : "") +
+      history + (health.length ? "<h3>🩺 Health notes</h3><ul class=\"up\">" + health.map((e) => "<li><b>" + T(niceDate(e.date)) + "</b> " + T([e.detail, e.medication, e.dose, e.notes].filter(Boolean).join(" · ")) + "</li>").join("") + "</ul>" : "") + "</section>";
+  }).join("");
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const checklist = re ? "" : '<section class="pet"><h3 style="margin-top:0">✅ Daily checklist</h3><table class="ck"><tr><th></th>' + days.map((d) => "<th>" + d + "</th>").join("") + "</tr>" +
+    ["Fresh water", "Check temps", "Spot clean", "Fed (if due)", "Lights on/off", "Peek & say hi ♡"].map((t) => "<tr><td>" + t + "</td>" + days.map(() => "<td>☐</td>").join("") + "</tr>").join("") + "</table></section>";
+  const who = sitterSettings.keeper || "", title = re ? (o.names.length === 1 ? o.names[0] + "’s care sheet" : "Care sheet") : "Pet-sitter care sheet";
+  const css = "*{box-sizing:border-box}body{margin:0;background:#fbf6f1;color:#34213f;font:14px/1.5 Arial,sans-serif}.wrap{max-width:780px;margin:0 auto;padding:22px 18px 30px}" +
+    ".hero{background:linear-gradient(125deg,#efe0f6,#fff3e7 70%,#eef4e3);border:1px solid #e6d3ee;border-radius:22px;padding:22px 22px 18px;text-align:center;position:relative;overflow:hidden}" +
+    ".hero:before,.hero:after{content:'♡';position:absolute;font-size:70px;color:#79538e18;top:-10px;left:14px}.hero:after{content:'✿';left:auto;right:18px;top:auto;bottom:-14px;color:#586c3826}" +
+    ".kick{font:bold 11px Arial;letter-spacing:3px;color:#586c38;text-transform:uppercase}h1{font:italic 700 38px Georgia,serif;color:#45205b;margin:4px 0 6px}.hero p{margin:4px 0;color:#5c4b66}" +
+    ".hello{background:#fff;border-radius:16px;padding:12px 16px;margin:12px auto 0;max-width:560px;border:1px dashed #cdb3da;white-space:pre-wrap}" +
+    ".contacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:16px 0}.ct{background:#fff;border:1px solid #eadcf0;border-radius:16px;padding:12px 14px}.ct small{display:block;color:#7b6a86;font-weight:bold;font-size:11px;letter-spacing:1px;text-transform:uppercase}.ct b{font-size:16px}" +
+    ".pet{background:#fff;border:1px solid #eadcf0;border-radius:22px;padding:18px;margin:16px 0;box-shadow:0 4px 18px #45205b10;break-inside:avoid;page-break-inside:avoid}" +
+    ".petHead{display:flex;gap:16px;align-items:center}.petHead img,.ph{width:96px;height:96px;border-radius:50%;object-fit:cover;border:4px solid #eadcf0;flex:none;background:#f5edf9}.ph{display:flex;align-items:center;justify-content:center;font-size:36px;color:#79538e}" +
+    "h2{font:italic 700 30px Georgia,serif;color:#45205b;margin:0 0 6px}.chip{display:inline-block;background:#f1e6f6;color:#45205b;border-radius:999px;padding:3px 11px;font-size:12px;font-weight:bold;margin:2px 2px 0 0}" +
+    ".facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:12px}.f{display:flex;gap:9px;align-items:center;background:#fbf7fd;border-radius:14px;padding:9px 11px}.f span{font-size:20px}.f small{display:block;color:#7b6a86;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px}.f b{font-size:14px}" +
+    ".note{background:#f4f9ee;border-left:5px solid #8aa65f;border-radius:12px;padding:10px 14px;margin-top:12px}.note.warn{background:#fff4ec;border-color:#e2a15c}.note p{margin:4px 0 0;white-space:pre-wrap}" +
+    "h3{font:italic 700 20px Georgia,serif;color:#45205b;margin:18px 0 6px}h4{margin:0 0 4px;color:#6a4a7c;font-size:13px}.up{list-style:none;padding:0;margin:0;display:grid;gap:5px}.up li{background:#f7f0fa;border-radius:10px;padding:7px 11px;border-left:4px solid #79538e}" +
+    ".hist{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:5px 6px;border-bottom:1px solid #f0e6f4;text-align:left}td:first-child{color:#7b6a86;white-space:nowrap}" +
+    ".ck th{font-size:11px;color:#6a4a7c;text-align:center}.ck td{text-align:center;font-size:18px;color:#79538e}.ck td:first-child{text-align:left;font-size:13px;color:#34213f}" +
+    ".foot{text-align:center;color:#8a7b93;font-size:12px;margin-top:22px}.foot b{font:italic 16px Georgia,serif;color:#79538e}" +
+    ".printBar{position:sticky;top:0;z-index:5;background:#45205b;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}.printBar button{background:#fff;color:#45205b;border:0;border-radius:9px;padding:8px 14px;font-weight:bold}" +
+    "@media(max-width:520px){h1{font-size:30px}.petHead img,.ph{width:74px;height:74px}h2{font-size:25px}}@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{background:#fff}.printBar{display:none}.pet{box-shadow:none}}";
+  const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + T(title) + "</title><style>" + css + "</style></head><body>" +
+    '<div class="printBar"><span>Care sheet preview</span><button onclick="window.print()">Print / Save as PDF</button></div><div class="wrap">' +
+    '<div class="hero"><div class="kick">' + (re ? "Welcome home" : "Thank you for helping") + "</div><h1>" + (re ? (o.names.length === 1 ? T(o.names[0]) + "’s care sheet ♡" : "Care sheet ♡") : "Pet-sitter care sheet ♡") + "</h1>" +
+    "<p>" + (re ? "Everything " + (who ? T(who) + " knows" : "we know") + " about " + (o.names.length === 1 ? T(o.names[0]) : "these babies") + ", so the move is easy." : (who ? T(who) + "’s " : "") + o.names.length + " little one" + (o.names.length === 1 ? "" : "s") + " and how to care for them.") + "</p>" +
+    (sitterSettings.general ? '<div class="hello">' + T(sitterSettings.general) + "</div>" : "") + "</div>" +
+    '<div class="contacts">' + (who || sitterSettings.phone ? '<div class="ct"><small>📞 ' + (re ? "Previous keeper" : "Owner") + "</small><b>" + T(who) + "</b><br>" + T(sitterSettings.phone) + "</div>" : "") +
+    (!re && sitterSettings.alternate ? '<div class="ct"><small>🤝 Backup contact</small><b>' + T(sitterSettings.alternate) + "</b></div>" : "") +
+    (!re && (savedVet.name || savedVet.phone) ? '<div class="ct"><small>🩺 Vet</small><b>' + T(savedVet.name || "") + "</b><br>" + T(savedVet.phone || "") + (savedVet.emergencyPhone ? "<br><small style=\"display:inline;text-transform:none;letter-spacing:0\">Emergency: " + T([savedVet.emergencyName, savedVet.emergencyPhone].filter(Boolean).join(" ")) + "</small>" : "") + "</div>" : "") + "</div>" +
+    cards + checklist +
+    '<p class="foot"><b>Made with Scale &amp; Tell ♡</b><br>Made ' + T(niceDate(today())) + " from the keeper’s records. When in doubt, call a reptile vet.</p></div></body></html>";
+  if (status) status.textContent = "";
+  reportCur = { title, html, to: "", url: "", back: "Pet-Sitter Sheet" };
+  openPanel("Report");
+}
+(function () {
+  const base = panelHeading;
+  panelHeading = function (n) { return n === "Pet-Sitter Sheet" ? "Care Sheet ♡" : n === "Feed Day" ? "Feed Day 🍽" : n === "Feeders" ? "Feeder Freezer 🧊" : base(n); };
+})();
