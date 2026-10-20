@@ -20,8 +20,6 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
-  // Password-recovery pages and their token-bearing URLs must never be served from or saved to Cache Storage.
-  if (url.pathname.endsWith('/reset.html')) { event.respondWith(fetch(req, { cache: 'no-store' })); return; }
   const isAsset = /\.webp$|\/icon-[^/]+\.png$/.test(url.pathname);
   if (isAsset) {
     // Artwork and guides rarely change: serve from cache, fetch once if missing.

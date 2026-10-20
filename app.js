@@ -512,6 +512,7 @@ async function founderRefreshEntitlement() {
       setTimeout(stMaybeShowUpgrade, 1500);
       setTimeout(rescueMaybeAskLayout, 1800);
       setTimeout(stAdminCheck, 1200);
+      setTimeout(stApplySignupEmailChoice, 1400);
       try { renderHomeCards(); } catch (e) {}
       setTimeout(bizQueueAuto, 2500);
       if (!window.__stTransferChecked) { window.__stTransferChecked = true; setTimeout(transferCheck, 3500); }
@@ -3650,7 +3651,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.69";
+const SCALE_LC_VERSION = "3.70";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7023,6 +7024,7 @@ function authLogin() {
 function authCreate() {
   authSetStay();
   const code = (document.getElementById("signupMemberCode")?.value || "").trim().slice(0, 40);
+  try { localStorage.setItem("scaleTellPendingUpdates", document.getElementById("signupUpdates")?.checked === false ? "0" : "1"); } catch (e) {}
   try {
     if (code) localStorage.setItem("scaleTellPendingCode", code);
     else localStorage.removeItem("scaleTellPendingCode");
@@ -7157,7 +7159,7 @@ function updateAuthGate() {
   }
   if (cloudRecovery) {
     body.innerHTML =
-      '<h1>Choose a new password ♡</h1><p class="authIntro">Finish resetting your Scale & Tell password.</p><label class="authField" for="cloudNewPassword">New password</label><input id="cloudNewPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"><button class="authButton" onclick="cloudUpdatePassword()">Save new password</button><p class="authMessage" id="cloudStatus" role="status"></p>';
+      '<h1>Choose a new password ♡</h1><p class="authIntro">Finish resetting your Scale & Tell password.</p><label class="authField" for="cloudNewPassword">New password</label><input id="cloudNewPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"><button class="authButton" onclick="cloudUpdatePassword()">Save new password</button>' + (cloudSession ? '<button class="authButton light" onclick="cloudRecovery=false;authMode=\'signin\';updateAuthGate()">Cancel</button>' : '') + '<p class="authMessage" id="cloudStatus" role="status"></p>';
     return;
   }
   if (cloudPendingEmail || authMode === "email") {
@@ -7709,7 +7711,7 @@ function cloudAccountMarkup() {
     action +
     stEmailPrefMarkup() +
     advanced +
-    '<button class="action secondary" onclick="openPanel(\'Privacy & Account\')">Privacy & account options</button><button class="action secondary" onclick="cloudSignOut()">Sign out</button><p class="muted">' +
+    '<button class="action secondary" onclick="stPwOpen()">Change password</button><button class="action secondary" onclick="openPanel(\'Privacy & Account\')">Privacy & account options</button><button class="action secondary" onclick="cloudSignOut()">Sign out</button><p class="muted">' +
     (state === "synced" && cloudConfirmedAt
       ? "Cloud confirmed " +
         esc(
@@ -7747,11 +7749,10 @@ async function cloudSignUp() {
   cloudWorking = true;
   cloudMsg("Creating your private keeper account…");
   try {
-    const marketingUpdates = document.getElementById("signupUpdates")?.checked !== false;
     let { data, error } = await cloudClient.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: location.origin + location.pathname, data: { marketing_updates: marketingUpdates } },
+      options: { emailRedirectTo: location.origin + location.pathname },
     });
     if (error) throw error;
     if (!data.session && data.user && Array.isArray(data.user.identities) && !data.user.identities.length) {
@@ -7844,7 +7845,7 @@ async function cloudResetEmail() {
   }
   try {
     let { error } = await cloudClient.auth.resetPasswordForEmail(email, {
-      redirectTo: new URL("reset.html", location.href).href,
+      redirectTo: location.origin + location.pathname,
     });
     if (error) throw error;
     cloudMsg("If the address has an account, a reset email will arrive. Open the link to set your new password.");
@@ -7862,9 +7863,11 @@ async function cloudUpdatePassword() {
     let { error } = await cloudClient.auth.updateUser({ password });
     if (error) throw error;
     cloudRecovery = false;
+    authMode = "signin";
     updateAuthGate();
     render();
     cloudMsg("Password updated.");
+    stToast("Password updated ♡ Use your new password next time you sign in.");
   } catch (e) {
     cloudReportError(e);
   }
@@ -10056,7 +10059,7 @@ async function stEmailPrefLoad() {
 async function stEmailPrefSet(on) {
   const m = document.getElementById("emailUpdMsg");
   try {
-    const { error } = await cloudClient.from("email_prefs").update({ updates: on }).eq("user_id", cloudSession.user.id);
+    const { error } = await cloudClient.from("email_prefs").update({ updates: on, updated_at: new Date().toISOString() }).eq("user_id", cloudSession.user.id);
     if (error) throw error;
     stEmailPref = on;
     if (m) m.textContent = on ? "✓ You’ll get app update emails." : "✓ You won’t get app update emails.";
@@ -12619,6 +12622,17 @@ async function herpHide(mac) {
   herpState.devices = null; render();
 }
 
+/* V3.60 · The Create Account checkbox for update emails is applied after the first sign-in. */
+async function stApplySignupEmailChoice() {
+  let v = null;
+  try { v = localStorage.getItem("scaleTellPendingUpdates"); } catch (e) {}
+  if (v === null || !cloudClient || !cloudSession) return;
+  try {
+    const { error } = await cloudClient.from("email_prefs").update({ updates: v === "1", updated_at: new Date().toISOString() }).eq("user_id", cloudSession.user.id);
+    if (!error) { localStorage.removeItem("scaleTellPendingUpdates"); stEmailPref = v === "1"; }
+  } catch (e) {}
+}
+
 /* ---------- V3.62 · Sensor alert ranges (Govee). The server checks every 30 minutes and alerts the phone. ---------- */
 let sensorAlertIdx = -1;
 const SENSOR_DEFAULTS = { "Warm side": [85, 95], "Cool side": [72, 82], Ambient: [72, 88] };
@@ -13511,3 +13525,34 @@ async function sitterMakePretty() {
   const base = panelHeading;
   panelHeading = function (n) { return n === "Pet-Sitter Sheet" ? "Care Sheet ♡" : n === "Feed Day" ? "Feed Day 🍽" : n === "Feeders" ? "Feeder Freezer 🧊" : base(n); };
 })();
+/* V3.70 · Password reset: friendly message for used/expired links, change password from My Account,
+   and a reset link opened in a tab that's already showing the app still opens the new-password screen. */
+const v70LinkErr = (() => {
+  try {
+    const h = new URLSearchParams((location.hash || "").replace(/^#/, "")), q = new URLSearchParams(location.search);
+    const code = h.get("error_code") || q.get("error_code") || "", desc = h.get("error_description") || q.get("error_description") || "";
+    return code || desc || h.get("error") ? { code, desc } : null;
+  } catch (e) { return null; }
+})();
+if (v70LinkErr) {
+  let tries = 0;
+  const t = setInterval(() => {
+    if (!cloudAuthReady && ++tries < 40) return;
+    clearInterval(t);
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+    const used = /expired|invalid|otp/i.test(v70LinkErr.code + " " + v70LinkErr.desc);
+    if (cloudSession) { stToast(used ? "That email link was already used. You’re signed in: change your password in My Account." : "That email link didn’t work."); return; }
+    authMode = "reset";
+    updateAuthGate();
+    setTimeout(() => cloudMsg(used ? "That link was already used or has expired. Each link works once, so enter your email for a fresh one." : "That email link didn’t work. Enter your email to get a new one."), 50);
+  }, 250);
+}
+window.addEventListener("hashchange", () => { if (/access_token=|type=recovery|error_code=/.test(location.hash)) location.reload(); });
+function stPwOpen() {
+  if (!cloudSession) return;
+  cloudRecovery = true;
+  authMode = "recovery";
+  try { closePanel(); } catch (e) {}
+  updateAuthGate();
+  setTimeout(() => document.getElementById("cloudNewPassword")?.focus(), 50);
+}
