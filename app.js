@@ -3651,7 +3651,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.71";
+const SCALE_LC_VERSION = "3.72";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7893,12 +7893,15 @@ async function cloudSignOut() {
       return;
   } else if (!confirm("Sign out of Scale & Tell?")) return;
   try {
-    if (!(await pushDisable(true))) {
-      cloudMsg("Could not disconnect this device’s phone alerts. Reconnect, turn off reminders, then sign out.");
-      return;
-    }
+    cloudMsg("Signing out…");
+    // Turn off this device's phone reminders first, but never let that block signing out
+    // (Safari tabs have no push support, and a slow connection shouldn't trap anyone).
+    try { await Promise.race([pushDisable(true), new Promise((ok) => setTimeout(() => ok(false), 4000))]); } catch (e) {}
     let { error } = await cloudClient.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      const r = await cloudClient.auth.signOut({ scope: "local" });
+      if (r.error) throw r.error;
+    }
     if (owner === userId) {
       cloudPauseWrites = true;
       try {
@@ -8858,7 +8861,7 @@ async function pushDisable(silent = false) {
   try {
     if (!("serviceWorker" in navigator)) return true;
     const reg = await navigator.serviceWorker.getRegistration("./");
-    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    const sub = reg && reg.pushManager ? await reg.pushManager.getSubscription() : null;
     if (sub) {
       // Do not falsely claim an opt-out if the server is still scheduled to send.
       if (!cloudSession || !cloudClient) throw Error("Sign in and reconnect before turning off reminders.");
