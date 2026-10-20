@@ -3651,7 +3651,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.70";
+const SCALE_LC_VERSION = "3.71";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7141,9 +7141,14 @@ function updateAuthGate() {
     }
     return;
   }
+  if (cloudRecovery) {
+    body.innerHTML =
+      '<h1>Choose a new password ♡</h1><p class="authIntro">Finish resetting your Scale & Tell password.</p><label class="authField" for="cloudNewPassword">New password</label><input id="cloudNewPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"><button class="authButton" onclick="cloudUpdatePassword()">Save new password</button>' + (cloudSession ? '<button class="authButton light" onclick="cloudRecovery=false;authMode=\'signin\';updateAuthGate()">Cancel</button>' : '') + '<p class="authMessage" id="cloudStatus" role="status"></p>';
+    return;
+  }
   if (cloudAuthReady && accountMismatch) {
     body.innerHTML =
-      '<h1>Account needs review ♡</h1><p class="authIntro">This browser has records saved for another keeper account. They have not been shared or replaced. Please sign out and use the original keeper account, or save its changes safely before switching.</p><button class="authButton" onclick="cloudSignOut()">Sign out of this account</button><p class="authMessage" id="cloudStatus" role="status"></p>';
+      '<h1>Different account ♡</h1><p class="authIntro">You’re signed in as <b>' + esc(cloudSession?.user?.email || "another account") + '</b>, but this device holds the journal for a different Scale &amp; Tell account. To keep both journals safe, nothing was mixed or changed.</p><p class="authSupport">Tap below, then sign in with the account you normally use on this device. To use this account here instead, open Scale &amp; Tell in a private window.</p><button class="authButton" onclick="cloudSignOut()">Sign out of ' + esc(cloudSession?.user?.email || "this account") + '</button><p class="authMessage" id="cloudStatus" role="status"></p>';
     return;
   }
   if (!cloudAuthReady) {
@@ -7155,11 +7160,6 @@ function updateAuthGate() {
       '<h1>Scale & Tell ♡</h1><p class="authIntro">Unable to connect to sign-in right now. Please check your connection and reload.</p><button class="authButton light" onclick="location.reload()">Retry connection</button>' +
       authGuestActions() +
       '<p class="authMessage" id="cloudStatus" role="status"></p>';
-    return;
-  }
-  if (cloudRecovery) {
-    body.innerHTML =
-      '<h1>Choose a new password ♡</h1><p class="authIntro">Finish resetting your Scale & Tell password.</p><label class="authField" for="cloudNewPassword">New password</label><input id="cloudNewPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"><button class="authButton" onclick="cloudUpdatePassword()">Save new password</button>' + (cloudSession ? '<button class="authButton light" onclick="cloudRecovery=false;authMode=\'signin\';updateAuthGate()">Cancel</button>' : '') + '<p class="authMessage" id="cloudStatus" role="status"></p>';
     return;
   }
   if (cloudPendingEmail || authMode === "email") {
