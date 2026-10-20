@@ -732,7 +732,7 @@ function founderStudioMarkup() {
     '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feed a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p>' +
     (stCanUseBreeder()
       ? '<button class="action" onclick="openPanel(&quot;Racks & Breeding&quot;)">Open Racks &amp; Breeding</button>'
-      : '<p class="lcSmall">Part of <b>Founding Breeder</b> ($14.99 a year).</p><button class="action secondary" onclick="openPanel(&quot;Plans&quot;)">See plans</button>') +
+      : '<p class="lcSmall">Part of <b>Founding Breeder</b> ($19.99 a year).</p><button class="action secondary" onclick="openPanel(&quot;Plans&quot;)">See plans</button>') +
     "</div>" +
     '<div class="studioTile"><h3>Personalized Care Binder</h3><p>Your animal profiles, recent care history, upcoming tasks and saved vet details.</p>' +
     founderPackAction("binder", "Open Care Binder") +
@@ -2193,7 +2193,7 @@ function plansMarkup() {
       '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>',
     ) +
     '<h3 class="sectionTitle">For breeders &amp; rescues</h3><p class="lcSmall">Breeder plans add racks, rack feeding, pairings, clutches and hatchlings.</p>' +
-    card("founding_breeder", "$14.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches & litters", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
+    card("founding_breeder", "$19.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches & litters", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
     card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "<b>5 logins</b> for your team", "Your logo and colors on the app and printouts", "MorphMarket export", "Genetics calculator, invoices &amp; receipts, bulk import, shipping weather check, waitlist and sales summary"], soon("premium_breeder")) +
     card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>300 animals</b>", "Everything in Premium Breeder: 5 logins, your logo and colors, MorphMarket export, public page and Inbox", "Foster tracking, adoption contracts with e-signatures, a year-end impact report, a donate button and vet costs per animal", "Listing in Scale Hub → Reptile Rescues with an intake open / full switch", "Verified 501(c)(3)? Add your EIN under Business Tools → Rescue profile for the $14.99/yr price"], soon("rescue")) +
     '<p class="lcSmall">Yearly plans renew through PayPal. Cancel anytime in <a href="https://www.paypal.com/myaccount/autopay/" target="_blank" rel="noopener">PayPal → Automatic payments</a>; you keep your plan until the end of the year you paid for.</p><p class="lcSmall">Already have more animals than a plan allows? You keep them all; you just can&#39;t add more until you upgrade.</p>'
@@ -3651,7 +3651,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.65";
+const SCALE_LC_VERSION = "3.66";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7065,7 +7065,7 @@ function accessGateMarkup() {
     founderCheckoutMarkup() +
     '</div>' +
     '<div class="accessCard accessBreeder"><span class="accessTag">Breeders &amp; rescues</span><h2>More animals? Racks? A rescue?</h2><div class="accessPlans">' +
-    '<div><b>Founding Breeder</b><span>$14.99 / year</span><small>150 animals · racks, rack feeding, pairings, clutches · 3 logins</small></div>' +
+    '<div><b>Founding Breeder</b><span>$19.99 / year</span><small>150 animals · racks, rack feeding, pairings, clutches · 3 logins</small></div>' +
     '<div><b>Premium Breeder</b><span>$29.99 / year</span><small>400 animals · genetics calculator, invoices, waitlist · 5 logins</small></div>' +
     '<div><b>Rescue</b><span>$29.99 / year · $14.99 verified 501(c)(3)</span><small>300 animals · intake, fosters, e-sign contracts · 5 logins</small></div>' +
     '</div><button class="authButton" type="button" onclick="openPanel(\'Plans\')">See breeder &amp; rescue plans</button></div>' +
@@ -9322,7 +9322,7 @@ function agoText(date) {
 }
 function breederLocked() {
   return (
-    '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feeding a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p><p><b>Included with Founding Breeder</b> ($14.99 a year, up to 150 animals) and every breeder and rescue plan.</p><button class="action" onclick="openPanel(&quot;Plans&quot;)">See plans</button></div>'
+    '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feeding a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p><p><b>Included with Founding Breeder</b> ($19.99 a year, up to 150 animals) and every breeder and rescue plan.</p><button class="action" onclick="openPanel(&quot;Plans&quot;)">See plans</button></div>'
   );
 }
 function breederHome() {
@@ -12933,7 +12933,7 @@ function landingBottom() {
     f("✍", "E-sign contracts", "Adopters sign on their phone.") + f("★", "Impact report", "Year-end numbers for grants and donors.") + "</div>" +
     '<h2>Plans</h2><div class="landPlans">' +
     plan("Founding Keeper", "$14.99 once", "40 animals · 3 logins · reminders, designs, Care Binder &amp; Keeper Tools") +
-    plan("Founding Breeder", "$14.99 / year", "150 animals · racks, pairings, clutches · 3 logins") +
+    plan("Founding Breeder", "$19.99 / year", "150 animals · racks, pairings, clutches · 3 logins") +
     plan("Premium Breeder", "$29.99 / year", "400 animals · genetics, invoices, your logo · 5 logins") +
     plan("Rescue", "$29.99 / year", "300 animals · fosters, contracts · $14.99 for verified 501(c)(3)s") +
     '</div><p class="landNote">No subscription for Founding Keeper. 10% of paid-plan profits are donated to a nonprofit reptile rescue ♡</p>' +
