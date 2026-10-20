@@ -2,8 +2,8 @@
  * Push reminders, plus a cache of the app's own static files (artwork, guides, icons, code)
  * so it opens fast. It never caches account data, photos or anything from Supabase. */
 'use strict';
-const CACHE = 'scale-tell-static-v3.69';
-const SHELL = ['./', './index.html', './styles.css?v=3.51', './watch-learn.css?v=10', './watch-learn.js?v=1', './app.js?v=3.69', './guides.js?v=3.67', './supabase.min.js?v=2.57.4', './home-nav-hub.webp', './home-nav-breeder.webp', './home-nav-rescue.webp', './manifest.webmanifest', './install.html',
+const CACHE = 'scale-tell-static-v3.70';
+const SHELL = ['./', './index.html', './styles.css?v=3.51', './watch-learn.css?v=10', './watch-learn.js?v=1', './app.js?v=3.70', './guides.js?v=3.67', './supabase.min.js?v=2.57.4', './home-nav-hub.webp', './home-nav-breeder.webp', './home-nav-rescue.webp', './manifest.webmanifest', './install.html',
   './icon-180.png', './icon-192.png', './header.webp', './header-compact.webp', './dashboard.webp', './auth-art.webp'];
 
 self.addEventListener('install', event => {
@@ -20,6 +20,8 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
+  // Password-recovery pages and their token-bearing URLs must never be served from or saved to Cache Storage.
+  if (url.pathname.endsWith('/reset.html')) { event.respondWith(fetch(req, { cache: 'no-store' })); return; }
   const isAsset = /\.webp$|\/icon-[^/]+\.png$/.test(url.pathname);
   if (isAsset) {
     // Artwork and guides rarely change: serve from cache, fetch once if missing.

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#45205b">
+  <title>Reset password · Scale &amp; Tell</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#f4e5f3;color:#431955;font:16px/1.5 system-ui,Arial,sans-serif}
+    main{width:min(100%,440px);background:#fffaf7;border:1px solid #dfcde6;border-radius:22px;padding:28px;box-shadow:0 8px 30px #45205b12}h1{font:italic 700 32px Georgia,serif;margin:10px 0;color:#45205b}p{margin:10px 0 18px}label{display:block;font-weight:600;margin:16px 0 5px}input{width:100%;padding:13px;border:1px solid #a98ab8;border-radius:10px;font:inherit}button,.back{display:block;width:100%;margin-top:16px;padding:13px 18px;border:0;border-radius:11px;background:#45205b;color:#fff;font-weight:700;text-align:center;text-decoration:none;font:700 16px system-ui,Arial;cursor:pointer}button:disabled{opacity:.65;cursor:wait}.back{background:#f2e7f7;color:#45205b}#status{min-height:24px;margin-top:12px}#form[hidden],#success[hidden]{display:none}small{color:#60486b}
+  </style>
+</head>
+<body>
+<main>
+  <img src="./icon-192.png" width="72" height="72" alt="Scale and Tell" style="border-radius:16px">
+  <h1>Reset your password ♡</h1>
+  <p id="status" role="status" aria-live="polite">Verifying your secure reset link…</p>
+  <form id="form" hidden>
+    <label for="newPassword">New password</label>
+    <input id="newPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+    <label for="confirmPassword">Confirm new password</label>
+    <input id="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+    <small>Use at least 12 characters. Don't reuse an old password.</small>
+    <button id="submit" type="submit">Save new password</button>
+  </form>
+  <div id="success" hidden><p>✓ Your password has been updated. Sign in with your new password.</p><a class="back" href="./">Go to Sign In</a></div>
+  <a id="retry" class="back" href="./" hidden>Return to Scale &amp; Tell</a>
+</main>
+<script src="./supabase.min.js?v=2.57.4"></script>
+<script>
+'use strict';
+(async function(){
+  const status=document.getElementById('status'), form=document.getElementById('form'), button=document.getElementById('submit');
+  const success=document.getElementById('success'), retry=document.getElementById('retry');
+  const h=new URLSearchParams(location.hash.slice(1)),q=new URLSearchParams(location.search);
+  // A current regular sign-in session is NOT a password-reset authorization.
+  const isRecovery=(h.get('type')==='recovery' && !!h.get('access_token')) ||
+                   (q.get('type')==='recovery' && !!q.get('code'));
+  const linkError=h.has('error')||q.has('error')||h.has('error_code')||q.has('error_code');
+  function fail(message){form.hidden=true;retry.hidden=false;status.textContent=message;}
+  if(linkError){fail('This reset link could not be verified. Request a fresh one from Forgot Password.');return;}
+  if(!isRecovery){fail('Please open this page using the password-reset link in your latest email.');return;}
+  if(!window.supabase?.createClient){fail('Unable to load secure sign-in. Check your connection and try again.');return;}
+  const client=window.supabase.createClient('https://fitlubsbesadknkjimqd.supabase.co','sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG',{
+    auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:true,flowType:'implicit',storageKey:'st-password-reset-only'}
+  });
+  let completed=false;
+  const sub=client.auth.onAuthStateChange((event)=>{
+    if(event==='PASSWORD_RECOVERY') status.textContent='Reset link verified. Choose your new password.';
+  });
+  try{
+    const {data,error}=await client.auth.getSession();
+    if(error||!data?.session) throw Error('Recovery session unavailable');
+    const u=await client.auth.getUser();
+    if(u.error||!u.data?.user) throw Error('Recovery session expired');
+    // Remove token-bearing fragment from browser history before showing a form.
+    history.replaceState(null,'',location.pathname);
+    status.textContent='Reset link verified. Choose your new password.';
+    form.hidden=false;
+  }catch(e){fail('This reset link has expired or could not be verified. Request a fresh one from Forgot Password.');return;}
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    if(completed)return;
+    const pw=document.getElementById('newPassword').value,confirm=document.getElementById('confirmPassword').value;
+    if(pw.length<12){status.textContent='Use at least 12 characters.';return;}
+    if(pw!==confirm){status.textContent='The passwords do not match.';return;}
+    button.disabled=true;status.textContent='Saving your new password…';
+    try{
+      const {error}=await client.auth.updateUser({password:pw});
+      if(error)throw error;
+      completed=true;form.hidden=true;success.hidden=false;status.textContent='Password saved successfully.';
+      document.getElementById('newPassword').value='';document.getElementById('confirmPassword').value='';
+      try{await client.auth.signOut({scope:'local'});}catch(_){}
+      try{sub.data.subscription.unsubscribe();}catch(_){}
+    }catch(err){status.textContent=err?.message||'Could not save. Request a fresh reset link and try again.';button.disabled=false;}
+  });
+})();
+</script>
+</body></html>

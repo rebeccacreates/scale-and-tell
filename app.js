@@ -512,7 +512,6 @@ async function founderRefreshEntitlement() {
       setTimeout(stMaybeShowUpgrade, 1500);
       setTimeout(rescueMaybeAskLayout, 1800);
       setTimeout(stAdminCheck, 1200);
-      setTimeout(stApplySignupEmailChoice, 1400);
       try { renderHomeCards(); } catch (e) {}
       setTimeout(bizQueueAuto, 2500);
       if (!window.__stTransferChecked) { window.__stTransferChecked = true; setTimeout(transferCheck, 3500); }
@@ -7024,7 +7023,6 @@ function authLogin() {
 function authCreate() {
   authSetStay();
   const code = (document.getElementById("signupMemberCode")?.value || "").trim().slice(0, 40);
-  try { localStorage.setItem("scaleTellPendingUpdates", document.getElementById("signupUpdates")?.checked === false ? "0" : "1"); } catch (e) {}
   try {
     if (code) localStorage.setItem("scaleTellPendingCode", code);
     else localStorage.removeItem("scaleTellPendingCode");
@@ -7749,10 +7747,11 @@ async function cloudSignUp() {
   cloudWorking = true;
   cloudMsg("Creating your private keeper account…");
   try {
+    const marketingUpdates = document.getElementById("signupUpdates")?.checked !== false;
     let { data, error } = await cloudClient.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: location.origin + location.pathname },
+      options: { emailRedirectTo: location.origin + location.pathname, data: { marketing_updates: marketingUpdates } },
     });
     if (error) throw error;
     if (!data.session && data.user && Array.isArray(data.user.identities) && !data.user.identities.length) {
@@ -7845,7 +7844,7 @@ async function cloudResetEmail() {
   }
   try {
     let { error } = await cloudClient.auth.resetPasswordForEmail(email, {
-      redirectTo: location.origin + location.pathname,
+      redirectTo: new URL("reset.html", location.href).href,
     });
     if (error) throw error;
     cloudMsg("If the address has an account, a reset email will arrive. Open the link to set your new password.");
@@ -10057,7 +10056,7 @@ async function stEmailPrefLoad() {
 async function stEmailPrefSet(on) {
   const m = document.getElementById("emailUpdMsg");
   try {
-    const { error } = await cloudClient.from("email_prefs").update({ updates: on, updated_at: new Date().toISOString() }).eq("user_id", cloudSession.user.id);
+    const { error } = await cloudClient.from("email_prefs").update({ updates: on }).eq("user_id", cloudSession.user.id);
     if (error) throw error;
     stEmailPref = on;
     if (m) m.textContent = on ? "✓ You’ll get app update emails." : "✓ You won’t get app update emails.";
@@ -12618,17 +12617,6 @@ async function herpHide(mac) {
   if (!confirm("Remove this Herpstat from Scale & Tell? (Turn off database upload on the Herpstat too.)")) return;
   try { await cloudClient.rpc("herpstat_hide", { p_mac: mac }); } catch (e) {}
   herpState.devices = null; render();
-}
-
-/* V3.60 · The Create Account checkbox for update emails is applied after the first sign-in. */
-async function stApplySignupEmailChoice() {
-  let v = null;
-  try { v = localStorage.getItem("scaleTellPendingUpdates"); } catch (e) {}
-  if (v === null || !cloudClient || !cloudSession) return;
-  try {
-    const { error } = await cloudClient.from("email_prefs").update({ updates: v === "1", updated_at: new Date().toISOString() }).eq("user_id", cloudSession.user.id);
-    if (!error) { localStorage.removeItem("scaleTellPendingUpdates"); stEmailPref = v === "1"; }
-  } catch (e) {}
 }
 
 /* ---------- V3.62 · Sensor alert ranges (Govee). The server checks every 30 minutes and alerts the phone. ---------- */
