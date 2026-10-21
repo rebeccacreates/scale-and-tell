@@ -1116,7 +1116,6 @@ function menuMarkup() {
     ["Cloud Account", "Account, reminders & settings"],
   ];
   let tools = [
-    ...(bizIsBreeder() || accountPrefs?.rescueLayout === "racks" ? [] : [["Racks & Breeding", "Breeder tools: racks, pairings, clutches & litters"]]),
     ["Data & Backup", "Download a copy of your records"],
     ["Get the App", "Add Scale & Tell to your Home Screen"],
     ["Help & Feedback", "How do I…? questions, ideas or something not working"],
@@ -3659,7 +3658,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.75";
+const SCALE_LC_VERSION = "3.76";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -13650,3 +13649,16 @@ tourGo = function (step) {
     if (m) m.scrollTop = 0;
   }
 };
+/* V3.76 · Closing the welcome tour any way (×, Skip, Start) counts as seen. Only an automatic refresh brings it back. */
+(function () {
+  const base = closePanel;
+  closePanel = function () {
+    try {
+      if (current === "Welcome Tour" && !window.__stReloading) {
+        const uid = cloudSession?.user?.id;
+        if (uid) localStorage.setItem("scaleTellTourSeen35:" + uid, "1");
+      }
+    } catch (e) {}
+    return base.apply(this, arguments);
+  };
+})();
