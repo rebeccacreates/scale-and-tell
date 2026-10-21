@@ -3659,7 +3659,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.78";
+const SCALE_LC_VERSION = "3.79";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7050,7 +7050,7 @@ async function stRedeemPendingCode() {
   if (!code || stPendingCodeTried || !cloudClient || !cloudSession) return;
   stPendingCodeTried = true;
   try {
-    const { data, error } = await cloudClient.rpc("redeem_member_code", { p_code: code });
+    const { data, error } = await stRedeemCall(code);
     if (!error && data !== "limit") localStorage.removeItem("scaleTellPendingCode");
     if (!error && data === "ok") {
       await founderRefreshEntitlement();
@@ -7058,6 +7058,13 @@ async function stRedeemPendingCode() {
       return;
     }
     updateAuthGate();
+    if (error?.stale) {
+      const st = document.getElementById("memberCodeStatus"), d = document.getElementById("memberCodeBox");
+      if (d) d.open = true;
+      const inp = document.getElementById("memberCode");
+      if (inp) inp.value = code;
+      if (st) st.textContent = "Your sign-in expired. Tap “Sign out” below, sign back in, then tap Use code.";
+    }
     if (!error && (data === "invalid" || data === "used")) {
       const st = document.getElementById("memberCodeStatus");
       if (st) st.textContent = data === "used" ? "That code has already been used up. Choose a plan below." : "That code didn't work. Check it and try again, or choose a plan.";
@@ -7087,6 +7094,18 @@ function accessGateMarkup() {
     '<button class="authLink" type="button" onclick="cloudSignOut()">Sign out</button></div>'
   );
 }
+/* Redeem a code. A stale sign-in (common when the confirmation email opened in another tab) is refreshed and retried once. */
+async function stRedeemCall(code) {
+  const call = () => cloudClient.rpc("redeem_member_code", { p_code: code });
+  let r = await call();
+  const stale = (e) => e && (e.status === 401 || e.code === "42501" || e.code === "PGRST301" || /jwt|permission denied|sign in required/i.test(e.message || ""));
+  if (stale(r.error)) {
+    try { await cloudClient.auth.refreshSession(); } catch (e) {}
+    r = await call();
+    if (stale(r.error)) r.error.stale = true;
+  }
+  return r;
+}
 async function accessRedeemCode() {
   const input = document.getElementById("memberCode"),
     status = document.getElementById("memberCodeStatus"),
@@ -7096,7 +7115,8 @@ async function accessRedeemCode() {
   if (!cloudClient || !cloudSession) return say("Please sign in again.");
   say("Checking your code…");
   try {
-    const { data, error } = await cloudClient.rpc("redeem_member_code", { p_code: code });
+    const { data, error } = await stRedeemCall(code);
+    if (error?.stale) return say("Your sign-in expired. Tap “Sign out” below, sign back in, then enter the code again.");
     if (error) throw error;
     if (data === "ok") {
       await founderRefreshEntitlement();
