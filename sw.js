@@ -2,8 +2,8 @@
  * Push reminders, plus a cache of the app's own static files (artwork, guides, icons, code)
  * so it opens fast. It never caches account data, photos or anything from Supabase. */
 'use strict';
-const CACHE = 'scale-tell-static-v3.77';
-const SHELL = ['./', './index.html', './styles.css?v=3.51', './watch-learn.css?v=10', './watch-learn.js?v=1', './app.js?v=3.77', './guides.js?v=3.67', './supabase.min.js?v=2.57.4', './home-nav-hub.webp', './home-nav-breeder.webp', './home-nav-rescue.webp', './manifest.webmanifest', './install.html',
+const CACHE = 'scale-tell-static-v3.78';
+const SHELL = ['./', './index.html', './styles.css?v=3.51', './watch-learn.css?v=10', './watch-learn.js?v=1', './app.js?v=3.78', './guides.js?v=3.67', './supabase.min.js?v=2.57.4', './home-nav-hub.webp', './home-nav-breeder.webp', './home-nav-rescue.webp', './manifest.webmanifest', './install.html',
   './icon-180.png', './icon-192.png', './header.webp', './header-compact.webp', './dashboard.webp', './auth-art.webp'];
 
 self.addEventListener('install', event => {

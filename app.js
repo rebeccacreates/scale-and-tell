@@ -135,7 +135,7 @@ function speciesPortraitKey(value) {
   if (/blue tongue|blue tongued|skink/.test(s)) return "skink";
   if (/tortoise/.test(s)) return "tortoise";
   if (/turtle|terrapin/.test(s)) return "turtle";
-  if (/bearded dragon|dragon|uromastyx|anole|iguana|monitor|lizard/.test(s)) return "lizard";
+  if (/bearded dragon|dragon|uromastyx|anole|iguana|monitor|tegu|lizard/.test(s)) return "lizard";
   if (/axolotl/.test(s)) return "axolotl";
   if (/frog|toad/.test(s)) return "frog";
   if (/newt|salamander/.test(s)) return "amphibian";
@@ -1109,6 +1109,7 @@ function menuMarkup() {
   // Home, My Reptiles, Calendar, Care Logs and Scale Hub live in the bottom bar, so they are not repeated here.
   let main = [
     ...(bizIsBreeder() || accountPrefs?.rescueLayout === "racks" ? [["Racks & Breeding", "Racks, rack feeding, pairings, clutches & litters"]] : []),
+    ["Feeders", "Feeder Freezer: frozen feeder stock, cost & when to reorder"],
     ["Photo Journal", "Photos and profile pictures"],
     ["Import Existing Records", "Bring in old care notes or screenshots"],
     ["Pet-Sitter Sheet", "Care sheet for a pet-sitter or new home"],
@@ -1131,7 +1132,7 @@ function menuMarkup() {
           '<button class="menuTile" onclick="openPanel(&quot;' +
           esc(name) +
           '&quot;)"><strong>' +
-          esc(name === "Cloud Account" ? "My Account" : name === "Calendar" ? "Care Schedule" : name) +
+          esc(name === "Cloud Account" ? "My Account" : name === "Calendar" ? "Care Schedule" : name === "Feeders" ? "🧊 Feeder Freezer" : name) +
           "</strong><small>" +
           esc(sub) +
           "</small></button>",
@@ -3658,7 +3659,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.77";
+const SCALE_LC_VERSION = "3.78";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -6019,10 +6020,10 @@ function saveEntry() {
 }
 
 const SPECIES_GROUPS = [
-  ["Snakes", ["Ball Python", "Corn Snake", "Kingsnake", "Milk Snake", "Western Hognose", "Garter Snake", "Boa Constrictor", "Reticulated Python", "Green Tree Python", "Carpet Python", "Kenyan Sand Boa", "Rosy Boa"]],
-  ["Lizards", ["Bearded Dragon", "Leopard Gecko", "Crested Gecko", "Tokay Gecko", "Day Gecko", "Veiled Chameleon", "Skink", "Blue Tongue Skink"]],
-  ["Turtles & tortoises", ["Sulcata Tortoise", "Tortoise", "Box Turtle", "Aquatic Turtle"]],
-  ["Amphibians", ["White’s Tree Frog", "African Dwarf Frog", "Pac-Man Frog", "Frog", "Axolotl", "Dart Frog", "Tree Frog", "Toad", "Newt", "Salamander"]],
+  ["Snakes", ["Ball Python", "Corn Snake", "Kingsnake", "Milk Snake", "Western Hognose", "Garter Snake", "Boa Constrictor", "Reticulated Python", "Burmese Python", "Blood Python", "Children’s Python", "Spotted Python", "Green Tree Python", "Carpet Python", "Woma Python", "Kenyan Sand Boa", "Rosy Boa", "Dumeril’s Boa", "Rat Snake", "Bull / Gopher Snake", "Pine Snake", "Rough Green Snake"]],
+  ["Lizards", ["Bearded Dragon", "Leopard Gecko", "Crested Gecko", "Gargoyle Gecko", "Leachianus Gecko", "African Fat-Tailed Gecko", "Tokay Gecko", "Day Gecko", "Mourning Gecko", "Veiled Chameleon", "Panther Chameleon", "Jackson’s Chameleon", "Uromastyx", "Ackie Monitor", "Savannah Monitor", "Argentine Tegu", "Green Iguana", "Frilled Dragon", "Chinese Water Dragon", "Rankin’s Dragon", "Green Anole", "Skink", "Blue Tongue Skink"]],
+  ["Turtles & tortoises", ["Sulcata Tortoise", "Russian Tortoise", "Hermann’s Tortoise", "Leopard Tortoise", "Red-Footed Tortoise", "Tortoise", "Box Turtle", "Red-Eared Slider", "Musk Turtle", "Aquatic Turtle"]],
+  ["Amphibians", ["White’s Tree Frog", "African Dwarf Frog", "Pac-Man Frog", "Tomato Frog", "Red-Eyed Tree Frog", "Frog", "Axolotl", "Dart Frog", "Tree Frog", "Toad", "Fire-Bellied Toad", "Newt", "Salamander"]],
   ["Invertebrates", ["Tarantula", "Jumping Spider", "Scorpion", "Millipede", "Isopod", "Mantis", "Hermit Crab", "Snail"]],
   ["Rodents", ["Rat", "Mouse", "Hamster", "Gerbil", "Guinea Pig", "Chinchilla", "Degu", "African Soft-Furred Rat", "Multimammate Mouse", "Spiny Mouse", "Feeder Mice (colony)", "Feeder Rats (colony)"]],
   ["Small mammals", ["Rabbit", "Hedgehog", "Sugar Glider", "Ferret"]],
@@ -6502,13 +6503,14 @@ function addPhoto() {
 // V1.8: species-aware care labels, with keeper-set targets rather than invented default ranges.
 function animalCareType(a) {
   let sp = (species[a] || "").toLowerCase();
+  if (/snake|python|boa\b|hognose/.test(sp)) return "snake";
   if (/\b(rats?|mouse|mice|hamsters?|gerbils?|guinea pigs?|chinchillas?|degus?|rabbits?|hedgehogs?|sugar gliders?|ferrets?)\b|multimammate|rodent/.test(sp)) return "mammal";
   if (/\bfish|betta|aquarium/.test(sp)) return "fish";
   if (/\bbirds?\b|parrot|parakeet|budgie|cockatiel/.test(sp)) return "bird";
   if (/spider|tarantula|scorpion|isopod|millipede|mantis|invertebrate/.test(sp)) return "invertebrate";
   if (/frog|toad|axolotl|newt|salamander/.test(sp)) return "amphibian";
-  if (/tortoise|turtle|terrapin/.test(sp)) return "chelonian";
-  if (/gecko|dragon|chameleon|skink|anole|iguana|lizard/.test(sp)) return "lizard";
+  if (/tortoise|turtle|terrapin|slider|cooter/.test(sp)) return "chelonian";
+  if (/gecko|dragon|chameleon|skink|anole|iguana|lizard|uromastyx|monitor|tegu|leachi/.test(sp)) return "lizard";
   if (/snake|python|boa|hognose/.test(sp)) return "snake";
   return "other";
 }
@@ -12824,7 +12826,7 @@ const WHATS_NEW = [
   ["🍽", "Feed Day", "Check off everyone who ate and save once. Find it on Home under Today’s Care."],
   ["💌", "Cuter care sheets", "For a pet-sitter or a new home. Print, save a PDF, email it or copy it as text."],
   ["🏡", "Enclosure setup", "Substrate, heat and UVB on each animal’s Habitat tab, with UVB bulb and cleanout reminders."],
-  ["🧊", "Feeder freezer", "What’s on hand, cost per meal and when to reorder (Founding Keeper)."],
+  ["🧊", "Feeder freezer", "What’s on hand, cost per meal and when to reorder. Menu → Feeder Freezer."],
   ["🏷", "Enclosure labels", "Print a QR label for any animal from its profile."],
   ["⏳", "Smoother start", "One loading screen, then your own layout and colors. No more flashing."],
   ["🩺", "Keeper Tools", "Vet and medication reminders, shed predictions, then-and-now photos and an emergency card (Founding Keeper)."],
@@ -13126,6 +13128,9 @@ function habSync() {
         want.set(k, { section: "Calendar", animal: a, detail, date: d.due, notes: "", repeatDays: 0, done: false, habKey: k });
       });
     });
+    let paidAuto = false;
+    try { paidAuto = !!(homeBusinessMode() || stIsRescue() || bizIsBreeder() || stCanUsePack()); } catch (e) {}
+    if (!paidAuto) feederList().forEach((f) => { if (Number(f.count) <= Number(f.low)) { const k = "feeder:" + f.name + ":" + today().slice(0, 7); want.set(k, { section: "Calendar", animal: "Feeders", detail: "🐁 " + f.name + ": " + Number(f.count) + " left, time to reorder", date: today(), notes: "", repeatDays: 0, done: false, habKey: k }); } });
     const before = entries.length, have = new Set(entries.filter((e) => e.habKey).map((e) => e.habKey));
     entries = entries.filter((e) => !e.habKey || e.done || want.has(e.habKey));
     let changed = entries.length !== before;
@@ -13265,11 +13270,10 @@ function feederForecast(f) {
 }
 let feederEditIdx = -1;
 BIZ_PANELS.Feeders = () => {
-  if (!stCanUsePack()) return '<p class="resourceIntro">Feeder freezer tracking comes with Founding Keeper ($14.99 once) and every paid plan: counts go down as you feed, it shows what each meal costs and tells you when to reorder.</p><button class="action" onclick="openPanel(\'Founding Keeper Studio\')">See Founding Keeper</button>' + v57Back("Feed Day");
   const list = feederList(), money = (n) => bizMoney(Math.round((Number(n) || 0) * 100) / 100);
   const value = list.reduce((s, f) => s + (Number(f.count) || 0) * (Number(f.cost) || 0), 0);
   const month = list.reduce((s, f) => s + feederUsage(f, 30) * (Number(f.cost) || 0), 0);
-  const back = bizIsBreeder() || stIsRescue() ? v57Back("Business Tools") : v57Back("Keeper Tools");
+  const back = bizIsBreeder() || stIsRescue() ? v57Back("Business Tools") : stCanUsePack() ? v57Back("Keeper Tools") : v57Back("Menu");
   return '<p class="resourceIntro">Your feeder freezer 🧊 Counts go down by themselves when you log a feeding with that prey (Feed Day, Quick Log, rack feeding or a care log).</p>' +
     (list.length ? '<div class="v69Sum"><div><b>' + list.reduce((s, f) => s + (Number(f.count) || 0), 0) + "</b><small>feeders on hand</small></div><div><b>" + money(value) + "</b><small>worth in the freezer</small></div><div><b>" + money(month) + "</b><small>fed out in 30 days</small></div></div>" : "") +
     (list.length ? list.map((f, i) => {
@@ -13346,7 +13350,7 @@ BIZ_PANELS["Feed Day"] = () => {
       }).join("") +
       '<button class="action" onclick="feedDaySave()">Save feedings</button>'
       : '<p class="helperLine">' + (feedDayFilter === "due" ? "Nobody is due right now ♡ Tap All to log anyway." : "No animals here.") + "</p>") +
-    '<p class="lcSmall">Each animal’s next feeding reminder moves forward automatically when you’ve set a feeding interval.' + (stCanUsePack() ? ' <button class="authLink" onclick="openPanel(\'Feeders\')">🧊 Feeder freezer</button>' : "") + "</p>";
+    '<p class="lcSmall">Each animal’s next feeding reminder moves forward automatically when you’ve set a feeding interval.' + ' <button class="authLink" onclick="openPanel(\'Feeders\')">🧊 Feeder freezer</button>' + "</p>";
 };
 function feedDaySave() {
   const date = document.getElementById("fdDate")?.value, time = (document.getElementById("fdTime")?.value || "").trim();
@@ -13646,7 +13650,7 @@ function tourUpgradeMarkup() {
   if (stPlanChecking()) return '<div class="tourSlide"><p class="planChecking">Checking your plan…</p></div>';
   if (stCanUsePack())
     return '<div class="tourSlide"><h3>You’re all set ♡</h3><div class="tourPack"><h4>' + esc(ST_PLANS[stPlan()]?.name || "Your plan") + ' is active</h4><p>Thank you for supporting Scale &amp; Tell! Room for ' + stAnimalLimit() + ' animals, family logins, Keeper Tools, four app designs and your Care Binder are unlocked.</p><button class="action secondary" onclick="tourDone(\'founder\')">See my extras</button></div></div>';
-  return '<div class="tourSlide"><h3>Optional: want more? ⭐</h3><p>Everything you need is already included. If you’d like extras, <b>Founding Keeper</b> is <b>$14.99 one time</b>, with no subscription:</p><ul class="tourList"><li>Room for <b>40 animals</b> and <b>3 logins</b> for family</li><li>Vet &amp; medication reminders, shed predictions, then &amp; now photos, emergency card</li><li>Feeder freezer tracking, four app designs and your Care Binder</li></ul>' +
+  return '<div class="tourSlide"><h3>Optional: want more? ⭐</h3><p>Everything you need is already included. If you’d like extras, <b>Founding Keeper</b> is <b>$14.99 one time</b>, with no subscription:</p><ul class="tourList"><li>Room for <b>40 animals</b> and <b>3 logins</b> for family</li><li>Vet &amp; medication reminders, shed predictions, then &amp; now photos, emergency card</li><li>Four app designs and your Care Binder</li></ul>' +
     '<button class="action secondary" onclick="tourDone(\'founder\')">See Founding Keeper</button><p class="lcSmall">Breeder or rescue? Menu → <b>Plans</b>. 10% of paid-plan profits go to a nonprofit reptile rescue 💚</p></div>';
 }
 tourMarkup = function () {
