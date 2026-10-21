@@ -3658,7 +3658,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.76";
+const SCALE_LC_VERSION = "3.77";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7752,8 +7752,26 @@ function cloudAccountMarkup() {
   );
 }
 
+/* Clear, friendly reasons for the sign-in and sign-up problems people actually hit. */
+function cloudFriendlyError(error) {
+  const m = String(error?.message || error || ""), code = String(error?.code || "");
+  if (/weak_password|known to be weak|easy to guess|pwned/i.test(code + " " + m))
+    return /should contain|at least one character/i.test(m)
+      ? "That password needs a lowercase letter, an UPPERCASE letter, a number and a symbol (like ! or #)."
+      : "That password is on a list of common or leaked passwords. Please choose a different one. A few words mixed with numbers and a symbol works great.";
+  if (/should contain|at least one character of each/i.test(m))
+    return "That password needs a lowercase letter, an UPPERCASE letter, a number and a symbol (like ! or #).";
+  if (/at least \d+ characters|password should be at least/i.test(m)) return "Use a password with at least 8 characters.";
+  if (/invalid login credentials/i.test(m)) return "That email and password don’t match. Check for typos, or tap “Forgot Password?”.";
+  if (/email not confirmed/i.test(m)) return "Please confirm your email first. Open the email from Scale & Tell and tap the link, then sign in.";
+  if (/rate limit|too many|security purposes|after \d+ seconds/i.test(m)) return "Too many tries in a row. Please wait a minute, then try again.";
+  if (/invalid.*email|unable to validate email|email address .* invalid/i.test(m)) return "That email address doesn’t look right. Please check it.";
+  if (/already registered|already exists/i.test(m)) return "This email already has an account. Sign in, or tap “Forgot Password?”.";
+  if (/failed to fetch|network|load failed/i.test(m)) return "Couldn’t reach Scale & Tell. Check your internet connection and try again.";
+  return "";
+}
 function cloudReportError(error) {
-  cloudMsg("That didn’t work. Please try again. Your existing journal has not been erased.");
+  cloudMsg(cloudFriendlyError(error) || "That didn’t work. Please try again. Your existing journal has not been erased.");
 }
 async function cloudAuthorizedUser() {
   if (!cloudClient || !cloudSession) throw Error("Please sign in first.");
