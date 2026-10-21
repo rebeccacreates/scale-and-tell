@@ -412,6 +412,7 @@ function stBootBegin(text) {
 }
 (function stBootStart() {
   let saved = false;
+  try { if (sessionStorage.getItem("scaleTellCodeToast") !== null) saved = true; } catch (e) {}
   try { for (let i = 0; i < localStorage.length; i++) if (/^sb-.*-auth-token$/.test(localStorage.key(i) || "")) saved = true; } catch (e) {}
   if (saved) stBootBegin();
 })();
@@ -429,6 +430,10 @@ function stBootCheck() {
     if (typeof cloudAuthReady === "undefined" || !cloudAuthReady) return;
     if (!cloudSession) return stBootDone();
     if (!stAccessChecked) return;
+    if (window.__stReloading) return;
+    let pend = "";
+    try { pend = localStorage.getItem("scaleTellPendingCode") || ""; } catch (e) {}
+    if (pend && !stPendingCodeTried) return; // still applying a code typed at sign-up
     if (!stCanUseApp()) return stBootDone();
     if (!["synced", "empty", "error", "offline", "other-user", "migration", "choose", "conflict", "merge-review", "remote-ready"].includes(cloudAutoStatus)) return;
     if (!window.__stBrandLoaded) return;
@@ -510,6 +515,7 @@ async function founderRefreshEntitlement() {
       updateAuthGate();
       if (stCanUseApp() && ["empty", "synced"].includes(cloudAutoStatus)) cloudSetStatus(cloudAutoStatus);
       setTimeout(stMaybeShowUpgrade, 1500);
+      setTimeout(() => { try { if (stCanUseApp() && ["empty", "synced"].includes(cloudAutoStatus)) cloudSetStatus(cloudAutoStatus); } catch (e) {} }, 1200);
       setTimeout(rescueMaybeAskLayout, 1800);
       setTimeout(stAdminCheck, 1200);
       setTimeout(stApplySignupEmailChoice, 1400);
@@ -2123,7 +2129,8 @@ function stUpgradeKey() {
 }
 /* Shown once after each sign-in (including a brand-new account), never in the middle of something else. */
 function stMaybeShowUpgrade() {
-  if (stPlan() !== "member" || window.__stReloading) return;
+  if (stPlan() !== "member" || window.__stReloading || current === "Welcome Tour") return;
+  try { if (!localStorage.getItem("scaleTellTourSeen35:" + cloudSession?.user?.id)) return; } catch (e) {}
   try { if (Date.now() - new Date(cloudSession?.user?.created_at || 0).getTime() < 3 * 864e5) return; } catch (e) {}
   const key = stUpgradeKey();
   if (!key) return;
@@ -3652,7 +3659,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.74";
+const SCALE_LC_VERSION = "3.75";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7102,10 +7109,18 @@ async function accessRedeemCode() {
   }
 }
 /* After a code unlocks a plan, reload once so every screen, menu and tool opens with the new plan. */
+function stBootForce(text) {
+  window.__stBootDoneFor = null;
+  document.body.classList.remove("stBooting");
+  document.getElementById("stBoot")?.remove();
+  stBootBegin(text);
+}
 function stCodeReload(msg) {
   window.__stReloading = true;
   try { sessionStorage.setItem("scaleTellCodeToast", msg || ""); } catch (e) {}
-  setTimeout(() => location.reload(), 1500);
+  try { closePanel(); } catch (e) {}
+  stBootForce("Setting up your account…");
+  setTimeout(() => location.reload(), 250);
 }
 setTimeout(() => {
   try {
@@ -7142,7 +7157,7 @@ function updateAuthGate() {
     let pendCode = "";
     try { pendCode = localStorage.getItem("scaleTellPendingCode") || ""; } catch (e) {}
     if (pendCode && !stPendingCodeTried) {
-      if (!document.getElementById("codeApplying")) body.innerHTML = '<div id="codeApplying"><h1>Welcome ♡</h1><p class="authIntro">Applying your member code… one moment.</p></div>';
+      if (!document.getElementById("codeApplying")) { body.innerHTML = '<div id="codeApplying"><h1>Welcome ♡</h1><p class="authIntro">Setting up your account… one moment.</p></div>'; if (!document.getElementById("stBoot")) stBootForce("Setting up your account…"); }
       setTimeout(stRedeemPendingCode, 0);
       return;
     }
@@ -8269,16 +8284,19 @@ function cloudSetStatus(status, msg) {
     stCanUseApp() &&
     !animals.length &&
     !localStorage.getItem("scaleTellTourSeen35:" + uid) &&
-    !sessionStorage.getItem("scaleTellWelcomeShown34:" + uid) &&
     !window.__stReloading
   ) {
-    sessionStorage.setItem("scaleTellWelcomeShown34:" + uid, "1");
+    // The tour keeps coming back (even after a refresh) until it's finished or skipped.
     setTimeout(() => {
       if (
         cloudSession?.user?.id === uid &&
+        !window.__stReloading &&
+        current !== "Welcome Tour" &&
         ["empty", "synced"].includes(cloudAutoStatus) &&
-        !cloudHasLocal() &&
-        !document.getElementById("sheet").classList.contains("on")
+        !animals.length &&
+        !localStorage.getItem("scaleTellTourSeen35:" + uid) &&
+        !document.getElementById("sheet").classList.contains("on") &&
+        !document.body.classList.contains("authLocked")
       ) {
         tourStep = 0;
         openPanel("Welcome Tour");
