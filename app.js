@@ -2123,7 +2123,8 @@ function stUpgradeKey() {
 }
 /* Shown once after each sign-in (including a brand-new account), never in the middle of something else. */
 function stMaybeShowUpgrade() {
-  if (stPlan() !== "member") return;
+  if (stPlan() !== "member" || window.__stReloading) return;
+  try { if (Date.now() - new Date(cloudSession?.user?.created_at || 0).getTime() < 3 * 864e5) return; } catch (e) {}
   const key = stUpgradeKey();
   if (!key) return;
   try {
@@ -3651,7 +3652,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.72";
+const SCALE_LC_VERSION = "3.74";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7046,13 +7047,16 @@ async function stRedeemPendingCode() {
     if (!error && data === "ok") {
       await founderRefreshEntitlement();
       stCodeReload(stCodeWelcome());
-    } else if (!error && (data === "invalid" || data === "used")) {
+      return;
+    }
+    updateAuthGate();
+    if (!error && (data === "invalid" || data === "used")) {
       const st = document.getElementById("memberCodeStatus");
       if (st) st.textContent = data === "used" ? "That code has already been used up. Choose a plan below." : "That code didn't work. Check it and try again, or choose a plan.";
       const d = document.getElementById("memberCodeBox");
       if (d) d.open = true;
     }
-  } catch (e) {}
+  } catch (e) { try { updateAuthGate(); } catch (x) {} }
 }
 function authGuestGuides() {
   openPanel("Care Library");
@@ -7099,6 +7103,7 @@ async function accessRedeemCode() {
 }
 /* After a code unlocks a plan, reload once so every screen, menu and tool opens with the new plan. */
 function stCodeReload(msg) {
+  window.__stReloading = true;
   try { sessionStorage.setItem("scaleTellCodeToast", msg || ""); } catch (e) {}
   setTimeout(() => location.reload(), 1500);
 }
@@ -7134,6 +7139,13 @@ function updateAuthGate() {
   if (!show) return;
   if (needsAccess) {
     if (document.getElementById("sheet")?.classList.contains("on")) closePanel();
+    let pendCode = "";
+    try { pendCode = localStorage.getItem("scaleTellPendingCode") || ""; } catch (e) {}
+    if (pendCode && !stPendingCodeTried) {
+      if (!document.getElementById("codeApplying")) body.innerHTML = '<div id="codeApplying"><h1>Welcome ♡</h1><p class="authIntro">Applying your member code… one moment.</p></div>';
+      setTimeout(stRedeemPendingCode, 0);
+      return;
+    }
     if (!document.getElementById("accessGate")) {
       setTimeout(stRedeemPendingCode, 0);
       body.innerHTML = accessGateMarkup();
@@ -8257,7 +8269,8 @@ function cloudSetStatus(status, msg) {
     stCanUseApp() &&
     !animals.length &&
     !localStorage.getItem("scaleTellTourSeen35:" + uid) &&
-    !sessionStorage.getItem("scaleTellWelcomeShown34:" + uid)
+    !sessionStorage.getItem("scaleTellWelcomeShown34:" + uid) &&
+    !window.__stReloading
   ) {
     sessionStorage.setItem("scaleTellWelcomeShown34:" + uid, "1");
     setTimeout(() => {
@@ -13559,3 +13572,63 @@ function stPwOpen() {
   updateAuthGate();
   setTimeout(() => document.getElementById("cloudNewPassword")?.focus(), 50);
 }
+
+/* V3.74 · Welcome tour in 4 slides: getting started → home screen (per device) → reminders → optional upgrade. */
+if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "") && !(navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform || ""))) tourDevice = "computer";
+function tourHomeScreenMarkup() {
+  const tab = (id, label) => '<button type="button" class="tourTab' + (tourDevice === id ? " on" : "") + '" aria-pressed="' + (tourDevice === id) + '" onclick="tourSetDevice(\'' + id + "')\">" + label + "</button>";
+  const inApp = installStandalone();
+  let body;
+  if (inApp) body = '<p class="tourOk">✓ You’re already using the app from your home screen. Nice!</p>';
+  else if (tourDevice === "iphone")
+    body = '<ol class="lcSteps"><li>Open scaleandtell.app in <b>Safari</b> (not Chrome or the Facebook browser).</li><li>Tap the <b>Share</b> button <span aria-hidden="true">⬆︎</span> at the bottom.</li><li>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li><li>Open Scale &amp; Tell from the new icon.</li></ol>' +
+      '<button class="action" type="button" onclick="installShare()">Open the Share menu</button><button class="action secondary" type="button" onclick="installCopyLink()">Copy app link</button><p class="lcSmall" id="installCopyNoteTour">In the Facebook or Instagram app? Copy the link and paste it into Safari first.</p>';
+  else if (tourDevice === "android")
+    body = (installPromptEvent ? '<button class="action" type="button" onclick="installNow()">Install Scale &amp; Tell</button>' : "") +
+      '<ol class="lcSteps"><li>Open scaleandtell.app in <b>Chrome</b>.</li><li>Tap the <b>⋮</b> menu (top right).</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li><li>Open Scale &amp; Tell from the new icon.</li></ol>' +
+      '<p class="lcSmall">Samsung Internet: <b>☰</b> → <b>Add page to</b> → <b>Home screen</b>.</p><button class="action secondary" type="button" onclick="installCopyLink()">Copy app link</button><p class="lcSmall" id="installCopyNote"></p>';
+  else
+    body = (installPromptEvent ? '<button class="action" type="button" onclick="installNow()">Install Scale &amp; Tell</button>' : "") +
+      '<ol class="lcSteps"><li><b>Chrome or Edge:</b> click the install icon <span aria-hidden="true">⊕</span> at the right end of the address bar, then <b>Install</b>.</li><li><b>Safari on Mac:</b> <b>File</b> → <b>Add to Dock</b>.</li><li>Or just bookmark scaleandtell.app. It works great in any browser.</li></ol>';
+  return '<div class="tourSlide"><h3>Put it on your home screen 📱</h3><p>Scale &amp; Tell opens like a real app, with no app store needed.</p><div class="tourTabs" role="group" aria-label="Choose your device">' +
+    tab("iphone", "🍎 iPhone") + tab("android", "🤖 Android") + tab("computer", "💻 Computer") + "</div>" + body + "</div>";
+}
+function tourRemindersMarkup() {
+  let body;
+  if (pushDeviceEnabled) body = tourReminderBlock(true).replace(/^<h4>.*?<\/h4>/, "");
+  else if (tourDevice === "iphone" && !installStandalone())
+    body = '<p>iPhone only sends notifications to apps on your <b>Home Screen</b>.</p><ol class="lcSteps"><li>Add Scale &amp; Tell to your Home Screen (previous slide).</li><li>Open it from the new icon.</li><li>Tap <b>Menu</b> → <b>Welcome Tour</b> (or <b>Calendar</b> → <b>Reminders</b>) and tap <b>Turn on reminders</b>, then <b>Allow</b>.</li></ol><p class="lcSmall">Needs iOS 16.4 or newer.</p>';
+  else body = tourReminderBlock(true).replace(/^<h4>.*?<\/h4>/, "");
+  return '<div class="tourSlide"><h3>Turn on reminders 🔔</h3><p>Get a heads-up on your phone when feedings, cleanings, UVB bulbs and vet visits are due.</p>' + body +
+    '<p class="lcSmall">Change what you get anytime in <b>Calendar</b> → <b>Reminders</b>.</p></div>';
+}
+function tourStartMarkup() {
+  return '<div class="tourSlide"><h3>Let’s get you started 🦎</h3><p>One private place for your animals’ feedings, sheds, weights, photos and reminders. Getting started takes about a minute:</p>' +
+    '<ol class="lcSteps"><li><b>Add your first animal</b>: name, species and how often they eat.</li><li><b>Log care in one tap</b>: Quick Log for one animal, <b>Feed Day</b> for everyone at once.</li><li><b>Check Today’s Care</b> on Home: what’s due, with a ✓ to finish it.</li></ol>' +
+    '<p class="lcSmall">Have old records? You can import them later from the Menu. Stuck? Menu → <b>Help &amp; Feedback</b>.</p></div>';
+}
+function tourUpgradeMarkup() {
+  if (stPlanChecking()) return '<div class="tourSlide"><p class="planChecking">Checking your plan…</p></div>';
+  if (stCanUsePack())
+    return '<div class="tourSlide"><h3>You’re all set ♡</h3><div class="tourPack"><h4>' + esc(ST_PLANS[stPlan()]?.name || "Your plan") + ' is active</h4><p>Thank you for supporting Scale &amp; Tell! Room for ' + stAnimalLimit() + ' animals, family logins, Keeper Tools, four app designs and your Care Binder are unlocked.</p><button class="action secondary" onclick="tourDone(\'founder\')">See my extras</button></div></div>';
+  return '<div class="tourSlide"><h3>Optional: want more? ⭐</h3><p>Everything you need is already included. If you’d like extras, <b>Founding Keeper</b> is <b>$14.99 one time</b>, with no subscription:</p><ul class="tourList"><li>Room for <b>40 animals</b> and <b>3 logins</b> for family</li><li>Vet &amp; medication reminders, shed predictions, then &amp; now photos, emergency card</li><li>Feeder freezer tracking, four app designs and your Care Binder</li></ul>' +
+    '<button class="action secondary" onclick="tourDone(\'founder\')">See Founding Keeper</button><p class="lcSmall">Breeder or rescue? Menu → <b>Plans</b>. 10% of paid-plan profits go to a nonprofit reptile rescue 💚</p></div>';
+}
+tourMarkup = function () {
+  const N = 4;
+  const nav = '<div class="tourNav"><button type="button" class="action secondary" onclick="tourDone()">Skip</button>' +
+    (tourStep ? '<button type="button" class="action secondary" onclick="tourGo(' + (tourStep - 1) + ')">← Back</button>' : "") +
+    '<span class="tourProgress" aria-label="Step ' + (tourStep + 1) + " of " + N + '">' + (tourStep + 1) + " / " + N + "</span>" +
+    (tourStep < N - 1 ? '<button type="button" class="action" onclick="tourGo(' + (tourStep + 1) + ')">Next →</button>'
+      : '<button type="button" class="action" onclick="tourDone(\'start\')">Start my journal ♡</button>') + "</div>";
+  const page = [tourStartMarkup, tourHomeScreenMarkup, tourRemindersMarkup, tourUpgradeMarkup][tourStep]();
+  return '<div class="tourShell" aria-live="polite">' + page + nav + "</div>";
+};
+tourGo = function (step) {
+  tourStep = Math.max(0, Math.min(3, Number(step) || 0));
+  if (current === "Welcome Tour") {
+    render();
+    const m = document.querySelector(".modal");
+    if (m) m.scrollTop = 0;
+  }
+};
