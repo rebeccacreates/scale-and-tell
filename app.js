@@ -645,8 +645,20 @@ function founderLoadPayPal(clientId) {
   });
   return paypalSdkLoader;
 }
+/* A sign-in that went stale (other tab, long sleep) is refreshed once. If it can't be, the person is sent to Sign In with a clear note. */
+async function stSessionRecover() {
+  try {
+    const { data, error } = await cloudClient.auth.refreshSession();
+    if (!error && data?.session) { cloudSession = data.session; return true; }
+  } catch (e) {}
+  try { await cloudClient.auth.signOut({ scope: "local" }); } catch (e) {}
+  cloudSession = null;
+  try { authMode = "signin"; updateAuthGate(); setTimeout(() => cloudMsg("For your security, please sign in again. Nothing was charged and nothing was lost."), 50); } catch (e) {}
+  return false;
+}
 async function founderInvoke(body) {
-  const { data, error } = await cloudClient.functions.invoke("founder-checkout", { body });
+  let { data, error } = await cloudClient.functions.invoke("founder-checkout", { body });
+  if (error && error.context?.status === 401 && (await stSessionRecover())) ({ data, error } = await cloudClient.functions.invoke("founder-checkout", { body }));
   if (error) {
     let msg = "";
     try {
@@ -3659,7 +3671,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.79";
+const SCALE_LC_VERSION = "3.80";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
