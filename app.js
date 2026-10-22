@@ -3671,7 +3671,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.80";
+const SCALE_LC_VERSION = "3.81";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7075,7 +7075,7 @@ async function stRedeemPendingCode() {
       if (d) d.open = true;
       const inp = document.getElementById("memberCode");
       if (inp) inp.value = code;
-      if (st) st.textContent = "Your sign-in expired. Tap “Sign out” below, sign back in, then tap Use code.";
+      if (st) st.textContent = "We couldn’t reach the server just now. Check your connection, then tap Use code again.";
     }
     if (!error && (data === "invalid" || data === "used")) {
       const st = document.getElementById("memberCodeStatus");
@@ -7128,7 +7128,7 @@ async function accessRedeemCode() {
   say("Checking your code…");
   try {
     const { data, error } = await stRedeemCall(code);
-    if (error?.stale) return say("Your sign-in expired. Tap “Sign out” below, sign back in, then enter the code again.");
+    if (error?.stale) return say("We couldn’t reach the server just now. Check your connection and try again.");
     if (error) throw error;
     if (data === "ok") {
       await founderRefreshEntitlement();
@@ -8666,6 +8666,7 @@ function cloudInitialize() {
     }
     cloudClient = window.supabase.createClient(CLOUD_URL, CLOUD_PUBLIC_KEY, {
       auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true, storage: authStorage },
+      global: { fetch: (u, o) => stAuthFetch(u, o) },
     });
     cloudClient.auth.onAuthStateChange((event, session) => {
       let prior = cloudSession?.user?.id;
@@ -13715,4 +13716,108 @@ tourGo = function (step) {
     } catch (e) {}
     return base.apply(this, arguments);
   };
+})();
+
+
+/* V3.81: no more silent logouts. Phones (especially iPhone) pause the app in the background, and when it wakes the
+   sign-in token may be out of date or the network not back yet. Every request now makes sure the sign-in is fresh
+   first, and repairs + retries once if the server says "not signed in". People are only asked to sign in again if
+   the account's sign-in was truly ended (signed out elsewhere, password changed). */
+var stEnsureP = null;
+function stEnsureSession(force) {
+  if (!cloudClient) return Promise.resolve(null);
+  return stEnsureP || (stEnsureP = stEnsureRun(force).finally(() => { stEnsureP = null; }));
+}
+function stAuthDead(e) {
+  if (!e) return false;
+  const t = (e.name || "") + " " + (e.message || "") + " " + (e.code || "");
+  if (/fetch|network|timeout|retryable|load failed|offline/i.test(t)) return false;
+  return /refresh_token|refresh token|session_not_found|session not found|already used|invalid_grant/i.test(t) || e.status === 400;
+}
+async function stEnsureRun(force) {
+  for (let i = 0; i < 5; i++) {
+    try {
+      const { data } = await cloudClient.auth.getSession();
+      const s = data?.session;
+      if (s && !(force && i === 0) && (s.expires_at || 0) * 1000 - Date.now() > 90000) { cloudSession = s; return s; }
+      const rt = s?.refresh_token || cloudSession?.refresh_token;
+      if (!rt) return null;
+      const { data: d2, error } = await cloudClient.auth.refreshSession({ refresh_token: rt });
+      if (d2?.session) { cloudSession = d2.session; return d2.session; }
+      if (stAuthDead(error)) return null;
+    } catch (e) {
+      if (stAuthDead(e)) return null;
+    }
+    await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+  }
+  return null;
+}
+async function stAuthFetch(url, opts) {
+  const f = window.fetch.bind(window);
+  const u = typeof url === "string" ? url : url?.url || String(url);
+  const ours = /\/(rest|functions|storage)\/v1\//.test(u) && typeof url === "string";
+  if (!ours || !cloudSession || !cloudClient) return f(url, opts);
+  const withToken = (tok) => { const h = new Headers(opts?.headers || {}); h.set("Authorization", "Bearer " + tok); return { ...(opts || {}), headers: h }; };
+  const auth = new Headers(opts?.headers || {}).get("Authorization") || "";
+  // The app thinks you're signed in but this request would go out anonymous: fix the sign-in first.
+  if (!/^Bearer ey/.test(auth)) {
+    const s = await stEnsureSession();
+    if (s?.access_token) opts = withToken(s.access_token);
+  }
+  const res = await f(url, opts);
+  const reusable = !(opts?.body && typeof opts.body === "object" && typeof opts.body.getReader === "function");
+  if (res.status !== 401 || !reusable) return res;
+  const s = await stEnsureSession(true);
+  if (!s?.access_token) return res;
+  return f(url, withToken(s.access_token));
+}
+/* Only a truly ended sign-in sends someone to Sign In. */
+stSessionRecover = async function () {
+  const s = await stEnsureSession(true);
+  if (s) return true;
+  try {
+    const { data } = await cloudClient.auth.getSession();
+    if (data?.session) return true;
+  } catch (e) {}
+  if (!navigator.onLine) return false;
+  try { await cloudClient.auth.signOut({ scope: "local" }); } catch (e) {}
+  cloudSession = null;
+  try { authMode = "signin"; updateAuthGate(); setTimeout(() => cloudMsg("Your sign-in ended on this device. Please sign in again. Nothing was charged and nothing was lost."), 50); } catch (e) {}
+  return false;
+};
+/* Freshen the sign-in quietly whenever the app comes back to the screen. */
+(function () {
+  const wake = () => { if (cloudSession && document.visibilityState !== "hidden") stEnsureSession(); };
+  document.addEventListener("visibilitychange", wake);
+  window.addEventListener("pageshow", wake);
+  window.addEventListener("online", wake);
+})();
+/* A PayPal payment that was approved but not confirmed (app closed, phone slept, connection dropped) is finished
+   automatically next time the app opens, so nobody is left with a hold and no upgrade. */
+(function () {
+  const KEY = "scaleTellPendingCapture";
+  const baseInvoke = founderInvoke;
+  founderInvoke = async function (body) {
+    if (body?.action === "capture" && body.orderId) try { localStorage.setItem(KEY, JSON.stringify({ id: body.orderId, g: body.groupName || "", t: Date.now(), u: cloudSession?.user?.id })); } catch (e) {}
+    const data = await baseInvoke(body);
+    if (body?.action === "capture" && data?.active) try { localStorage.removeItem(KEY); } catch (e) {}
+    return data;
+  };
+  let tried = false;
+  async function resume() {
+    if (tried || !cloudSession || !cloudClient) return;
+    let p = null;
+    try { p = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
+    if (!p?.id) return;
+    tried = true;
+    if (Date.now() - (p.t || 0) > 3 * 864e5 || (p.u && p.u !== cloudSession.user?.id)) { try { localStorage.removeItem(KEY); } catch (e) {} return; }
+    try {
+      const d = await baseInvoke({ action: "capture", orderId: p.id, groupName: p.g });
+      try { localStorage.removeItem(KEY); } catch (e) {}
+      if (d?.active) { await founderRefreshEntitlement(); try { cloudSetStatus(cloudAutoStatus); } catch (e) {} try { if (typeof showToast === "function") showToast("✓ Your Founding Keeper payment is confirmed ♡"); } catch (e) {} }
+    } catch (e) {
+      if (!/unavailable|network|fetch/i.test(e?.message || "")) try { localStorage.removeItem(KEY); } catch (x) {}
+    }
+  }
+  let n = 0; const iv = setInterval(() => { if (++n > 40) clearInterval(iv); if (cloudSession) { clearInterval(iv); setTimeout(resume, 2500); } }, 750);
 })();
