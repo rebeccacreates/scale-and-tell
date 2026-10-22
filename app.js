@@ -3671,7 +3671,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.81";
+const SCALE_LC_VERSION = "3.82";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -13820,4 +13820,119 @@ stSessionRecover = async function () {
     }
   }
   let n = 0; const iv = setInterval(() => { if (++n > 40) clearInterval(iv); if (cloudSession) { clearInterval(iv); setTimeout(resume, 2500); } }, 750);
+})();
+
+/* V3.82 · Feeder Freezer auto-deduct. Logging a feeding ("Ate") with a prey type that's in the Feeder Freezer takes that
+   many out automatically, shows what's left, and puts them back if the log is undone or deleted. */
+function stPreyNorm(s) {
+  return String(s || "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\bmice\b/g, "mouse").replace(/\bpinkies\b/g, "pinky").replace(/\bfuzzies\b/g, "fuzzy")
+    .split(/\s+/).filter(Boolean).map((w) => w.length > 3 ? w.replace(/(es|s)$/, (m) => (m === "es" && /(ch|sh|x)es$/.test(w) ? "" : m === "es" ? "e" : "")) : w).join(" ").trim();
+}
+function stFreezerFind(prey) {
+  const p = stPreyNorm(prey);
+  if (!p) return -1;
+  const list = feederList();
+  let i = list.findIndex((f) => stPreyNorm(f.name) === p);
+  if (i < 0) i = list.findIndex((f) => { const n = stPreyNorm(f.name); return n && (p.includes(n) || n.includes(p)); });
+  return i;
+}
+var stLastFz = null;
+feederUse = function (prey, n) {
+  stLastFz = null;
+  n = Math.round(Number(n) || 0);
+  if (!prey || n <= 0) return null;
+  const i = stFreezerFind(prey);
+  if (i < 0) return null;
+  const list = feederList().map((f) => ({ ...f }));
+  const take = Math.min(n, Math.max(0, Number(list[i].count) || 0));
+  list[i].count = Math.max(0, (Number(list[i].count) || 0) - n);
+  accountPrefsSet("feeders", list);
+  return (stLastFz = { name: list[i].name, n: take, left: list[i].count, low: Number(list[i].low) || 0 });
+};
+function stFreezerGive(fz) {
+  if (!fz?.name || !fz.n) return;
+  const list = feederList().map((f) => ({ ...f }));
+  const f = list.find((x) => x.name === fz.name);
+  if (!f) return;
+  f.count = (Number(f.count) || 0) + fz.n;
+  accountPrefsSet("feeders", list);
+}
+function stFzText(fz) {
+  if (!fz) return "";
+  return "🧊 " + fz.n + " " + fz.name + " taken from the freezer · " + fz.left + " left" + (fz.left <= fz.low ? ". Time to reorder!" : "");
+}
+/* Main feeding form: a "How many" box and the freezer's feeders as suggestions. */
+(function () {
+  const baseRender = render;
+  render = function () {
+    const r = baseRender.apply(this, arguments);
+    try {
+      const inp = document.getElementById("preyType");
+      if (inp && !document.getElementById("preyQty") && feederList().length) {
+        const dl = document.createElement("datalist");
+        dl.id = "stFzList";
+        dl.innerHTML = feederList().map((f) => '<option value="' + esc(f.name) + '">').join("");
+        inp.setAttribute("list", "stFzList");
+        inp.after(dl);
+        const lab = document.createElement("label");
+        lab.innerHTML = 'How many (taken from your Feeder Freezer)<input id="preyQty" type="number" min="1" max="50" step="1" value="1" inputmode="numeric">';
+        inp.closest("label")?.after(lab);
+      }
+    } catch (e) {}
+    return r;
+  };
+  const baseSave = saveEntry;
+  saveEntry = function () {
+    const before = new Set(entries), qty = Math.max(1, Math.min(50, Math.round(Number(document.getElementById("preyQty")?.value) || 1)));
+    stLastFz = null;
+    const r = baseSave.apply(this, arguments);
+    try {
+      const e = entries.find((x) => !before.has(x)) || null;
+      if (e && e.section === "Feeding Tracker" && stLastFz) {
+        const fz = { ...stLastFz };
+        if (qty > 1) { const more = feederUse(e.preyType, qty - 1); if (more) { fz.n += more.n; fz.left = more.left; } }
+        e.fz = { name: fz.name, n: fz.n };
+        if (qty > 1) e.preyCount = qty;
+        save();
+        stToast(stFzText(fz), "Undo", () => { stFreezerGive(e.fz); delete e.fz; save(); render(); });
+      }
+    } catch (x) {}
+    stLastFz = null;
+    return r;
+  };
+  /* Quick "Fed" button: uses that animal's usual prey when it's in the freezer. */
+  const baseQuick = quickLogEntry;
+  quickLogEntry = function (q, extra) {
+    const before = new Set(entries);
+    const r = baseQuick.apply(this, arguments);
+    try {
+      const e = entries.find((x) => !before.has(x)) || null;
+      if (e && q?.section === "Feeding Tracker" && e.detail === "Ate" && !e.preyType) {
+        const usual = entries.filter((x) => x !== e && x.animal === e.animal && x.section === "Feeding Tracker" && x.preyType).sort((a, b) => b.date.localeCompare(a.date))[0]?.preyType || "";
+        const fz = usual && stFreezerFind(usual) >= 0 ? feederUse(usual, 1) : null;
+        if (fz) {
+          e.preyType = usual;
+          e.fz = { name: fz.name, n: fz.n };
+          save();
+          render();
+          stToast("Logged ♡ " + e.animal + " fed · " + stFzText(fz), "Undo", () => {
+            const k = entries.indexOf(e);
+            if (k >= 0) entries.splice(k, 1);
+            stFreezerGive(e.fz);
+            save();
+            render();
+          });
+        }
+      }
+    } catch (x) {}
+    return r;
+  };
+  /* Deleting a feeding puts its feeders back in the freezer. */
+  const baseDel = deleteWithRecovery;
+  deleteWithRecovery = function (i) {
+    const e = entries[i];
+    const r = baseDel.apply(this, arguments);
+    try { if (e?.fz && !entries.includes(e)) { stFreezerGive(e.fz); stToast("🧊 " + e.fz.n + " " + e.fz.name + " put back in the freezer"); } } catch (x) {}
+    return r;
+  };
 })();
