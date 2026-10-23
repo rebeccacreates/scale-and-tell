@@ -3671,7 +3671,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.82";
+const SCALE_LC_VERSION = "3.83";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -10258,6 +10258,10 @@ async function goveePull(i, quiet) {
   if (!d?.goveeDevice) return false;
   try {
     const r = await hubInvoke({ action: "govee_read", sku: d.goveeSku, device: d.goveeDevice });
+    // V3.83: Govee sends an empty reading (shows up as 0°F / 0%) when the sensor isn't reachable online. Never log that.
+    const z = (v) => v == null || v === "" || Number(v) === 0;
+    if (r.online === false || (z(r.tempF) && z(r.humidity)))
+      throw Error("Govee didn’t send a reading for " + (d.nickname || "this sensor") + ". Bluetooth-only Govee thermometers (like the H5075 and H5104) need a Govee Wi-Fi gateway (like the H5151) to share readings online. Check that it shows as online in the Govee Home app.");
     const t = r.tempF == null ? "" : String(Math.round(r.tempF * 10) / 10), h = r.humidity == null ? "" : String(Math.round(r.humidity));
     const e = { section: "Enclosure Care", animal: d.animal, detail: "Govee reading", date: today(), warmTemp: "", coolTemp: "", humidity: h,
       notes: "Pulled from Govee · " + d.nickname + " (" + d.placement + ")" + (d.placement === "Ambient" && t ? " · ambient " + t + "°F" : "") };
