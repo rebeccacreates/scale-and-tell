@@ -3671,7 +3671,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.83";
+const SCALE_LC_VERSION = "3.86";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -13939,4 +13939,390 @@ function stFzText(fz) {
     try { if (e?.fz && !entries.includes(e)) { stFreezerGive(e.fz); stToast("🧊 " + e.fz.n + " " + e.fz.name + " put back in the freezer"); } } catch (x) {}
     return r;
   };
+})();
+
+/* V3.84 · Password checklist on every "create a password" screen (sign up, reset, change password).
+   Live check marks as you type; the button only goes through once all four are met. */
+function stPwRules(pw) {
+  pw = String(pw || "");
+  return [
+    ["At least 8 characters", pw.length >= 8],
+    ["A capital letter", /[A-Z]/.test(pw)],
+    ["A number", /[0-9]/.test(pw)],
+    ["A symbol like ! @ # $", /[^A-Za-z0-9]/.test(pw)],
+  ];
+}
+function stPwOk(pw) { return stPwRules(pw).every((r) => r[1]); }
+function stPwMissing(pw) { return stPwRules(pw).filter((r) => !r[1]).map((r) => r[0].replace(/ like.*/, "").toLowerCase()); }
+function stPwPaint(input) {
+  let ul = input.parentNode.querySelector('ul.pwCheck[data-for="' + input.id + '"]');
+  if (!ul) {
+    ul = document.createElement("ul");
+    ul.className = "pwCheck";
+    ul.dataset.for = input.id;
+    ul.setAttribute("aria-live", "polite");
+    input.after(ul);
+  }
+  ul.innerHTML = stPwRules(input.value).map((r) => '<li class="' + (r[1] ? "ok" : "") + '"><span aria-hidden="true">' + (r[1] ? "✓" : "○") + "</span>" + r[0] + (r[1] ? '<span class="sr"> (done)</span>' : "") + "</li>").join("");
+}
+(function () {
+  try {
+    const st = document.createElement("style");
+    st.textContent = ".pwCheck{list-style:none;padding:0;margin:6px 0 10px;display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:13px;color:#7a6585;text-align:left}.pwCheck li{display:flex;gap:6px;align-items:baseline}.pwCheck li span:first-child{font-weight:900;width:12px}.pwCheck li.ok{color:#2f6b2f;font-weight:600}.pwCheck .sr{position:absolute;left:-9999px}@media(max-width:480px){.pwCheck{grid-template-columns:1fr}}";
+    document.head.appendChild(st);
+  } catch (e) {}
+  const wants = () => {
+    const out = [];
+    const nw = document.getElementById("cloudNewPassword");
+    if (nw) out.push(nw);
+    const pw = document.getElementById("cloudPassword");
+    if (pw && authMode === "signup") out.push(pw);
+    return out;
+  };
+  const baseGate = updateAuthGate;
+  updateAuthGate = function () {
+    const r = baseGate.apply(this, arguments);
+    try { wants().forEach(stPwPaint); } catch (e) {}
+    return r;
+  };
+  document.addEventListener("input", (e) => {
+    const t = e.target;
+    if (t && (t.id === "cloudNewPassword" || (t.id === "cloudPassword" && authMode === "signup"))) stPwPaint(t);
+  });
+  const baseUp = cloudSignUp;
+  cloudSignUp = async function () {
+    const pw = document.getElementById("cloudPassword")?.value || "";
+    if (!stPwOk(pw)) { cloudMsg("Your password still needs: " + stPwMissing(pw).join(", ") + "."); return; }
+    return baseUp.apply(this, arguments);
+  };
+  const baseNew = cloudUpdatePassword;
+  cloudUpdatePassword = async function () {
+    const pw = document.getElementById("cloudNewPassword")?.value || "";
+    if (!stPwOk(pw)) { cloudMsg("Your new password still needs: " + stPwMissing(pw).join(", ") + "."); return; }
+    return baseNew.apply(this, arguments);
+  };
+})();
+
+/* V3.85 · Login page: no "Browse without an account" care guides / Facebook community buttons. */
+authGuestActions = function () { return ""; };
+
+/* V3.86 · Rescue: bring animals you already had into the rescue without re-entering them.
+   Rescue Animals lists every animal with no rescue record; pick a status for the rescues, mark the rest "My own animal", save once. */
+let rescueShowOwn = false;
+(function () {
+  const base = BIZ_PANELS["Rescue Animals"];
+  BIZ_PANELS["Rescue Animals"] = function () {
+    let html = base.apply(this, arguments);
+    try {
+      const todo = animals.filter((a) => !rescueOf(a) && !profiles[a]?.rescueSkip);
+      const own = animals.filter((a) => !rescueOf(a) && profiles[a]?.rescueSkip);
+      if (!todo.length && !own.length) return html;
+      const opts = (a) => '<select id="rsx_' + animals.indexOf(a) + '"><option value="">Choose…</option><option value="__own">My own pet</option>' + RESCUE_STATUSES.map((s) => "<option>" + s + "</option>").join("") + "</select>";
+      const box = todo.length
+        ? '<div class="v86Bring"><h3 class="sectionTitle">Already in your app (' + todo.length + ")</h3><p class=\"helperLine\">Added these before you had the Rescue plan? Pick a status for each rescue, mark your own pets, then save. Nothing gets re-entered.</p>" +
+          todo.map((a) => '<div class="v86Row"><b>' + esc(a) + "</b>" + (species[a] ? "<small>" + esc(species[a]) + "</small>" : "") + opts(a) + "</div>").join("") +
+          '<div class="inlineActions"><button class="action" onclick="rescueBringSave()">Save</button><button class="action secondary" onclick="rescueBringAll(\'Available\')">Set all to Available</button></div></div>'
+        : "";
+      const ownLink = own.length ? '<p class="lcSmall"><button class="authLink" onclick="rescueShowOwn=!rescueShowOwn;render()">' + (rescueShowOwn ? "Hide" : "Show") + " your own animals (" + own.length + ")</button></p>" +
+          (rescueShowOwn ? own.map((a) => '<div class="v86Row"><b>' + esc(a) + '</b><button class="action secondary" onclick="rescueUnskip(\'' + esc(a).replace(/'/g, "\\'") + '\')">Add to rescue</button></div>').join("") : "") : "";
+      const marker = '<button class="action secondary" onclick="openPanel(\'Business Tools\')">← Business Tools</button>';
+      const i = html.lastIndexOf(marker);
+      html = i >= 0 ? html.slice(0, i) + box + ownLink + html.slice(i) : html + box + ownLink;
+    } catch (e) {}
+    return html;
+  };
+})();
+function rescueBringAll(st) {
+  animals.forEach((a, i) => { const s = document.getElementById("rsx_" + i); if (s && !s.value) s.value = st; });
+}
+function rescueBringSave() {
+  let n = 0, own = 0;
+  animals.forEach((a, i) => {
+    const s = document.getElementById("rsx_" + i);
+    if (!s || !s.value) return;
+    if (s.value === "__own") { profiles[a] = { ...(profiles[a] || {}), rescueSkip: true }; own++; return; }
+    const st = s.value;
+    profiles[a] = { ...(profiles[a] || {}), rescue: { status: st, intakeDate: today(), quarantineStart: st === "Quarantine" ? today() : "", quarantineDays: st === "Quarantine" ? 30 : 0, vetDue: "", foster: "", fosterContact: "", fee: "", adopter: "", adopterContact: "", adoptedDate: st === "Adopted" ? today() : "", publicNote: "" } };
+    entries.push({ section: "Observations", animal: a, detail: "Status: " + st, date: today(), notes: "" });
+    n++;
+  });
+  if (!n && !own) return stToast("Pick a status for at least one animal.");
+  bizSaveProfiles();
+  save();
+  stToast((n ? n + " added to your rescue" : "") + (n && own ? " · " : "") + (own ? own + " kept as your own" : "") + " ♡");
+  render();
+}
+function rescueUnskip(a) {
+  if (!profiles[a]) return;
+  delete profiles[a].rescueSkip;
+  bizSaveProfiles();
+  save();
+  render();
+}
+(function () {
+  try {
+    const st = document.createElement("style");
+    st.textContent = ".v86Bring{margin:16px 0;padding:14px;border:1px dashed #b99bc8;border-radius:16px;background:#fbf6fd}.v86Row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid #eadff0}.v86Row small{grid-column:1;color:#7a6585;font-size:12px}.v86Row select{grid-column:2;grid-row:1/span 2;max-width:180px}";
+    document.head.appendChild(st);
+  } catch (e) {}
+})();
+
+/* ============ V3.86 · Community requests ============ */
+
+/* --- Quick Log: log several things at once (Shelby) --- */
+let qlMulti = false, qlSel = [];
+(function () {
+  const baseMarkup = quickLogMarkup;
+  quickLogMarkup = function () {
+    let h = baseMarkup.apply(this, arguments);
+    h = h.replace(/onclick="quickLogDo\('(\w+)'\)"/g, (m, id) => 'onclick="quickLogTap(\'' + id + '\')"' + (qlMulti && qlSel.includes(id) ? ' data-sel="1"' : ""));
+    if (qlMulti) h = h.replace(/class="qlAction"( onclick="quickLogTap\('(\w+)'\)" data-sel="1")/g, 'class="qlAction qlOn"$1');
+    const toggle = '<div class="qlMode"><button type="button" class="' + (!qlMulti ? "on" : "") + '" onclick="qlMulti=false;qlSel=[];render()">One tap</button><button type="button" class="' + (qlMulti ? "on" : "") + '" onclick="qlMulti=true;render()">Log several at once</button></div>';
+    h = h.replace('<div class="qlGrid">', toggle + '<div class="qlGrid">');
+    if (qlMulti) {
+      const n = qlSel.length;
+      h = h.replace('<label class="qlDate">', '<button class="action qlLogAll" ' + (n ? "" : "disabled ") + 'onclick="quickLogMany()">' + (n ? "Log " + n + " thing" + (n > 1 ? "s" : "") : "Tap everything you did") + '</button><label class="qlDate">');
+      if (qlSel.includes("weight")) h = h.replace('<div class="qlWeigh" id="qlWeigh" hidden>', '<div class="qlWeigh" id="qlWeigh">').replace('<button class="action" onclick="quickLogWeight()">Save weight</button>', "");
+    }
+    return h;
+  };
+})();
+function quickLogTap(id) {
+  if (!qlMulti) return quickLogDo(id);
+  const grams = document.getElementById("qlGrams")?.value || "";
+  if (qlSel.includes(id)) qlSel = qlSel.filter((x) => x !== id);
+  else {
+    if (id === "fed") qlSel = qlSel.filter((x) => x !== "refused");
+    if (id === "refused") qlSel = qlSel.filter((x) => x !== "fed");
+    qlSel.push(id);
+  }
+  render();
+  const g = document.getElementById("qlGrams");
+  if (g && grams) g.value = grams;
+  if (id === "weight" && qlSel.includes("weight")) setTimeout(() => document.getElementById("qlGrams")?.focus(), 30);
+}
+function quickLogMany() {
+  if (!qlSel.length || !animals.includes(selectedAnimal)) return;
+  let grams = null;
+  if (qlSel.includes("weight")) {
+    grams = parseFloat(document.getElementById("qlGrams")?.value || "");
+    if (!Number.isFinite(grams) || grams <= 0 || grams > 100000) return alert("Enter the weight in grams, or untick Weighed.");
+  }
+  const before = new Set(entries), r = render, labels = [];
+  render = () => {};
+  try {
+    for (const id of qlSel) {
+      const q = QUICK_LOG.find((x) => x.id === id);
+      if (!q) continue;
+      quickLogEntry(q, id === "weight" ? { detail: String(Number(grams.toFixed(1))) } : undefined);
+      labels.push(q.label);
+    }
+  } finally { render = r; }
+  const added = entries.filter((e) => !before.has(e));
+  qlSel = [];
+  render();
+  stToast("Logged ♡ " + selectedAnimal + " · " + labels.join(", "), "Undo", () => {
+    added.forEach((e) => { const k = entries.indexOf(e); if (k >= 0) entries.splice(k, 1); try { if (e.fz) stFreezerGive(e.fz); } catch (x) {} });
+    save(); render();
+  });
+}
+
+/* --- Supplement schedule per animal (Melissa) --- */
+const SUPP_NAMES = ["Calcium", "Calcium + D3", "Multivitamin"];
+function suppList(a) { return Array.isArray(profiles[a]?.supps) ? profiles[a].supps : []; }
+function suppLastUse(a, name) {
+  const n = String(name).toLowerCase();
+  return entries.filter((e) => e.animal === a && ((e.section === "Supplements" && [e.detail, e.product].some((x) => String(x || "").toLowerCase() === n)) || (e.section === "Feeding Tracker" && String(e.supplement || "").toLowerCase() === n)))
+    .map((e) => e.date).filter(validDate).sort().pop() || "";
+}
+function suppDue(a, s) {
+  const last = suppLastUse(a, s.name), n = Math.max(1, Number(s.n) || 1);
+  if (s.mode === "days") return { due: last ? advanceDate(last, n) : today(), last, text: "every " + (n === 1 ? "day" : n + " days") };
+  const fedSince = entries.filter((e) => e.animal === a && e.section === "Feeding Tracker" && e.detail === "Ate" && (!last || e.date > last)).length;
+  const text = n === 1 ? "every feeding" : "every " + n + " feedings";
+  if (fedSince < n - 1) return { due: "", last, text, wait: n - 1 - fedSince };
+  const next = entries.filter((e) => e.section === "Calendar" && !e.done && e.animal === a && /feed/i.test(e.detail || "")).map((e) => e.date).sort()[0];
+  return { due: next || today(), last, text, withFeeding: true };
+}
+(function () {
+  const baseSync = habSync;
+  habSync = function () {
+    baseSync.apply(this, arguments);
+    try {
+      const want = new Map();
+      animals.forEach((a) => suppList(a).forEach((s) => {
+        const d = suppDue(a, s);
+        if (!d.due) return;
+        const k = "supp:" + a + ":" + s.id + ":" + d.due;
+        want.set(k, { section: "Calendar", animal: a, detail: "💊 " + s.name + (d.withFeeding ? " with this feeding" : ""), date: d.due, notes: "", repeatDays: 0, done: false, habKey: k, category: "feeding", suppId: s.id, suppName: s.name });
+      }));
+      const before = entries.length, have = new Set(entries.filter((e) => e.habKey).map((e) => e.habKey));
+      entries = entries.filter((e) => !String(e.habKey || "").startsWith("supp:") || e.done || want.has(e.habKey));
+      let changed = entries.length !== before;
+      want.forEach((e, k) => { if (!have.has(k)) { entries.push(e); changed = true; } });
+      if (changed) { syncStampEntries(); scaleStoreSet("scaleTellApprovedPreview", JSON.stringify(entries)); try { updateStats(); } catch (e) {} }
+    } catch (e) {}
+  };
+  const baseDone = completeReminder;
+  completeReminder = function (i, quiet) {
+    const e = entries[i];
+    const r = baseDone.apply(this, arguments);
+    try {
+      if (e && e.suppName && e.done) {
+        entries.push({ section: "Supplements", animal: e.animal, detail: SUPP_NAMES.includes(e.suppName) ? e.suppName : "Other supplement", product: e.suppName, date: today(), notes: "" });
+        save();
+        clearTimeout(habSyncT); habSyncT = setTimeout(habSync, 400);
+      }
+    } catch (x) {}
+    return r;
+  };
+  const baseHab = habitatMarkup;
+  habitatMarkup = function (a) { return suppCard(a) + baseHab(a); };
+})();
+let suppEditFor = "";
+function suppCard(a) {
+  const list = suppList(a);
+  const rows = list.map((s) => { const d = suppDue(a, s);
+    return '<div class="v86Supp"><span>💊</span><div><b>' + esc(s.name) + "</b><small>" + esc(d.text) + (d.last ? " · last " + esc(niceDate(d.last)) : " · not logged yet") + " · " +
+      (d.due ? (d.withFeeding ? "with the next feeding" : "due " + esc(niceDate(d.due))) : "in " + d.wait + " more feeding" + (d.wait > 1 ? "s" : "")) +
+      '</small></div><button class="authLink" onclick="suppRemove(\'' + esc(a).replace(/'/g, "\\'") + "','" + s.id + '\')" aria-label="Remove ' + esc(s.name) + '">✕</button></div>'; }).join("");
+  const form = suppEditFor === a
+    ? '<div class="v86SuppForm"><label>Supplement<select id="spName" onchange="document.getElementById(\'spOtherWrap\').hidden=this.value!==\'Other\'">' + SUPP_NAMES.concat(["Other"]).map((x) => "<option>" + x + "</option>").join("") + '</select></label><label id="spOtherWrap" hidden>Name<input id="spOther" maxlength="40" placeholder="e.g. Repashy Calcium Plus"></label>' +
+      '<div class="saleGrid"><label>How often<select id="spMode"><option value="feed">Every … feedings</option><option value="days">Every … days</option></select></label><label>Number<input id="spN" type="number" min="1" max="90" value="1" inputmode="numeric"></label></div>' +
+      '<div class="inlineActions"><button class="action" onclick="suppAdd(\'' + esc(a).replace(/'/g, "\\'") + '\')">Save schedule</button><button class="action secondary" onclick="suppEditFor=\'\';habRefresh()">Cancel</button></div></div>'
+    : '<button class="authLink" onclick="suppEditFor=selectedAnimal;habRefresh()">＋ Add a supplement schedule</button>';
+  return '<div class="v69Setup"><div class="v69SetupHead"><h3>💊 Supplement schedule</h3></div>' + (rows || '<p class="helperLine">Dusting calcium every feeding or a multivitamin every 2 weeks? Add it here and you’ll get a reminder.</p>') + form + "</div>";
+}
+function suppAdd(a) {
+  let name = document.getElementById("spName")?.value || "Calcium";
+  if (name === "Other") name = (document.getElementById("spOther")?.value || "").trim().slice(0, 40);
+  if (!name) return alert("Name the supplement.");
+  const mode = document.getElementById("spMode")?.value === "days" ? "days" : "feed", n = Math.max(1, Math.min(90, Math.round(Number(document.getElementById("spN")?.value) || 1)));
+  profiles[a] = { ...(profiles[a] || {}), supps: [...suppList(a), { id: "sp" + Date.now().toString(36), name, mode, n }].slice(0, 12) };
+  bizSaveProfiles(); save();
+  suppEditFor = "";
+  habSync();
+  stToast("💊 " + name + " scheduled for " + a + " ♡");
+  habRefresh();
+}
+function suppRemove(a, id) {
+  const s = suppList(a).find((x) => x.id === id);
+  if (!s || !confirm("Stop the " + s.name + " schedule for " + a + "?")) return;
+  profiles[a] = { ...(profiles[a] || {}), supps: suppList(a).filter((x) => x.id !== id) };
+  bizSaveProfiles(); save(); habSync(); habRefresh();
+}
+
+/* --- Wish List with photos (Samantha) --- */
+function wishList() { return Array.isArray(accountPrefs?.wishlist) ? accountPrefs.wishlist : []; }
+let wishAdding = false, wishTab = "want";
+(function () {
+  const baseMenu = menuMarkup;
+  menuMarkup = function () {
+    const h = baseMenu.apply(this, arguments), tile = '<button class="menuTile" onclick="openPanel(&quot;Wish List&quot;)"><strong>⭐ Wish List</strong><small>Animals you want someday, with photos</small></button>';
+    const k = h.indexOf("</button>", h.indexOf("openPanel(&quot;Feeders&quot;)"));
+    return k > 0 ? h.slice(0, k + 9) + tile + h.slice(k + 9) : h + tile;
+  };
+  const baseHead = panelHeading;
+  panelHeading = function (n) { return n === "Wish List" ? "Wish List ⭐" : baseHead(n); };
+})();
+BIZ_PANELS["Wish List"] = () => {
+  const all = wishList(), want = all.filter((w) => !w.got), got = all.filter((w) => w.got), show = wishTab === "got" ? got : want;
+  const card = (w) => '<div class="v86Wish"><div class="v86WishImg">' + (w.img ? '<img src="' + esc(w.img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : "<span>⭐</span>") + "</div><div><b>" + esc(w.name) + "</b>" +
+    (w.species ? "<small>" + esc(w.species) + "</small>" : "") + (w.price ? '<small class="v86Price">' + esc(w.price) + "</small>" : "") + (w.priority ? '<small>' + "★★★".slice(0, w.priority) + "</small>" : "") + (w.notes ? "<p>" + esc(w.notes) + "</p>" : "") +
+    '<div class="recordActions">' + (w.got ? '<button onclick="wishUngot(\'' + w.id + '\')">Move back</button>' : '<button onclick="wishGot(\'' + w.id + '\')">🎉 Got it!</button>') + '<button onclick="wishDel(\'' + w.id + '\')">Remove</button></div></div></div>';
+  return '<p class="resourceIntro">Keep track of the animals you’re dreaming about, with a photo so you know what they look like.</p>' +
+    '<div class="diyTabs"><button class="' + (wishTab === "want" ? "on" : "") + '" onclick="wishTab=\'want\';render()">Want (' + want.length + ')</button><button class="' + (wishTab === "got" ? "on" : "") + '" onclick="wishTab=\'got\';render()">Got it (' + got.length + ")</button></div>" +
+    (wishAdding
+      ? '<div class="v86SuppForm"><label>Name or morph<input id="wsName" maxlength="60" placeholder="e.g. Brazilian Black tarantula"></label><label>Species (optional)<input id="wsSpecies" maxlength="60" placeholder="e.g. Grammostola pulchra"></label>' +
+        '<label>Photo from your phone<input id="wsPhoto" type="file" accept="image/*"></label><label>…or paste a photo link<input id="wsUrl" inputmode="url" maxlength="500" placeholder="https://…"></label>' +
+        '<div class="saleGrid"><label>Price range (optional)<input id="wsPrice" maxlength="30" placeholder="e.g. $60–90"></label><label>How much do you want it?<select id="wsPri"><option value="3">★★★ Dream animal</option><option value="2" selected>★★ Really want</option><option value="1">★ Someday</option></select></label></div>' +
+        '<label>Notes (optional)<textarea id="wsNotes" rows="2" maxlength="300" placeholder="Where to buy, care level, size…"></textarea></label><p class="helperLine" id="wsMsg" role="status"></p>' +
+        '<div class="inlineActions"><button class="action" id="wsSave" onclick="wishSave()">Add to wish list</button><button class="action secondary" onclick="wishAdding=false;render()">Cancel</button></div></div>'
+      : '<button class="action" onclick="wishAdding=true;render()">＋ Add to wish list</button>') +
+    (show.length ? '<div class="v86WishGrid">' + show.slice().sort((x, y) => (y.priority || 0) - (x.priority || 0)).map(card).join("") + "</div>" : '<p class="helperLine">' + (wishTab === "got" ? "Nothing crossed off yet." : "Your wish list is empty. Add the first one!") + "</p>");
+};
+async function wishSave() {
+  const v = (id) => (document.getElementById(id)?.value || "").trim(), msg = (t) => { const m = document.getElementById("wsMsg"); if (m) m.textContent = t; };
+  const name = v("wsName").slice(0, 60);
+  if (!name) return msg("Give it a name.");
+  let img = "";
+  const f = document.getElementById("wsPhoto")?.files?.[0], url = v("wsUrl");
+  try {
+    if (f) { msg("Shrinking your photo…"); img = await wishThumb(f); }
+    else if (url) { if (!/^https:\/\/[^\s"'<>]+$/i.test(url)) return msg("Photo links must start with https://"); img = url.slice(0, 500); }
+  } catch (e) { return msg(e.message || "That photo couldn’t be used. Try another."); }
+  const w = { id: "w" + Date.now().toString(36), name, species: v("wsSpecies").slice(0, 60), price: v("wsPrice").slice(0, 30), priority: Number(v("wsPri")) || 2, notes: v("wsNotes").slice(0, 300), img, added: today() };
+  accountPrefsSet("wishlist", [...wishList(), w].slice(-80));
+  save();
+  wishAdding = false; wishTab = "want";
+  stToast("⭐ " + name + " added to your wish list");
+  render();
+}
+async function wishThumb(file) {
+  if (!file.type.startsWith("image/") || file.size > 15000000) throw Error("Choose an image under 15 MB.");
+  const src = await new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => bad(Error("Could not read that photo.")); r.readAsDataURL(file); });
+  const im = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(Error("That photo couldn’t be opened. Try a JPEG.")); i.src = src; });
+  const c = document.createElement("canvas"), s = Math.min(1, 420 / im.width, 420 / im.height);
+  c.width = Math.max(1, Math.round(im.width * s)); c.height = Math.max(1, Math.round(im.height * s));
+  c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.68);
+}
+function wishGot(id) {
+  const w = wishList().find((x) => x.id === id);
+  accountPrefsSet("wishlist", wishList().map((x) => (x.id === id ? { ...x, got: today() } : x)));
+  save(); render();
+  if (w) stToast("🎉 Congrats on " + w.name + "!", "Add to My Reptiles", () => wishAddAnimal(w));
+}
+function wishUngot(id) { accountPrefsSet("wishlist", wishList().map((x) => (x.id === id ? { ...x, got: "" } : x))); save(); render(); }
+function wishDel(id) { if (!confirm("Remove from your wish list?")) return; accountPrefsSet("wishlist", wishList().filter((x) => x.id !== id)); save(); render(); }
+function wishAddAnimal(w) {
+  addAnimal();
+  setTimeout(() => {
+    const n = document.getElementById("animalSetupName"); if (n && !n.value) n.value = w.name.slice(0, 50);
+    const sel = document.getElementById("speciesChoice");
+    if (sel && w.species) {
+      const hit = [...sel.options].find((o) => o.value.toLowerCase() === w.species.toLowerCase());
+      if (hit) sel.value = hit.value; else { sel.value = "Other"; sel.dispatchEvent(new Event("change")); const c = document.getElementById("customSpecies"); if (c) c.value = w.species; }
+    }
+  }, 120);
+}
+
+/* --- Govee: a hiccup no longer makes it look "unlinked" (Melissa) --- */
+goveeLoad = async function () {
+  if (goveeState.connected !== null && (goveeState.connected === false || goveeState.devices !== null)) return;
+  if (!cloudSession) { goveeState.msg = "Sign in to connect Govee."; goveeState.connected = false; return goveeRerender(); }
+  let known = false;
+  try { known = localStorage.getItem("scaleTellGoveeOn:" + cloudSession.user.id) === "1"; } catch (e) {}
+  try {
+    if (goveeState.connected === null) {
+      const on = !!(await hubInvoke({ action: "govee_status" })).connected;
+      goveeState.connected = on;
+      try { localStorage.setItem("scaleTellGoveeOn:" + cloudSession.user.id, on ? "1" : "0"); } catch (e) {}
+    }
+  } catch (e) {
+    // Couldn't check (signal, sign-in refresh). If it was connected before, keep showing it as connected.
+    goveeState.connected = known || devices.some((d) => d.goveeDevice) ? true : null;
+    goveeState.msg = "Couldn’t reach Govee just now. Your sensors are still linked. Pull to refresh or try again in a minute.";
+    if (goveeState.connected === null) { goveeState.connected = false; goveeState.msg = "Couldn’t check your Govee connection. Try again in a minute."; }
+  }
+  try {
+    if (goveeState.connected && goveeState.devices === null) goveeState.devices = (await hubInvoke({ action: "govee_devices" })).devices || [];
+  } catch (e) {
+    goveeState.devices = devices.filter((d) => d.goveeDevice).map((d) => ({ sku: d.goveeSku, device: d.goveeDevice, name: d.nickname }));
+    goveeState.msg = "Couldn’t load the full list from Govee just now. Your linked sensors are still linked.";
+  }
+  goveeRerender();
+};
+
+(function () {
+  try {
+    const st = document.createElement("style");
+    st.textContent =
+      ".qlMode{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f3e9f6;border-radius:14px;padding:4px;margin:8px 0 10px}.qlMode button{border:0;border-radius:11px;padding:9px 6px;font-weight:700;color:#45205b;background:none;cursor:pointer}.qlMode button.on{background:#45205b;color:#fff}" +
+      ".qlAction.qlOn{outline:3px solid #45205b;background:#ead7ef!important;position:relative}.qlAction.qlOn:after{content:'✓';position:absolute;top:4px;right:8px;font-weight:900;color:#45205b}.qlLogAll{width:100%;margin:10px 0}.qlLogAll:disabled{opacity:.55}" +
+      ".v86Supp{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #eadff0}.v86Supp small{display:block;color:#7a6585}.v86SuppForm{background:#fbf6fd;border:1px dashed #b99bc8;border-radius:14px;padding:12px;margin:10px 0}" +
+      ".v86WishGrid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}.v86Wish{display:grid;grid-template-columns:96px 1fr;gap:12px;background:#fff;border:1px solid #e5d6ec;border-radius:16px;padding:10px}.v86WishImg{width:96px;height:96px;border-radius:12px;overflow:hidden;background:#f3e9f6;display:grid;place-items:center;font-size:34px}.v86WishImg img{width:100%;height:100%;object-fit:cover}.v86Wish small{display:block;color:#7a6585}.v86Wish .v86Price{color:#2f6b2f;font-weight:700}.v86Wish p{margin:4px 0;font-size:14px}" +
+      "body.themeDark .v86Wish,body.themeDark .v86SuppForm{background:#2b1f33;border-color:#4a3557}";
+    document.head.appendChild(st);
+  } catch (e) {}
 })();
