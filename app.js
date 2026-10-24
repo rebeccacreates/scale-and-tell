@@ -3059,6 +3059,10 @@ function careValues() {
     ["coolMax", "Cool-side maximum (°F)", 0, 130],
     ["humidityMin", "Humidity minimum (%)", 0, 100],
     ["humidityMax", "Humidity maximum (%)", 0, 100],
+    ["nightMin", "Night temperature minimum (°F)", 0, 130],
+    ["nightMax", "Night temperature maximum (°F)", 0, 130],
+    ["nightHumMin", "Night humidity minimum (%)", 0, 100],
+    ["nightHumMax", "Night humidity maximum (%)", 0, 100],
   ];
 }
 function carePlanForm(a) {
@@ -3081,6 +3085,10 @@ function carePlanForm(a) {
           '" placeholder="Optional"></label>',
       )
       .join("") +
+    '<p class="muted">Night ranges are for animals whose temperature or humidity changes after lights-out (like crested geckos). Leave them blank if they stay the same.</p>' +
+    '<label>Feeding notes for sitters<textarea id="planFeedNotes" maxlength="500" placeholder="Which feeder, how many, supplements, how to offer (e.g. 2 small dubia dusted with calcium, in a bowl at night)">' +
+    esc(p.feedNotes || "") +
+    "</textarea></label>" +
     '<label>Keeper notes<textarea id="planNotes" maxlength="500" placeholder="Care routine, veterinary guidance or individual considerations">' +
     esc(p.notes || "") +
     '</textarea></label><button class="action" onclick="saveCarePlan()">Save care plan</button><button class="action secondary" onclick="openPanel(\'Care Insights\',selectedAnimal)">Back to Care Insights</button>'
@@ -3106,6 +3114,8 @@ function saveCarePlan() {
     ["warmMin", "warmMax"],
     ["coolMin", "coolMax"],
     ["humidityMin", "humidityMax"],
+    ["nightMin", "nightMax"],
+    ["nightHumMin", "nightHumMax"],
   ]) {
     if (obj[a] !== "" && obj[b] !== "" && obj[a] > obj[b]) {
       alert("The minimum cannot be greater than the maximum.");
@@ -3113,6 +3123,7 @@ function saveCarePlan() {
     }
   }
   obj.notes = document.getElementById("planNotes").value.trim().slice(0, 500);
+  obj.feedNotes = (document.getElementById("planFeedNotes")?.value || "").trim().slice(0, 500);
   let old = carePlans[selectedAnimal];
   carePlans[selectedAnimal] = obj;
   if (!saveCarePlans()) {
@@ -3601,6 +3612,8 @@ function habitatMarkup(a) {
     ["Warm", p.warmMin, p.warmMax, "°F"],
     ["Cool", p.coolMin, p.coolMax, "°F"],
     ["Humidity", p.humidityMin, p.humidityMax, "%"],
+    ["Night", p.nightMin, p.nightMax, "°F"],
+    ["Night humidity", p.nightHumMin, p.nightHumMax, "%"],
   ]
     .filter((x) => (x[1] !== undefined && x[1] !== "") || (x[2] !== undefined && x[2] !== ""))
     .map(
@@ -3671,7 +3684,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.87";
+const SCALE_LC_VERSION = "3.88";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -5700,6 +5713,7 @@ async function importBackup() {
           typeof p === "object" &&
           !Array.isArray(p) &&
           (!p.notes || (typeof p.notes === "string" && p.notes.length <= 500)) &&
+          (!p.feedNotes || (typeof p.feedNotes === "string" && p.feedNotes.length <= 500)) &&
           careValues().every(
             ([k, , lo, hi]) =>
               p[k] === undefined || p[k] === "" || (Number.isInteger(p[k]) && p[k] >= lo && p[k] <= hi),
@@ -11636,6 +11650,7 @@ function packetDoc(a, kind) {
       : "Congratulations on your new " + esc(species[a] || "reptile") + "! This packet has " + esc(a) + "'s care history so far" + (who ? " from " + esc(who) : "") + ". Give them about a week to settle in before the first meal and handling.") + "</p>" +
     "<h2>Care at a glance</h2><table>" + [["Feeding", plan.feedDays ? "Every " + plan.feedDays + " days" : ""], ["Last prey", feeds.find((f) => f.preyType)?.preyType || ""], ["Warm side", plan.warmMin || plan.warmMax ? (plan.warmMin || "…") + "–" + (plan.warmMax || "…") + "°F" : ""],
       ["Cool side", plan.coolMin || plan.coolMax ? (plan.coolMin || "…") + "–" + (plan.coolMax || "…") + "°F" : ""], ["Humidity", plan.humidityMin || plan.humidityMax ? (plan.humidityMin || "…") + "–" + (plan.humidityMax || "…") + "%" : ""],
+      ["Night temps", plan.nightMin || plan.nightMax ? (plan.nightMin || "…") + "–" + (plan.nightMax || "…") + "°F" : ""], ["Night humidity", plan.nightHumMin || plan.nightHumMax ? (plan.nightHumMin || "…") + "–" + (plan.nightHumMax || "…") + "%" : ""], ["Feeding notes", plan.feedNotes || ""],
       ["Handling", p.handlingNotes || ""], ["Notes", p.sitterInstructions || p.notes || ""]].filter((x) => x[1]).map((x) => "<tr><td>" + x[0] + "</td><td>" + esc(x[1]) + "</td></tr>").join("") + "</table>" +
     "<h2>Weights</h2>" + rows(w, (e) => "<tr><td>" + niceDate(e.date) + "</td><td>" + esc(e.detail) + "</td></tr>") +
     "<h2>Recent feedings</h2>" + rows(feeds, (e) => "<tr><td>" + niceDate(e.date) + "</td><td>" + esc(e.detail + (e.preyType ? " · " + e.preyType : "")) + "</td></tr>") +
@@ -12861,6 +12876,10 @@ function helpMarkup() {
 /* V3.86 · ONE list of releases. Add the newest at the top each update: the What's New popup, and the ready-made
    update emails + banners in Send Update Email all build themselves from it. */
 const ST_RELEASES = [
+  { v: "3.88", date: "2026-10-24", subject: "Day & night ranges and feeding notes for sitters ♡", banner: "New: day/night ranges ♡", items: [
+    ["🌙", "Day & night ranges", "Add night temperature and humidity goals in an animal’s care plan, perfect for cresties and others that get more humid at night."],
+    ["🍽", "Feeding notes for sitters", "Write which feeder, how many and which supplements in the care plan. It shows on the pet-sitter sheet along with your supplement schedule."],
+  ] },
   { v: "3.86", date: "2026-10-23", subject: "Wish List, supplement schedules and more ♡", banner: "New: Wish List & supplement schedules ♡", items: [
     ["⭐", "Wish List", "Keep the animals you’re dreaming about, with photos. Menu → Wish List."],
     ["💊", "Supplement schedules", "Calcium every feeding, multivitamin every 2 weeks… set it on the Habitat tab and get reminders."],
@@ -13506,6 +13525,8 @@ function sitterFacts(a) {
     p, s, w, prey, sex: p.sex && !/unknown/i.test(p.sex) ? p.sex : "", morph: p.genes || p.morph || "", age: v69Age(p.hatchDate),
     feedEvery: Number(plan.feedDays) ? "Every " + plan.feedDays + " days" : "", lastFed: f ? niceDate(f.date) + " (" + v69Ago(f.date) + ")" : "",
     warm: range(plan.warmMin, plan.warmMax, "°F"), cool: range(plan.coolMin, plan.coolMax, "°F"), hum: range(plan.humidityMin, plan.humidityMax, "%"),
+    nightTemp: range(plan.nightMin, plan.nightMax, "°F"), nightHum: range(plan.nightHumMin, plan.nightHumMax, "%"), feedNotes: plan.feedNotes || "",
+    supps: (typeof suppList === "function" ? suppList(a) : []).map((x) => { try { return x.name + " " + suppDue(a, x).text; } catch (e) { return x.name; } }).join(", "),
     substrate: s.substrate === "Other" ? s.substrateOther : s.substrate || "", uvb: v69HasUvb(s) || s.uvbType ? v69UvbLabel(s) : "",
     shed: stNoShed(a) ? "" : (v69Latest(a, "Shed History") ? niceDate(v69Latest(a, "Shed History").date) : ""),
   };
@@ -13521,7 +13542,7 @@ sitterDocument = function (names, includeHealth, withHistory) {
   for (const a of names) {
     const x = sitterFacts(a);
     L.push("", "— " + a + " —", [species[a], x.sex, x.morph, x.age].filter(Boolean).join(" · "));
-    [["Feeds", [x.feedEvery, x.prey].filter(Boolean).join(" · ")], ["Last fed", x.lastFed], ["Weight", x.w ? v69Grams(x.w.g) : ""], ["Warm side", x.warm], ["Cool side", x.cool], ["Humidity", x.hum],
+    [["Feeds", [x.feedEvery, x.prey].filter(Boolean).join(" · ")], ["Last fed", x.lastFed], ["Weight", x.w ? v69Grams(x.w.g) : ""], ["Feeding notes", x.feedNotes], ["Supplements", x.supps], ["Warm side", x.warm], ["Cool side", x.cool], ["Humidity", x.hum && x.nightHum ? x.hum + " (day)" : x.hum], ["Night temps", x.nightTemp], ["Night humidity", x.nightHum],
       ["Enclosure", x.p.enclosure], ["Substrate", x.substrate], ["Heat", x.s.heat], ["UVB", x.uvb], ["Lights", x.s.lightHours ? x.s.lightHours + " hrs/day" : ""], ["Care", x.p.sitterInstructions || x.p.notes], ["Handling", x.p.handlingNotes]]
       .filter((r) => r[1]).forEach((r) => L.push(r[0] + ": " + r[1]));
     if (!re) {
@@ -13580,7 +13601,7 @@ async function sitterMakePretty() {
     const x = sitterFacts(a);
     const up = re ? [] : entries.filter((e) => e.animal === a && e.section === "Calendar" && !e.done).sort((p, q) => p.date.localeCompare(q.date)).slice(0, 5);
     const facts = fact("🍽", "Feeding", [x.feedEvery, x.prey].filter(Boolean).join(" · ")) + fact("🗓", "Last meal", x.lastFed) + fact("⚖", "Weight", x.w ? v69Grams(x.w.g) + " · " + niceDate(x.w.date) : "") +
-      fact("🔥", "Warm side", x.warm) + fact("❄", "Cool side", x.cool) + fact("💧", "Humidity", x.hum) + fact("✨", "Last shed", x.shed);
+      fact("🔥", "Warm side", x.warm) + fact("❄", "Cool side", x.cool) + fact("💧", x.nightHum ? "Humidity (day)" : "Humidity", x.hum) + fact("🌙", "Night temps", x.nightTemp) + fact("🌙", "Night humidity", x.nightHum) + fact("💊", "Supplements", x.supps) + fact("✨", "Last shed", x.shed);
     const setup = fact("📐", "Enclosure", x.p.enclosure) + fact("🪵", "Substrate", x.substrate) + fact("🔥", "Heat", x.s.heat) + fact("☀", "UVB / lighting", x.uvb) + fact("🕗", "Lights on", x.s.lightHours ? x.s.lightHours + " hours a day" : "") + fact("🌿", "Hides & décor", x.s.decor);
     const hist = (list, f) => list.length ? "<table>" + list.map(f).join("") + "</table>" : "";
     let history = "";
@@ -13596,6 +13617,7 @@ async function sitterMakePretty() {
       [species[a], x.sex, x.morph, x.age].filter(Boolean).map((v) => '<span class="chip">' + T(v) + "</span>").join(" ") + "</p></div></div>" +
       (facts ? '<div class="facts">' + facts + "</div>" : "") +
       (x.p.sitterInstructions || x.p.notes ? '<div class="note"><b>💜 How to care for ' + T(a) + "</b><p>" + T(x.p.sitterInstructions || x.p.notes) + "</p></div>" : "") +
+      (x.feedNotes ? '<div class="note"><b>🍽 Feeding notes</b><p>' + T(x.feedNotes) + "</p></div>" : "") +
       (x.p.handlingNotes ? '<div class="note warn"><b>✋ Handling</b><p>' + T(x.p.handlingNotes) + "</p></div>" : "") +
       (setup ? "<h3>🏡 Setup</h3><div class=\"facts\">" + setup + "</div>" : "") +
       (up.length ? "<h3>📅 Coming up</h3><ul class=\"up\">" + up.map((e) => "<li><b>" + T(niceDate(e.date)) + "</b> " + T(e.detail) + "</li>").join("") + "</ul>" : "") +
