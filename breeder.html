@@ -454,7 +454,7 @@ window.ST_PIXEL_ID = '2580184572460750';
     if (!client) return say('msg1', 'Couldn’t load secure sign-up. Please refresh and try again.');
     $('go').disabled = true; say('msg1', plan === 'free' ? 'Creating your account…' : 'Setting up your account…', true);
     try {
-      var r = await client.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: 'https://scaleandtell.app/' } });
+      var r = await client.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: 'https://scaleandtell.app/', data: { src: 'ad-' + PAGE_SEG } } });
       if (r.error) throw r.error;
       existing = !!(r.data && r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length === 0);
       email = em; say('msg1', '');
