@@ -3671,7 +3671,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.86";
+const SCALE_LC_VERSION = "3.87";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -12858,7 +12858,29 @@ function helpMarkup() {
 }
 
 /* What's new: one screen the first time someone opens a new version. */
-const WHATS_NEW_VER = "3.69";
+/* V3.86 · ONE list of releases. Add the newest at the top each update: the What's New popup, and the ready-made
+   update emails + banners in Send Update Email all build themselves from it. */
+const ST_RELEASES = [
+  { v: "3.86", date: "2026-10-23", subject: "Wish List, supplement schedules and more ♡", banner: "New: Wish List & supplement schedules ♡", items: [
+    ["⭐", "Wish List", "Keep the animals you’re dreaming about, with photos. Menu → Wish List."],
+    ["💊", "Supplement schedules", "Calcium every feeding, multivitamin every 2 weeks… set it on the Habitat tab and get reminders."],
+    ["⚡", "Log several at once", "In Quick Log, tap “Log several at once,” pick everything you did and save once."],
+    ["💜", "Rescues: bring animals in", "Animals you added before the Rescue plan can join your rescue in one step (Rescue Animals)."],
+    ["🌡", "Steadier Govee screen", "Your sensors stay linked even when Govee is slow to answer."],
+    ["🔐", "Password checklist", "See exactly what a new password needs as you type."],
+  ] },
+  { v: "3.82", date: "2026-10-22", subject: "Your freezer now counts itself ♡", banner: "New: freezer counts itself ♡", items: [
+    ["🧊", "Freezer counts itself", "Log a feeding with a prey type from your Feeder Freezer and it comes off your count. Undo puts it back."],
+    ["🔔", "Reminders on the right day", "Each reminder goes out once, on its own date, at the time you picked."],
+    ["🔑", "Fewer sign-in hiccups", "Codes and upgrades work smoothly even after the app sat in the background."],
+  ] },
+  { v: "3.78", date: "2026-10-21", subject: "30+ new species and a smarter freezer ♡", banner: "New: 30+ species ♡", items: [
+    ["🐍", "30+ new species", "More snakes, lizards, turtles, frogs and inverts to pick from."],
+    ["🧊", "Feeder Freezer in the Menu", "What’s on hand, cost per meal and low-stock reminders."],
+    ["💬", "Clearer messages", "Friendlier sign-in and password messages so you know what to fix."],
+  ] },
+];
+const WHATS_NEW_VER = ST_RELEASES[0].v;
 const WHATS_NEW = [
   ["🍽", "Feed Day", "Check off everyone who ate and save once. Find it on Home under Today’s Care."],
   ["💌", "Cuter care sheets", "For a pet-sitter or a new home. Print, save a PDF, email it or copy it as text."],
@@ -12873,9 +12895,10 @@ const WHATS_NEW = [
   ["🐀", "More animals", "Rodents, small mammals, amphibians, fish and more."],
   ["❓", "Help", "Search “How do I…?” answers in Menu → More → Help & Feedback."],
 ];
+WHATS_NEW.unshift(...ST_RELEASES.slice(0, 2).flatMap((r) => r.items));
 BIZ_PANELS["What's New"] = () =>
   '<p class="resourceIntro">Here’s what’s new in Scale &amp; Tell ♡</p>' +
-  WHATS_NEW.map(([i, t, d]) => '<div class="v57Card"><b>' + i + " " + esc(t) + "</b><p>" + esc(d) + "</p></div>").join("") +
+  WHATS_NEW.slice(0, 12).map(([i, t, d]) => '<div class="v57Card"><b>' + i + " " + esc(t) + "</b><p>" + esc(d) + "</p></div>").join("") +
   (stIsRescue() ? '<div class="v57Card"><b>⌂ Rescue tools</b><p>Foster page, e-sign adoption contracts, impact report and a donate button in Business Tools.</p></div>' : "") +
   (stIsPremium() && bizIsBreeder() ? '<div class="v57Card"><b>🧬 Premium tools</b><p>Genetics calculator, invoices, bulk import, shipping weather, waitlist and sales summary in Business Tools.</p></div>' : "") +
   '<button class="action" onclick="closePanel()">Got it ♡</button>';
@@ -14325,4 +14348,41 @@ goveeLoad = async function () {
       "body.themeDark .v86Wish,body.themeDark .v86SuppForm{background:#2b1f33;border-color:#4a3557}";
     document.head.appendChild(st);
   } catch (e) {}
+})();
+
+
+/* V3.86 · Ready-made updates build themselves from ST_RELEASES: newest first, plus "everything since your last email". */
+function stReleaseBody(list) {
+  const items = list.flatMap((r) => r.items);
+  return "Hi keepers ♡\n\nHere’s what’s new in Scale & Tell:\n\n" + items.map(([i, t, d]) => "• " + i + " " + t + ": " + d).join("\n") +
+    "\n\nTo get the newest version, close Scale & Tell all the way and open it again.\n\nKeep the ideas coming. Just reply to this email ♡";
+}
+function stReadyTemplates() {
+  const out = [];
+  const last = String(stMailState?.stats?.past?.[0]?.created_at || "").slice(0, 10);
+  const since = last ? ST_RELEASES.filter((r) => r.date > last) : [];
+  if (since.length > 1) out.push({ label: "Everything new since your last email (" + niceDate(last) + ")", aud: "all", subject: since[0].subject, body: stReleaseBody(since), banner: since[0].banner });
+  ST_RELEASES.forEach((r, i) => out.push({ label: (i === 0 ? "Latest · " : "") + "Version " + r.v + ": " + r.items.slice(0, 3).map((x) => x[1]).join(", "), aud: "all", subject: r.subject, body: stReleaseBody([r]), banner: r.banner }));
+  return out.concat(UPDATE_TEMPLATES.map((t) => ({ ...t, label: "Older · " + t.label })));
+}
+stUseTemplate = function (i) {
+  const t = stReadyTemplates()[i];
+  if (!t) return;
+  stMailState.subject = t.subject; stMailState.body = t.body; stMailState.aud = t.aud;
+  stMailState.msg = "Filled in “" + t.label + "”. Check it, send yourself a test, then Send to everyone.";
+  render();
+  setTimeout(() => { const bt = document.getElementById("bnTitle"); if (bt) bt.value = t.banner; document.getElementById("mailSubj")?.scrollIntoView({ behavior: "smooth", block: "center" }); }, 50);
+};
+(function () {
+  const prev = BIZ_PANELS["Send Update Email"];
+  BIZ_PANELS["Send Update Email"] = function () {
+    let h = prev.apply(this, arguments);
+    if (!window.__stIsAdmin) return h;
+    const a = h.indexOf('<h3 class="sectionTitle">⚡ Ready-made updates</h3>');
+    if (a < 0) return h;
+    let b = a, n = UPDATE_TEMPLATES.length;
+    for (let k = 0; k < n; k++) b = h.indexOf("</button>", b) + 9;
+    const list = stReadyTemplates().map((t, i) => '<button class="resourceTile" onclick="stUseTemplate(' + i + ')"><strong>' + esc(t.label) + "</strong><small>" + esc(t.subject) + "</small></button>").join("");
+    return h.slice(0, a) + '<h3 class="sectionTitle">⚡ Ready-made updates</h3><p class="lcSmall">Newest first. Tap one to fill in the email and the banner headline. You can edit it before sending.</p>' + list + h.slice(b);
+  };
 })();
