@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#45205b">
+<meta name="color-scheme" content="light">
+<title>Scale &amp; Tell for Rescues · Intake to adoption in one app</title>
+<meta name="description" content="Intake, quarantine, medical, fosters, e-sign adoption contracts and impact reports in one app.">
+<meta property="og:title" content="Scale & Tell for Rescues · Intake to adoption in one app">
+<meta property="og:description" content="Intake, quarantine, medical, fosters, e-sign adoption contracts and impact reports in one app.">
+<meta property="og:image" content="https://scaleandtell.app/share-preview.jpg">
+<meta property="og:url" content="https://scaleandtell.app/rescue.html">
+<link rel="icon" href="./icon-192.png">
+<link rel="preload" as="image" href="./lp-r-animals.webp">
+<style>
+:root{--plum:#45205b;--plum2:#79538e;--ink:#34213f;--soft:#60486b;--cream:#fffaf7;--lav:#f4e5f3;--lav2:#ead7ef;--line:#dfcde6;--gold:#f6b93b;--gold2:#e9a21a;--leaf:#4f7a2a;--ok:#2f6b2f;--bad:#a3263b}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--cream);color:var(--ink);font:17px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+img{max-width:100%;height:auto;display:block}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+h1,h2,h3{color:var(--plum);line-height:1.15;margin:0 0 12px}
+h1{font:italic 700 clamp(32px,5vw,50px)/1.08 Georgia,"Times New Roman",serif;letter-spacing:-.5px}
+h2{font:italic 700 clamp(28px,4.4vw,42px)/1.12 Georgia,serif}
+h3{font-size:20px}
+p{margin:0 0 14px}
+.eyebrow{display:inline-block;font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--plum2);background:#fff;border:1px solid var(--line);border-radius:99px;padding:6px 12px;margin-bottom:14px}
+.cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;text-decoration:none;font:800 19px/1.2 system-ui,Arial,sans-serif;color:#2b1238;background:linear-gradient(180deg,#ffd067,var(--gold));border-radius:14px;padding:18px 26px;box-shadow:0 4px 0 var(--gold2),0 10px 24px #e9a21a40;transition:transform .08s}
+.cta:active{transform:translateY(2px);box-shadow:0 2px 0 var(--gold2)}
+.cta small{display:block;font-weight:600;font-size:13px;opacity:.85}
+.cta.two{flex-direction:column;gap:2px}
+.cta.block{width:100%}
+.ghost{display:inline-block;color:var(--plum);font-weight:700;text-decoration:underline;text-underline-offset:3px;background:none;border:0;font-size:16px;cursor:pointer;padding:8px 4px}
+.top{position:sticky;top:0;z-index:20;background:#fffaf7ee;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font:italic 700 22px Georgia,serif;color:var(--plum);text-decoration:none}
+.brand img{width:34px;height:34px;border-radius:9px}
+.top .cta{padding:10px 16px;font-size:15px;box-shadow:0 3px 0 var(--gold2)}
+/* hero */
+.hero{background:linear-gradient(180deg,#f4e5f3 0%,#fffaf7 100%);padding:34px 0 40px;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;align-items:center}
+.hero .sub{font-size:20px;color:var(--soft);max-width:560px}
+.hero .ctas{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:22px 0 14px}
+.trust{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px;color:var(--soft);font-weight:600}
+.trust span:before{content:"✓ ";color:var(--leaf);font-weight:900}
+.phone{position:relative;max-width:330px;margin:0 auto;border-radius:38px;padding:10px;background:#2b1238;box-shadow:0 30px 60px #45205b45}
+.phone img{border-radius:30px}
+.phone .tag{position:absolute;left:-30px;bottom:70px;background:#fff;border-radius:14px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--plum);box-shadow:0 10px 30px #45205b30;max-width:200px}
+.phone .tag2{left:auto;right:-26px;bottom:auto;top:60px}
+.art{margin-top:30px;border-radius:22px;overflow:hidden;border:1px solid var(--line)}
+section{padding:56px 0}
+.center{text-align:center}
+.narrow{max-width:760px;margin:0 auto}
+/* pain */
+.pain{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.painlist{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:24px 0}
+.painlist div{background:var(--lav);border-radius:16px;padding:16px 18px;font-weight:600}
+.painlist div b{display:block;color:var(--plum);font-size:18px;margin-bottom:2px}
+.turn{font:italic 700 24px/1.3 Georgia,serif;color:var(--plum);margin-top:8px}
+/* features */
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;margin:0 0 54px}
+.feat.flip .shot{order:2}
+.shot{max-width:300px;margin:0 auto;border-radius:30px;padding:8px;background:#2b1238;box-shadow:0 22px 46px #45205b38}
+.shot img{border-radius:24px;max-height:560px;object-fit:cover;object-position:top;width:100%}
+.feat ul{padding:0;margin:14px 0 0;list-style:none}
+.feat li{padding:6px 0 6px 30px;position:relative}
+.feat li:before{content:"✓";position:absolute;left:0;top:5px;width:22px;height:22px;border-radius:50%;background:var(--leaf);color:#fff;font-size:13px;font-weight:900;display:grid;place-items:center}
+.kicker{font-weight:800;color:var(--plum2);text-transform:uppercase;letter-spacing:1.2px;font-size:13px}
+/* stack */
+.stack{background:var(--plum);color:#fff;border-radius:26px;padding:34px 30px;max-width:820px;margin:0 auto;box-shadow:0 24px 50px #45205b40}
+.stack h2{color:#fff}
+.stack .row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px dashed #ffffff40}
+.stack .row b{color:#ffd067}
+.stack .row span:last-child{opacity:.85;text-align:right;font-size:15px;white-space:nowrap}
+.stack .total{font:italic 700 26px Georgia,serif;margin-top:18px;color:#ffd067}
+/* plans */
+.plans{background:linear-gradient(180deg,#fffaf7,#f4e5f3)}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px;gap:4px;margin:8px auto 26px;flex-wrap:wrap;justify-content:center}
+.seg button{border:0;background:none;border-radius:99px;padding:11px 18px;font:700 16px system-ui,Arial;color:var(--plum);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--plum);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;max-width:860px;margin:0 auto}
+.cards.one{max-width:440px}
+.card{position:relative;background:#fff;border:2px solid var(--line);border-radius:22px;padding:24px 22px 22px;text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column}
+.card:hover{border-color:var(--plum2)}
+.card[aria-checked=true]{border-color:var(--plum);box-shadow:0 0 0 4px #79538e30,0 18px 40px #45205b25}
+.card .pop{position:absolute;top:-13px;left:22px;background:var(--gold);color:#2b1238;font-weight:900;font-size:12px;letter-spacing:1px;text-transform:uppercase;border-radius:99px;padding:5px 12px}
+.card h3{margin:0 0 4px;font:italic 700 24px Georgia,serif}
+.price{font:800 40px/1 system-ui,Arial;color:var(--ink);margin:10px 0 2px}
+.price small{font-size:16px;font-weight:700;color:var(--soft)}
+.term{font-size:14px;color:var(--soft);font-weight:600;margin-bottom:14px}
+.card ul{list-style:none;padding:0;margin:0 0 18px;flex:1}
+.card li{padding:5px 0 5px 26px;position:relative;font-size:15.5px}
+.card li:before{content:"✓";position:absolute;left:0;color:var(--leaf);font-weight:900}
+.card li.plus:before{content:"★";color:var(--gold2)}
+.pick{display:block;width:100%;text-align:center;border-radius:12px;padding:13px;font-weight:800;border:2px solid var(--plum);color:var(--plum);background:#fff}
+.card[aria-checked=true] .pick{background:var(--plum);color:#fff}
+.give{max-width:760px;margin:22px auto 0;text-align:center;font-size:15px;color:var(--soft)}
+/* checkout */
+.checkout{max-width:620px;margin:34px auto 0;background:#fff;border:2px solid var(--plum);border-radius:24px;padding:26px 24px;box-shadow:0 22px 50px #45205b25;scroll-margin-top:80px}
+.sum{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--lav);border-radius:14px;padding:14px 16px;margin-bottom:18px}
+.sum b{color:var(--plum);font-size:18px}
+.sum .amt{font:800 22px system-ui,Arial;color:var(--ink);text-align:right}
+.sum .amt small{display:block;font-size:12px;font-weight:600;color:var(--soft)}
+.steps{display:flex;gap:8px;margin-bottom:16px;font-size:13px;font-weight:800;color:var(--soft);text-transform:uppercase;letter-spacing:.8px}
+.steps span{flex:1;border-top:4px solid var(--line);padding-top:6px}
+.steps span.on{border-color:var(--plum);color:var(--plum)}
+label{display:block;font-weight:700;margin:12px 0 5px;color:var(--plum)}
+input{width:100%;padding:15px 14px;border:1.5px solid #a98ab8;border-radius:12px;font:17px system-ui,Arial;color:var(--ink);background:#fff}
+input:focus{outline:3px solid #79538e55;border-color:var(--plum)}
+.hint{font-size:13.5px;color:var(--soft);margin-top:6px}
+.pwCheck{list-style:none;padding:0;margin:8px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:14px;color:var(--soft)}
+.pwCheck li.ok{color:var(--ok);font-weight:700}
+@media (max-width:480px){.pwCheck{grid-template-columns:1fr}}
+.msg{min-height:22px;margin:12px 0 0;font-weight:700}
+.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+.paybox{margin-top:6px}
+.secure{display:flex;align-items:center;gap:8px;justify-content:center;font-size:13.5px;color:var(--soft);margin-top:14px;text-align:center}
+.done{text-align:center;padding:10px 0}
+.done .big{font-size:56px;line-height:1}
+.hide{display:none!important}
+/* faq */
+details{background:#fff;border:1px solid var(--line);border-radius:16px;padding:4px 18px;margin:10px 0}
+summary{cursor:pointer;font-weight:800;color:var(--plum);padding:14px 0;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"+";float:right;font-size:22px;line-height:1}
+details[open] summary:after{content:"–"}
+details p{color:var(--soft)}
+.vs{max-width:820px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 14px 34px #45205b18}
+.vs table{width:100%;border-collapse:collapse;font-size:16px}
+.vs th{background:var(--lav);color:var(--plum);font-size:14px;text-transform:uppercase;letter-spacing:.8px;padding:14px 10px}
+.vs th.us{background:var(--plum);color:#fff}
+.vs td{padding:13px 12px;border-top:1px solid var(--line)}
+.vs td:nth-child(2),.vs td:nth-child(3){text-align:center;width:118px;font-size:20px;font-weight:900}
+.vs td:nth-child(3){background:#f8f1fa;color:var(--leaf)}
+.vs td:nth-child(2){color:#b9a6c2}
+.vs td small{display:block;color:var(--soft);font-size:13.5px}
+.vs .head{font-weight:800;color:var(--ink)}
+@media (max-width:560px){.vs td:nth-child(2),.vs td:nth-child(3){width:70px}.vs th{font-size:12px;padding:12px 6px}.vs td{padding:12px 8px;font-size:15px}}
+.final{background:var(--plum);color:#fff;text-align:center}
+.final h2{color:#fff}
+.final p{opacity:.9;font-size:19px}
+footer{padding:26px 0 90px;text-align:center;font-size:14px;color:var(--soft)}
+footer a{color:var(--plum)}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:#fffaf7f2;border-top:1px solid var(--line);display:none}
+.sticky .cta{width:100%;padding:15px;font-size:17px}
+/* features: grid on desktop, swipe carousel on phones */
+.fx{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+.fxc{background:#fff;border:1px solid var(--line);border-radius:24px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px #45205b14}
+.fxshot{background:linear-gradient(180deg,#f4e5f3,#fff);padding:22px 22px 0;height:340px;overflow:hidden;display:flex;justify-content:center}
+.fxshot img{width:250px;border-radius:24px 24px 0 0;border:6px solid #2b1238;border-bottom:0;object-fit:cover;object-position:top}
+.fxtxt{padding:18px 22px 22px}
+.fxtxt h3{font:italic 700 26px Georgia,serif;margin:6px 0 8px}
+.fxtxt p{margin:0;color:var(--soft)}
+.fxdots,.swipe{display:none}
+.pwrap{position:relative}
+.pwrap input{padding-right:70px}
+.eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--plum);font:700 14px system-ui,Arial;padding:10px;cursor:pointer}
+.brands{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:10px}
+.brands span{border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:800;color:var(--soft);background:#fff}
+.price-line{font-size:15px;font-weight:700;color:var(--plum);margin:-2px 0 12px}
+.price-line s{color:#9b86a5;font-weight:600}
+@media (max-width:820px){
+  .fx{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:0 -18px;padding:4px 18px 8px;scrollbar-width:none}
+  .fx::-webkit-scrollbar{display:none}
+  .fxc{flex:0 0 84%;scroll-snap-align:center}
+  .fxshot{height:250px;padding:16px 16px 0}
+  .fxshot img{width:190px}
+  .fxtxt{padding:14px 16px 18px}
+  .fxtxt h3{font-size:22px}
+  .fxtxt p{font-size:15.5px}
+  .fxdots{display:flex;justify-content:center;gap:7px;margin-top:12px}
+  .fxdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .fxdots i.on{background:var(--plum);width:22px;border-radius:5px}
+  .swipe{display:block;text-align:center;font-size:13px;color:var(--soft);font-weight:700;margin:6px 0 0}
+  /* hero: headline + offer + button all above the fold */
+  h1{font-size:30px;line-height:1.1}
+  h2{font-size:27px}
+  .hero{padding:16px 0 26px}
+  .eyebrow{font-size:11px;padding:5px 10px;margin-bottom:10px}
+  .hero .sub{font-size:16.5px;margin-bottom:0}
+  .hero .ctas{margin:16px 0 10px}
+  .hero .ctas .cta{width:100%}
+  .hero .ctas .ghost{width:100%;text-align:center}
+  .trust{font-size:13px;gap:4px 12px}
+  .phone{max-width:230px;margin-top:6px;max-height:330px;overflow:hidden;border-radius:30px 30px 0 0;padding-bottom:0;-webkit-mask-image:linear-gradient(#000 75%,transparent);mask-image:linear-gradient(#000 75%,transparent)}
+  .phone img{border-radius:22px 22px 0 0}
+  .phone .tag{display:none}
+  .pain{padding:34px 0}
+  .painlist{gap:8px;margin:16px 0}
+  .painlist div{padding:12px 14px;font-size:14.5px;font-weight:500}
+  .painlist div b{font-size:16px}
+  .turn{font-size:21px}
+  .vs td small{display:none}
+  .vs td{padding:11px 8px}
+  .top .wrap{height:54px}
+  .brand{font-size:19px}.brand img{width:30px;height:30px}
+  .top .cta{padding:8px 12px;font-size:14px}
+  .final{padding:40px 0}
+}
+@media (max-width:820px){
+  .hero .wrap,.feat{grid-template-columns:1fr}
+  .feat.flip .shot{order:0}
+  .hero{padding-top:22px}
+  .phone{max-width:270px}
+  .phone .tag{left:-8px;font-size:13px}.phone .tag2{display:none}
+  .painlist{grid-template-columns:1fr}
+  .stack{padding:26px 20px}
+  .stack .row{flex-direction:column;gap:2px}
+  .stack .row span:last-child{white-space:normal;text-align:left;font-size:14px;color:#ffd067;opacity:.9}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);width:100%;border-radius:18px}
+  .seg button{padding:10px 4px;font-size:14px;border-radius:14px}
+  .sticky{display:block}
+  section{padding:44px 0}
+  .checkout{padding:22px 16px}
+}
+
+/* V-short */
+.hero h1{margin-bottom:6px}
+.fxsec{padding:26px 0 10px}
+.fxc{margin:0}
+.fxc figcaption{padding:14px 16px;font:800 18px system-ui,Arial;color:var(--plum);text-align:center}
+.cmp{padding:26px 0}
+.vs td{font-weight:700;font-size:16px}
+.vs td.y{color:var(--leaf)!important}
+.vs td:nth-child(2){color:#c9a9b5}
+.plans{padding-top:30px}
+.seg{margin-top:0}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:20px auto 0;max-width:620px}
+.chips span{background:#fff;border:1px solid var(--line);border-radius:99px;padding:7px 12px;font-size:13.5px;font-weight:700;color:var(--plum)}
+footer{padding:20px 0 96px}
+@media (max-width:820px){
+  h1{font-size:36px}
+  .hero .sub{font-size:19px}
+  .hero{padding:22px 0 0}
+  .phone{max-height:300px}
+  .phone .tag{display:block;left:-4px;bottom:auto;top:110px;font-size:13px;padding:8px 10px}
+  .phone .tag2{display:block;right:-4px;left:auto;top:40px}
+  .fxc{flex:0 0 76%}
+  .fxshot{height:300px}
+  .fxshot img{width:210px}
+  .vs th{font-size:11px}
+  .vs td{font-size:15px}
+}
+
+.hl{color:var(--leaf)}
+.cta.big{font-size:21px;padding:20px 26px}
+.aio{padding:30px 0 10px}
+.aiogrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.aiogrid div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 6px;font-weight:800;font-size:14px;color:var(--plum);box-shadow:0 6px 16px #45205b10}
+.aiogrid i{display:block;font-style:normal;font-size:28px;line-height:1.2;margin-bottom:4px}
+@media (max-width:820px){.aiogrid{grid-template-columns:repeat(3,1fr);gap:8px}.aiogrid div{font-size:13px;padding:12px 4px}.cta.big{font-size:19px;padding:18px 14px}}
+</style>
+<script>
+/* Meta Pixel: paste your Pixel ID between the quotes (numbers only). Leave empty to turn tracking off. */
+window.ST_PIXEL_ID = '';
+(function (id) {
+  if (!/^\d{8,20}$/.test(id)) return;
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', id); fbq('track', 'PageView'); fbq('track', 'ViewContent', { content_name: document.title });
+})(window.ST_PIXEL_ID);
+</script>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <a class="brand" href="#"><img src="./icon-192.png" alt="">Scale &amp; Tell</a>
+  <a class="cta" href="#checkout">Get everything</a>
+</div></header>
+
+<!-- HERO -->
+<section class="hero"><div class="wrap">
+  <div>
+    <h1>Intake to adoption. <span class="hl">One app.</span></h1>
+    <p class="sub">Every animal, foster and adoption in one place. Ditch the spreadsheets.</p>
+    <div class="ctas">
+      <a class="cta two big" href="#checkout">Yes! Give me everything →<small>All-in-one · $29.99/year · cancel anytime</small></a>
+    </div>
+    <div class="trust"><span>Up to 400 animals</span><span>5 staff logins</span><span>Any phone or computer</span></div>
+  </div>
+  <div class="phone">
+    <img src="./lp-r-animals.webp" alt="Scale and Tell app" width="560" height="1212">
+    <div class="tag">💜 Biscuit is available</div>
+    <div class="tag tag2">✍️ Contract signed</div>
+  </div>
+</div></section>
+
+<!-- SEE IT -->
+<section class="fxsec"><div class="wrap">
+  <div class="fx" id="fx">
+    <figure class="fxc"><div class="fxshot"><img src="./lp-r-animals.webp" alt="Rescue animals" loading="lazy" width="560" height="1212"></div><figcaption>🏥 Every animal’s status</figcaption></figure>
+    <figure class="fxc"><div class="fxshot"><img src="./lp-r-contract.webp" alt="Adoption contract" loading="lazy" width="560" height="1212"></div><figcaption>✍️ E-sign adoption contracts</figcaption></figure>
+    <figure class="fxc"><div class="fxshot"><img src="./lp-r-fosters.webp" alt="Fosters" loading="lazy" width="560" height="1212"></div><figcaption>🏡 Foster tracking</figcaption></figure>
+    <figure class="fxc"><div class="fxshot"><img src="./lp-r-impact.webp" alt="Impact report" loading="lazy" width="560" height="1212"></div><figcaption>📊 Year-end impact report</figcaption></figure>
+  </div>
+  <div class="fxdots" id="fxdots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
+</div></section>
+
+<!-- ALL IN ONE -->
+<section class="aio"><div class="wrap narrow center">
+  <h2>Everything your rescue needs.</h2>
+  <div class="aiogrid"><div><i>📥</i>Intake</div><div><i>🧪</i>Quarantine</div><div><i>🩺</i>Medical &amp; meds</div><div><i>🏡</i>Fosters</div><div><i>💜</i>Available list</div><div><i>📝</i>Applications</div><div><i>✍️</i>E-sign contracts</div><div><i>📊</i>Impact report</div><div><i>💸</i>Donate button</div><div><i>🌐</i>Public page</div><div><i>👥</i>5 staff logins</div><div><i>📍</i>Rescue directory</div></div>
+  <a class="cta block" href="#checkout" style="margin-top:18px">Get it all for $29.99/yr →</a>
+</div></section>
+
+<!-- COMPARE -->
+<section id="compare" class="cmp"><div class="wrap narrow">
+  <h2 class="center" style="margin-bottom:14px">More than a spreadsheet</h2>
+  <div class="vs"><table>
+    <thead><tr><th></th><th>Spreadsheet</th><th class="us">Scale &amp; Tell</th></tr></thead>
+    <tbody>
+      <tr><td>📝 Intake records</td><td class="y">✓</td><td>✓</td></tr>
+      <tr><td>🏥 Live status board</td><td>✕</td><td>✓</td></tr>
+      <tr><td>🧪 Quarantine &amp; med reminders</td><td>✕</td><td>✓</td></tr>
+      <tr><td>🏡 Foster logins</td><td>✕</td><td>✓</td></tr>
+      <tr><td>📝 Adoption applications</td><td>✕</td><td>✓</td></tr>
+      <tr><td>✍️ E-sign contracts</td><td>✕</td><td>✓</td></tr>
+      <tr><td>📊 Impact report</td><td>✕</td><td>✓</td></tr>
+      <tr><td>💸 Donate button</td><td>✕</td><td>✓</td></tr>
+    </tbody>
+  </table></div>
+  <a class="cta block" href="#checkout" style="margin-top:18px">Switch to Scale &amp; Tell →</a>
+</div></section>
+
+<!-- PLANS + CHECKOUT -->
+<section class="plans" id="plans" style="scroll-margin-top:54px"><div class="wrap center">
+  <div class="cards" id="cards" role="radiogroup" aria-label="Plans"></div>
+
+  <div class="checkout" id="checkout" style="text-align:left">
+    <div class="sum"><div><small style="color:var(--soft);font-weight:700">YOUR PLAN</small><br><b id="sumName">Rescue</b></div><div class="amt" id="sumAmt">$29.99<span style="font-size:15px">/year</span><small>billed yearly · cancel anytime</small></div></div>
+    <div class="steps" id="stepBar"><span class="on">1 · Account</span><span>2 · Pay</span></div>
+
+    <form id="acct" novalidate>
+      <label for="em">Email</label>
+      <input id="em" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com">
+      <label for="pw">Create a password</label>
+      <div class="pwrap"><input id="pw" type="password" autocomplete="new-password" minlength="8" required placeholder="Create a password"><button class="eye" type="button" id="eye" aria-label="Show password">Show</button></div>
+      <ul class="pwCheck" id="pwCheck" aria-live="polite"></ul>
+      <button class="cta block" id="go" type="submit" style="margin-top:14px">Continue to payment →</button>
+      <p class="msg" id="msg1" role="status"></p>
+    </form>
+
+    <div id="pay" class="hide">
+      <p style="font-weight:700;margin-bottom:10px">Any debit or credit card. No PayPal account needed.</p>
+      <div id="cardBtn" class="paybox"></div>
+      <div id="ppBtn" class="paybox"></div>
+      <p class="msg" id="msg2" role="status"></p>
+      <button class="ghost" type="button" id="back">← Change email</button>
+    </div>
+
+    <div id="done" class="hide done">
+      <div class="big">🎉</div>
+      <h2 id="doneTitle">You’re in!</h2>
+      <p id="doneText"></p>
+      <a class="cta" href="https://scaleandtell.app/">Open Scale &amp; Tell →</a>
+    </div>
+
+    <p class="secure">🔒 Secure checkout by PayPal</p>
+    <div class="brands" aria-label="Cards accepted"><span>VISA</span><span>Mastercard</span><span>AMEX</span><span>Discover</span><span>PayPal</span></div>
+  </div>
+  <div class="chips"><span>✓ $29.99/year</span><span>✓ Cancel anytime</span><span>✓ Works like an app</span><span><a href="mailto:support@scaleandtell.app?subject=501(c)(3)%20rescue%20rate" style="color:inherit">501(c)(3)? Ask about $14.99/yr</a></span></div>
+</div></section>
+
+<footer><div class="wrap">
+  <p><a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a> · <a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></p>
+</div></footer>
+
+<div class="sticky" id="sticky"><a class="cta" href="#checkout" id="stickyBtn">Get Rescue · $29.99/year →</a></div>
+
+<script src="./supabase.min.js?v=2.57.4"></script>
+<script>
+'use strict';
+(function () {
+  var URL_ = 'https://fitlubsbesadknkjimqd.supabase.co', KEY = 'sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG';
+  var PLANS = {
+    founding_keeper: { name: 'Founding Keeper', price: '$14.99', unit: '', term: 'one time · yours forever', seg: 'pets', pop: 'All-in-one', once: true,
+      perks: ['<b>40 animals</b> · <b>3 logins</b>', 'Freezer, Feed Day &amp; reminders', 'Vet, meds &amp; shed predictions', 'Care sheets &amp; printables'], cta: 'Get everything' },
+    founding_breeder: { name: 'Founding Breeder', price: '$19.99', unit: '/year', term: 'billed yearly · cancel anytime', seg: 'breed', pop: 'Best for growing breeders',
+      perks: ['<b>150 animals</b> · <b>3 logins</b>', 'Racks, pairings &amp; clutches', 'Public page + Inbox', 'Everything in Founding Keeper'], cta: 'Get Founding Breeder' },
+    premium_breeder: { name: 'Premium Breeder', price: '$29.99', unit: '/year', term: 'billed yearly · cancel anytime', seg: 'breed',
+      perks: ['<b>400 animals</b> · <b>5 logins</b>', 'Your logo &amp; colors', 'Genetics, invoices &amp; waitlist', 'Everything in Founding Breeder'], cta: 'Get Premium Breeder' },
+    rescue: { name: 'Rescue', price: '$29.99', unit: '/year', term: 'billed yearly · verified 501(c)(3)s pay $14.99', seg: 'rescue', pop: 'For rescues',
+      perks: ['<b>400 animals</b> · <b>5 staff logins</b>', 'Intake, medical &amp; fosters', 'E-sign adoption contracts', 'Rescue listing + donate button'], cta: 'Get Rescue' }
+  };
+  var PAGE_SEG = 'rescue';
+  var DEFAULT = { pets: 'founding_keeper', breed: 'founding_breeder', rescue: 'rescue' };
+  var seg = PAGE_SEG, plan = 'rescue', email = '', client = null, cfg = null, existing = false;
+  var $ = function (id) { return document.getElementById(id); };
+  try { client = window.supabase.createClient(URL_, KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }); } catch (e) {}
+
+  function cards() {
+    var keys = Object.keys(PLANS).filter(function (k) { return PLANS[k].seg === seg; });
+    $('cards').classList.toggle('one', keys.length === 1);
+    $('cards').innerHTML = keys.map(function (k) {
+      var p = PLANS[k];
+      return '<div class="card" role="radio" tabindex="0" data-k="' + k + '" aria-checked="' + (k === plan) + '">' + (p.pop ? '<span class="pop">' + p.pop + '</span>' : '') +
+        '<h3>' + p.name + '</h3><div class="price">' + p.price + '<small>' + p.unit + '</small></div><div class="term">' + p.term + '</div><ul>' +
+        p.perks.map(function (x, i) { return '<li' + (i === 0 && /plus:|Everything/.test(x) ? ' class="plus"' : '') + '>' + x + '</li>'; }).join('') +
+        '</ul><span class="pick">' + (k === plan ? '✓ Selected' : p.cta) + '</span></div>';
+    }).join('');
+  }
+  function choose(k, scroll) {
+    plan = k; var p = PLANS[k];
+    cards();
+    $('sumName').textContent = p.name;
+    $('sumAmt').innerHTML = p.price + (p.unit ? '<span style="font-size:15px">' + p.unit + '</span>' : '') + '<small>' + p.term + '</small>';
+    $('go').textContent = k === 'free' ? 'Create my free account →' : 'Continue to payment →';
+    $('stepBar').classList.toggle('hide', k === 'free');
+    if (!$('pay').classList.contains('hide')) showStep(1);
+    $('stickyBtn').textContent = ('Get ' + p.name) + ' · ' + p.price + (p.unit || '') + ' →';
+    if (scroll) $('checkout').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function setSeg(s) {
+    seg = s;
+    document.querySelectorAll('[data-seg]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.seg === s)); });
+    choose(DEFAULT[s], false);
+  }
+  document.querySelectorAll('[data-seg]').forEach(function (b) { b.onclick = function () { setSeg(b.dataset.seg); }; });
+  $('cards').addEventListener('click', function (e) { var c = e.target.closest('.card'); if (c) choose(c.dataset.k, true); });
+  $('cards').addEventListener('keydown', function (e) { var c = e.target.closest('.card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); choose(c.dataset.k, true); } });
+  document.querySelectorAll('[data-plan]').forEach(function (a) { a.addEventListener('click', function () { setSeg('pets'); choose(a.dataset.plan, false); }); });
+
+  function rules(pw) { return [['At least 8 characters', pw.length >= 8], ['A capital letter', /[A-Z]/.test(pw)], ['A number', /[0-9]/.test(pw)], ['A symbol like ! @ # $', /[^A-Za-z0-9]/.test(pw)]]; }
+  function paintPw() { $('pwCheck').innerHTML = rules($('pw').value).map(function (r) { return '<li class="' + (r[1] ? 'ok' : '') + '">' + (r[1] ? '✓ ' : '○ ') + r[0] + '</li>'; }).join(''); }
+  $('pw').addEventListener('input', paintPw); paintPw();
+  function say(id, t, ok) { var el = $(id); el.textContent = t || ''; el.className = 'msg' + (t ? ok ? ' ok' : ' err' : ''); }
+  function showStep(n) {
+    $('acct').classList.toggle('hide', n !== 1); $('pay').classList.toggle('hide', n !== 2); $('done').classList.toggle('hide', n !== 3);
+    var s = $('stepBar').children; s[0].className = n >= 1 ? 'on' : ''; s[1].className = n >= 2 ? 'on' : '';
+  }
+  function friendly(err) {
+    var m = String(err && (err.message || err.msg || err) || '');
+    if (/weak|pwned|leak|breach/i.test(m)) return 'That password has shown up in a data breach. Please choose a different one.';
+    if (/should contain|characters/i.test(m)) return 'Please choose a password with at least 8 characters.';
+    if (/rate|too many/i.test(m)) return 'Too many tries. Please wait a minute and try again.';
+    if (/fetch|network|load failed/i.test(m)) return 'Couldn’t connect. Check your internet and try again.';
+    return m || 'Something went wrong. Please try again.';
+  }
+  async function invoke(body) {
+    var r = await client.functions.invoke('founder-checkout', { body: body });
+    if (r.error) { var t = ''; try { t = (await r.error.context.json()).error; } catch (e) {} throw Error(t || 'Checkout is unavailable right now. Please try again.'); }
+    return r.data || {};
+  }
+
+  $('acct').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var em = $('em').value.trim().toLowerCase(), pw = $('pw').value;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || em.length > 120) return say('msg1', 'Please enter a valid email.');
+    var miss = rules(pw).filter(function (r) { return !r[1]; }).map(function (r) { return r[0].replace(/ like.*/, '').toLowerCase(); });
+    if (miss.length) return say('msg1', 'Your password still needs: ' + miss.join(', ') + '.');
+    if (!client) return say('msg1', 'Couldn’t load secure sign-up. Please refresh and try again.');
+    $('go').disabled = true; say('msg1', plan === 'free' ? 'Creating your account…' : 'Setting up your account…', true);
+    try {
+      var r = await client.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: 'https://scaleandtell.app/' } });
+      if (r.error) throw r.error;
+      existing = !!(r.data && r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length === 0);
+      email = em; say('msg1', '');
+      try { if (window.fbq) fbq('track', plan === 'free' ? 'CompleteRegistration' : 'InitiateCheckout', { content_name: PLANS[plan].name }); } catch (x) {}
+      if (plan === 'free') return finish('free');
+      showStep(2); mountPay(); setTimeout(function () { $('checkout').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+    } catch (err) { say('msg1', friendly(err)); }
+    finally { $('go').disabled = false; }
+  });
+  $('back').onclick = function () { showStep(1); };
+
+  function loadSdk(clientId, sub) {
+    var ns = sub ? 'paypalSub' : 'paypalOnce';
+    if (window[ns]) return Promise.resolve(window[ns]);
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(clientId) + '&currency=USD&components=buttons&enable-funding=card' + (sub ? '&vault=true&intent=subscription' : '&intent=capture');
+      s.setAttribute('data-namespace', ns);
+      s.onload = function () { window[ns] ? res(window[ns]) : rej(Error('PayPal did not load.')); };
+      s.onerror = function () { rej(Error('Secure checkout couldn’t load. Check your connection and try again.')); };
+      document.head.appendChild(s);
+    });
+  }
+  async function mountPay() {
+    $('cardBtn').innerHTML = ''; $('ppBtn').innerHTML = '';
+    say('msg2', 'Loading secure checkout…', true);
+    try {
+      cfg = cfg || await invoke({ action: 'config' });
+      if (!cfg.ready) throw Error('Checkout is being set up. Please check back soon.');
+      var p = PLANS[plan], sub = !p.once, pp = await loadSdk(cfg.clientId, sub), planId = '';
+      if (sub) { var pl = await invoke({ action: 'guest_plans' }); planId = pl.plans && pl.plans[plan]; if (!planId) throw Error('This plan isn’t available right now.'); }
+      var opts = {
+        style: { layout: 'vertical', shape: 'pill', height: 48 },
+        onApprove: async function (d) {
+          say('msg2', 'Confirming your payment…', true);
+          try {
+            if (sub) await invoke({ action: 'guest_subscribed', subscriptionId: d.subscriptionID, email: email });
+            else {
+              try { localStorage.setItem('stLpPending', JSON.stringify({ o: d.orderID, e: email, t: Date.now() })); } catch (x) {}
+              var c = await invoke({ action: 'guest_capture', orderId: d.orderID, email: email });
+              if (!c.active) throw Error(c.error || 'Payment could not be confirmed.');
+              try { localStorage.removeItem('stLpPending'); } catch (x) {}
+            }
+            try { if (window.fbq) fbq('track', 'Purchase', { value: Number(p.price.replace('$', '')), currency: 'USD', content_name: p.name }); } catch (x) {}
+            finish(plan);
+          } catch (err) { if (sub && /automatically/i.test(err.message || '')) return finish(plan); say('msg2', friendly(err) + ' If you see a charge, don’t pay again. Email support@scaleandtell.app and we’ll fix it fast.'); }
+        },
+        onCancel: function () { say('msg2', 'Checkout closed. You weren’t charged.'); },
+        onError: function () { say('msg2', 'Something went wrong with checkout. If you see a pending charge, don’t pay again. It will drop off, or email support@scaleandtell.app.'); }
+      };
+      if (sub) opts.createSubscription = function (data, actions) { return actions.subscription.create({ plan_id: planId, custom_id: 'e:' + email }); };
+      else opts.createOrder = async function () { var o = await invoke({ action: 'guest_create', email: email }); if (o.active) { finish('owned'); throw Error('owned'); } return o.id; };
+      var card = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.CARD, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'black' } }));
+      if (card.isEligible()) await card.render('#cardBtn');
+      var ppb = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.PAYPAL, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'gold' } }));
+      if (ppb.isEligible()) await ppb.render('#ppBtn');
+      say('msg2', '');
+    } catch (err) { say('msg2', friendly(err)); }
+  }
+  function finish(kind) {
+    showStep(3);
+    var p = PLANS[plan];
+    if (kind === 'owned') { $('doneTitle').textContent = 'You already have it ♡'; $('doneText').innerHTML = 'Founding Keeper is already on <b>' + esc(email) + '</b>. Sign in to Scale &amp; Tell to use it.'; return; }
+    if (kind === 'free') { $('doneTitle').textContent = existing ? 'Welcome back ♡' : 'Almost there! ♡'; $('doneText').innerHTML = existing ? 'You already have an account with <b>' + esc(email) + '</b>. Open Scale &amp; Tell and sign in.' : 'We just emailed <b>' + esc(email) + '</b>. Tap the link to confirm your account, then open Scale &amp; Tell and sign in.'; return; }
+    $('doneTitle').textContent = 'Welcome, ' + p.name + '! 🎉';
+    $('doneText').innerHTML = existing
+      ? 'Your plan is now on your account (<b>' + esc(email) + '</b>). Open Scale &amp; Tell and sign in. If it still shows your old plan, close the app all the way and open it again.'
+      : 'Your plan is unlocked and waiting. <b>Next step:</b> we emailed <b>' + esc(email) + '</b>. Tap the link to confirm your account, then sign in. That’s it!';
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
+
+  // A payment approved but not confirmed (closed tab, lost signal) is finished on the next visit.
+  (async function () {
+    var p = null; try { p = JSON.parse(localStorage.getItem('stLpPending') || 'null'); } catch (e) {}
+    if (!p || !p.o || Date.now() - p.t > 3 * 864e5 || !client) return;
+    try { var c = await invoke({ action: 'guest_capture', orderId: p.o, email: p.e }); localStorage.removeItem('stLpPending'); if (c.active) { email = p.e; plan = 'founding_keeper'; choose(plan, false); finish('paid'); $('checkout').scrollIntoView(); } }
+    catch (e) { if (!/unavailable|connect/i.test(e.message)) try { localStorage.removeItem('stLpPending'); } catch (x) {} }
+  })();
+
+  // Ads can link straight to a plan: start.html?plan=founding_breeder
+  var q = new URLSearchParams(location.search).get('plan');
+  if (q && PLANS[q] && PLANS[q].seg === PAGE_SEG) { setSeg(PAGE_SEG); choose(q, false); } else setSeg(PAGE_SEG);
+
+  // Sticky button on phones until they reach the plans.
+  var io = 'IntersectionObserver' in window && new IntersectionObserver(function (es) { es.forEach(function (x) { $('sticky').style.transform = x.isIntersecting ? 'translateY(120%)' : ''; }); });
+  if (io) { io.observe($('checkout')); }
+  $('sticky').style.transition = 'transform .2s';
+  $('stickyBtn').addEventListener('click', function () { setTimeout(function () { try { $('em').focus({ preventScroll: true }); } catch (e) {} }, 500); });
+  $('eye').onclick = function () { var t = $('pw').type === 'password'; $('pw').type = t ? 'text' : 'password'; $('eye').textContent = t ? 'Hide' : 'Show'; };
+  var fx = $('fx'), dots = $('fxdots').children;
+  fx.addEventListener('scroll', function () { var w = fx.firstElementChild.getBoundingClientRect().width + 14, i = Math.round(fx.scrollLeft / w); for (var k = 0; k < dots.length; k++) dots[k].className = k === i ? 'on' : ''; }, { passive: true });
+})();
+</script>
+</body>
+</html>
