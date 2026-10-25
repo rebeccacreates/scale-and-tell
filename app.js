@@ -3310,7 +3310,7 @@ function compassMarkup(a) {
     d.lines
       .map((v, i) => '<div class="compassInsight"><small>' + insightLabel(v) + "</small><p>" + esc(v) + "</p></div>")
       .join("") +
-    '<div class="inlineActions"><button class="action" onclick="openPanel(\'Care Plan\',selectedAnimal)">Edit personal care targets</button><button class="action secondary" onclick="openPanel(\'Observations\',selectedAnimal)">+ Log observation</button><button class="action secondary" onclick="openPanel(\'Habitat\',selectedAnimal)">View habitat</button><button class="action secondary" onclick="openPanel(\'Care Handoff\',selectedAnimal)">Care handoff</button><button class="action secondary" onclick="openPanel(\'Health & Vet\',selectedAnimal)">Health / Vet history</button><button class="action secondary" onclick="openPanel(\'Pet-Sitter Sheet\',selectedAnimal)">Pet-sitter sheet</button></div><h3 class="sectionTitle">Next on the schedule</h3>' +
+    '<div class="inlineActions"><button class="action" onclick="openPanel(\'Care Plan\',selectedAnimal)">🔁 Care plan: targets, feeding rotation &amp; sitter notes</button><button class="action secondary" onclick="openPanel(\'Observations\',selectedAnimal)">+ Log observation</button><button class="action secondary" onclick="openPanel(\'Habitat\',selectedAnimal)">View habitat</button><button class="action secondary" onclick="openPanel(\'Care Handoff\',selectedAnimal)">Care handoff</button><button class="action secondary" onclick="openPanel(\'Health & Vet\',selectedAnimal)">Health / Vet history</button><button class="action secondary" onclick="openPanel(\'Pet-Sitter Sheet\',selectedAnimal)">Pet-sitter sheet</button></div><h3 class="sectionTitle">Next on the schedule</h3>' +
     taskMarkup(d.pending) +
     '<p class="muted">Upcoming tasks come from the existing Calendar. Insights do not create duplicate reminders or automatically adjust schedules.</p>'
   );
@@ -3660,7 +3660,7 @@ function habitatMarkup(a) {
   return (
     gaugeComingSoon() +
     habitatReadingSummary(a) +
-    '<div class="inlineActions"><button class="action" onclick="openPanel(&quot;Enclosure Care&quot;,selectedAnimal)">+ Log habitat check</button><button class="action secondary" onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">Edit personal targets</button></div><p class="helperLine">' +
+    '<div class="inlineActions"><button class="action" onclick="openPanel(&quot;Enclosure Care&quot;,selectedAnimal)">+ Log habitat check</button><button class="action secondary" onclick="openPanel(&quot;Care Plan&quot;,selectedAnimal)">🔁 Care plan: targets, feeding rotation &amp; sitter notes</button></div><p class="helperLine">' +
     (targets.length ? "Your chosen targets: " + esc(targets.join(" · ")) : "No personal habitat targets set yet.") +
     '</p><details class="compactDisclosure"><summary>Sensors (' +
     sensors.length +
@@ -3716,7 +3716,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.88";
+const SCALE_LC_VERSION = "3.89";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -12909,6 +12909,11 @@ function helpMarkup() {
 /* V3.86 · ONE list of releases. Add the newest at the top each update: the What's New popup, and the ready-made
    update emails + banners in Send Update Email all build themselves from it. */
 const ST_RELEASES = [
+  { v: "3.89", date: "2026-10-25", subject: "No more double logs ♡", banner: "New: duplicate log check ♡", items: [
+    ["✅", "“Saved” every time", "You’ll see a quick confirmation each time a log is saved, so you know it worked."],
+    ["🛑", "No more double logs", "Log the exact same thing twice for the same day and the app checks with you first."],
+    ["🔁", "Easier to find your care plan", "Habitat tab → Care plan: targets, feeding rotation & sitter notes."],
+  ] },
   { v: "3.88", date: "2026-10-24", subject: "Feeding rotations, day & night ranges and more ♡", banner: "New: feeding rotations ♡", items: [
     ["🌙", "Day & night ranges", "Add night temperature and humidity goals in an animal’s care plan, perfect for cresties and others that get more humid at night."],
     ["🍽", "Feeding notes for sitters", "Write which feeder, how many and which supplements in the care plan. It shows on the pet-sitter sheet along with your supplement schedule."],
@@ -13463,7 +13468,7 @@ BIZ_PANELS["Feed Day"] = () => {
       }).join("") +
       '<button class="action" onclick="feedDaySave()">Save feedings</button>'
       : '<p class="helperLine">' + (feedDayFilter === "due" ? "Nobody is due right now ♡ Tap All to log anyway." : "No animals here.") + "</p>") +
-    '<p class="lcSmall">Each animal’s next feeding reminder moves forward automatically when you’ve set a feeding interval.' + ' <button class="authLink" onclick="openPanel(\'Feeders\')">🧊 Feeder freezer</button>' + "</p>";
+    '<p class="lcSmall">Each animal’s next feeding reminder moves forward automatically when you’ve set a feeding interval.' + ' <button class="authLink" onclick="openPanel(\'Feeders\')">🧊 Feeder freezer</button>' + " · Set a feeding rotation (calcium → D3 → vitamins) in each animal’s Habitat tab → Care plan.</p>";
 };
 function feedDaySave() {
   const date = document.getElementById("fdDate")?.value, time = (document.getElementById("fdTime")?.value || "").trim();
@@ -14441,5 +14446,84 @@ stUseTemplate = function (i) {
     for (let k = 0; k < n; k++) b = h.indexOf("</button>", b) + 9;
     const list = stReadyTemplates().map((t, i) => '<button class="resourceTile" onclick="stUseTemplate(' + i + ')"><strong>' + esc(t.label) + "</strong><small>" + esc(t.subject) + "</small></button>").join("");
     return h.slice(0, a) + '<h3 class="sectionTitle">⚡ Ready-made updates</h3><p class="lcSmall">Newest first. Tap one to fill in the email and the banner headline. You can edit it before sending.</p>' + list + h.slice(b);
+  };
+})();
+
+/* --- 3.89 · Saved confirmations + duplicate log check --- */
+function stDupKey(e) {
+  const n = (v) => String(v ?? "").trim().toLowerCase();
+  const d = e.section === "Weight Tracker" ? String(parseFloat(e.detail) || n(e.detail)) : n(e.detail);
+  return [e.section, e.animal, e.date, d, n(e.preyType), n(e.notes), n(e.product), n(e.supplement), n(e.bulb), n(e.warmTemp), n(e.coolTemp), n(e.humidity)].join("|");
+}
+function stFindDup(e) {
+  if (!e || e.section === "Calendar" || e.section === "Ledger") return null;
+  const k = stDupKey(e);
+  return entries.find((x) => x !== e && x.section === e.section && x.animal === e.animal && x.date === e.date && stDupKey(x) === k) || null;
+}
+function stDupLabel(e) {
+  const what = e.section === "Weight Tracker" ? (parseFloat(e.detail) || e.detail) + " g weight" : e.section === "Feeding Tracker" ? "feeding (" + [e.detail, e.preyType].filter(Boolean).join(" · ") + ")" : (e.detail || e.section).toLowerCase();
+  return e.animal + " already has a " + what + " logged for " + (e.date === today() ? "today" : niceDate(e.date)) + ".";
+}
+/* Ask before keeping an exact repeat; returns true when the new entry was removed. */
+function stDupUndo(e) {
+  if (!stFindDup(e)) return false;
+  if (confirm(stDupLabel(e) + "\n\nLog it again anyway?")) return false;
+  const k = entries.indexOf(e);
+  if (k >= 0) entries.splice(k, 1);
+  try { if (e.fz) stFreezerGive(e.fz); } catch (x) {}
+  try { save(); } catch (x) {}
+  render();
+  stToast("Not logged again. It was already saved ♡");
+  return true;
+}
+(function () {
+  const baseSave = saveEntry;
+  saveEntry = function () {
+    const before = new Set(entries), sec = current;
+    const r = baseSave.apply(this, arguments);
+    try {
+      const e = entries.find((x) => !before.has(x)) || null;
+      if (!e || sec === "Calendar") return r;
+      if (stDupUndo(e)) return r;
+      const toasted = e.fz || (e.section === "Feeding Tracker" && feedingInterval(e.animal));
+      if (!toasted) stToast("✓ Saved ♡ " + e.animal + " · " + (e.section === "Weight Tracker" ? e.detail + " g" : e.detail || e.section));
+    } catch (x) {}
+    return r;
+  };
+  const baseQuick = quickLogEntry;
+  quickLogEntry = function (q, extra) {
+    const before = new Set(entries);
+    const r = baseQuick.apply(this, arguments);
+    try { const e = entries.find((x) => !before.has(x)) || null; if (e) stDupUndo(e); } catch (x) {}
+    return r;
+  };
+  const baseWeight = saveWeight;
+  saveWeight = function () {
+    const before = new Set(entries);
+    const r = baseWeight.apply(this, arguments);
+    try {
+      const e = entries.find((x) => !before.has(x)) || null;
+      if (e && !stDupUndo(e)) stToast("✓ Saved ♡ " + e.animal + " · " + e.detail);
+    } catch (x) {}
+    return r;
+  };
+  const baseFeedDay = feedDaySave;
+  feedDaySave = function () {
+    try {
+      const date = document.getElementById("fdDate")?.value || today();
+      const dups = [];
+      feedDayRows.forEach((a, n) => {
+        const choice = document.querySelector('input[name="rf' + n + '"]:checked')?.value;
+        if (!choice) return;
+        const prey = choice === "Skipped feeding" ? "" : (document.getElementById("fdPrey" + n)?.value || "").trim().slice(0, 60);
+        const cand = { section: "Feeding Tracker", animal: a, detail: choice, date, notes: "", preyType: prey };
+        if (stFindDup(cand)) dups.push(a);
+      });
+      if (dups.length && !confirm((dups.length === 1 ? dups[0] + " already has" : dups.join(", ") + " already have") + " this exact feeding logged for " + (date === today() ? "today" : niceDate(date)) + ".\n\nSave all of these anyway?")) {
+        stToast("Nothing saved. Those feedings were already logged ♡");
+        return;
+      }
+    } catch (x) {}
+    return baseFeedDay.apply(this, arguments);
   };
 })();
