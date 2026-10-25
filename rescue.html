@@ -249,6 +249,8 @@ footer{padding:20px 0 96px}
 .aiogrid div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 6px;font-weight:800;font-size:14px;color:var(--plum);box-shadow:0 6px 16px #45205b10}
 .aiogrid i{display:block;font-style:normal;font-size:28px;line-height:1.2;margin-bottom:4px}
 @media (max-width:820px){.aiogrid{grid-template-columns:repeat(3,1fr);gap:8px}.aiogrid div{font-size:13px;padding:12px 4px}.cta.big{font-size:19px;padding:18px 14px}}
+.review{max-width:560px;margin:0 auto 22px;background:#fff;border:2px solid #e8dcee;border-radius:20px;padding:18px 20px;text-align:left}.review .stars{color:#f2b53a;font-size:20px;letter-spacing:2px}.review blockquote{margin:6px 0 8px;font:italic 600 19px/1.4 Georgia,serif;color:#45205b}.review figcaption{font-size:13px;color:var(--soft);font-weight:700}
+.payFirst{font-size:14px;color:var(--soft);background:#f6eef9;border-radius:12px;padding:10px 12px;margin:10px 0 14px;line-height:1.4}
 </style>
 <script>
 /* Meta Pixel: paste your Pixel ID between the quotes (numbers only). Leave empty to turn tracking off. */
@@ -274,7 +276,7 @@ window.ST_PIXEL_ID = '2580184572460750';
     <h1>Intake to adoption. <span class="hl">One app.</span></h1>
     <p class="sub">Every animal, foster and adoption in one place. Ditch the spreadsheets.</p>
     <div class="ctas">
-      <a class="cta two big" href="#checkout">Yes! Give me everything →<small>All-in-one · $29.99/year · cancel anytime</small></a>
+      <a class="cta two big" href="#checkout">Yes! Give me everything →<small>All-in-one · $39.99/year · cancel anytime</small></a>
     </div>
     <div class="trust"><span>Up to 400 animals</span><span>5 staff logins</span><span>Any phone or computer</span></div>
   </div>
@@ -300,7 +302,7 @@ window.ST_PIXEL_ID = '2580184572460750';
 <section class="aio"><div class="wrap narrow center">
   <h2>Everything your rescue needs.</h2>
   <div class="aiogrid"><div><i>📥</i>Intake</div><div><i>🧪</i>Quarantine</div><div><i>🩺</i>Medical &amp; meds</div><div><i>🏡</i>Fosters</div><div><i>💜</i>Available list</div><div><i>📝</i>Applications</div><div><i>✍️</i>E-sign contracts</div><div><i>📊</i>Impact report</div><div><i>💸</i>Donate button</div><div><i>🌐</i>Public page</div><div><i>👥</i>5 staff logins</div><div><i>📍</i>Rescue directory</div></div>
-  <a class="cta block" href="#checkout" style="margin-top:18px">Get it all for $29.99/yr →</a>
+  <a class="cta block" href="#checkout" style="margin-top:18px">Get it all for $39.99/yr →</a>
 </div></section>
 
 <!-- COMPARE -->
@@ -326,9 +328,14 @@ window.ST_PIXEL_ID = '2580184572460750';
 <section class="plans" id="plans" style="scroll-margin-top:54px"><div class="wrap center">
   <div class="cards" id="cards" role="radiogroup" aria-label="Plans"></div>
 
+  <figure class="review">
+    <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+    <blockquote>“So far I am really enjoying how much easier it’s been to set up and use than other apps we’ve tried.”</blockquote>
+    <figcaption>Mara F. · crested gecko &amp; blue tongue skink keeper</figcaption>
+  </figure>
   <div class="checkout" id="checkout" style="text-align:left">
-    <div class="sum"><div><small style="color:var(--soft);font-weight:700">YOUR PLAN</small><br><b id="sumName">Rescue</b></div><div class="amt" id="sumAmt">$29.99<span style="font-size:15px">/year</span><small>billed yearly · cancel anytime</small></div></div>
-    <div class="steps" id="stepBar"><span class="on">1 · Account</span><span>2 · Pay</span></div>
+    <div class="sum"><div><small style="color:var(--soft);font-weight:700">YOUR PLAN</small><br><b id="sumName">Rescue</b></div><div class="amt" id="sumAmt">$39.99<span style="font-size:15px">/year</span><small>billed yearly · cancel anytime</small></div></div>
+    <p class="payFirst" id="stepBar">🔒 Pick your login, then pay below. Your account is created the moment your payment goes through.</p>
 
     <form id="acct" novalidate>
       <label for="em">Email</label>
@@ -336,16 +343,15 @@ window.ST_PIXEL_ID = '2580184572460750';
       <label for="pw">Create a password</label>
       <div class="pwrap"><input id="pw" type="password" autocomplete="new-password" minlength="8" required placeholder="Create a password"><button class="eye" type="button" id="eye" aria-label="Show password">Show</button></div>
       <ul class="pwCheck" id="pwCheck" aria-live="polite"></ul>
-      <button class="cta block" id="go" type="submit" style="margin-top:14px">Continue to payment →</button>
+      <button class="cta block hide" id="go" type="submit" style="margin-top:14px">Create my free account →</button>
       <p class="msg" id="msg1" role="status"></p>
     </form>
 
-    <div id="pay" class="hide">
-      <p style="font-weight:700;margin-bottom:10px">Any debit or credit card. No PayPal account needed.</p>
+    <div id="pay">
+      <p style="font-weight:700;margin:14px 0 10px">Pay with any debit or credit card. No PayPal account needed.</p>
       <div id="cardBtn" class="paybox"></div>
       <div id="ppBtn" class="paybox"></div>
       <p class="msg" id="msg2" role="status"></p>
-      <button class="ghost" type="button" id="back">← Change email</button>
     </div>
 
     <div id="done" class="hide done">
@@ -358,14 +364,14 @@ window.ST_PIXEL_ID = '2580184572460750';
     <p class="secure">🔒 Secure checkout by PayPal</p>
     <div class="brands" aria-label="Cards accepted"><span>VISA</span><span>Mastercard</span><span>AMEX</span><span>Discover</span><span>PayPal</span></div>
   </div>
-  <div class="chips"><span>✓ $29.99/year</span><span>✓ Cancel anytime</span><span>✓ Works like an app</span><span><a href="mailto:support@scaleandtell.app?subject=501(c)(3)%20rescue%20rate" style="color:inherit">501(c)(3)? Ask about $14.99/yr</a></span></div>
+  <div class="chips"><span>✓ $39.99/year</span><span>✓ Cancel anytime</span><span>✓ Works like an app</span><span><a href="mailto:support@scaleandtell.app?subject=501(c)(3)%20rescue%20rate" style="color:inherit">501(c)(3)? Ask about $19.99/yr</a></span></div>
 </div></section>
 
 <footer><div class="wrap">
   <p><a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a> · <a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></p>
 </div></footer>
 
-<div class="sticky" id="sticky"><a class="cta" href="#checkout" id="stickyBtn">Get Rescue · $29.99/year →</a></div>
+<div class="sticky" id="sticky"><a class="cta" href="#checkout" id="stickyBtn">Get Rescue · $39.99/year →</a></div>
 
 <script src="./supabase.min.js?v=2.57.4"></script>
 <script>
@@ -375,16 +381,17 @@ window.ST_PIXEL_ID = '2580184572460750';
   var PLANS = {
     founding_keeper: { name: 'Founding Keeper', price: '$14.99', unit: '', term: 'one time · yours forever', seg: 'pets', pop: 'All-in-one', once: true,
       perks: ['<b>40 animals</b> · <b>3 logins</b>', 'Freezer, Feed Day &amp; reminders', 'Vet, meds &amp; shed predictions', 'Care sheets &amp; printables'], cta: 'Get everything' },
-    founding_breeder: { name: 'Founding Breeder', price: '$19.99', unit: '/year', term: 'billed yearly · cancel anytime', seg: 'breed', pop: 'Best for growing breeders',
+    founding_breeder: { name: 'Founding Breeder', price: '$39.99', unit: '/year', term: 'billed yearly · cancel anytime', seg: 'breed', pop: 'Best for growing breeders',
       perks: ['<b>150 animals</b> · <b>3 logins</b>', 'Racks, pairings &amp; clutches', 'Public page + Inbox', 'Everything in Founding Keeper'], cta: 'Get Founding Breeder' },
-    premium_breeder: { name: 'Premium Breeder', price: '$29.99', unit: '/year', term: 'billed yearly · cancel anytime', seg: 'breed',
+    premium_breeder: { name: 'Premium Breeder', price: '$59.99', unit: '/year', term: 'billed yearly · cancel anytime', seg: 'breed',
       perks: ['<b>400 animals</b> · <b>5 logins</b>', 'Your logo &amp; colors', 'Genetics, invoices &amp; waitlist', 'Everything in Founding Breeder'], cta: 'Get Premium Breeder' },
-    rescue: { name: 'Rescue', price: '$29.99', unit: '/year', term: 'billed yearly · verified 501(c)(3)s pay $14.99', seg: 'rescue', pop: 'For rescues',
+    rescue: { name: 'Rescue', price: '$39.99', unit: '/year', term: 'billed yearly · verified 501(c)(3)s pay $19.99', seg: 'rescue', pop: 'For rescues',
       perks: ['<b>400 animals</b> · <b>5 staff logins</b>', 'Intake, medical &amp; fosters', 'E-sign adoption contracts', 'Rescue listing + donate button'], cta: 'Get Rescue' }
   };
   var PAGE_SEG = 'rescue';
   var DEFAULT = { pets: 'founding_keeper', breed: 'founding_breeder', rescue: 'rescue' };
-  var seg = PAGE_SEG, plan = 'rescue', email = '', client = null, cfg = null, existing = false;
+  var seg = PAGE_SEG, plan = 'rescue', email = '', client = null, cfg = null, existing = false, mounted = '';
+  var invited = false, SRC = ((location.search.match(/[?&]from=(page|expo)/) || [0, 'ad'])[1]) + '-';
   var $ = function (id) { return document.getElementById(id); };
   try { client = window.supabase.createClient(URL_, KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }); } catch (e) {}
 
@@ -404,9 +411,11 @@ window.ST_PIXEL_ID = '2580184572460750';
     cards();
     $('sumName').textContent = p.name;
     $('sumAmt').innerHTML = p.price + (p.unit ? '<span style="font-size:15px">' + p.unit + '</span>' : '') + '<small>' + p.term + '</small>';
-    $('go').textContent = k === 'free' ? 'Create my free account →' : 'Continue to payment →';
+    $('go').classList.toggle('hide', k !== 'free');
+    $('pay').classList.toggle('hide', k === 'free');
     $('stepBar').classList.toggle('hide', k === 'free');
-    if (!$('pay').classList.contains('hide')) showStep(1);
+    $('acct').classList.remove('hide'); $('done').classList.add('hide');
+    if (k !== 'free' && mounted !== k) mountPay();
     $('stickyBtn').textContent = ('Get ' + p.name) + ' · ' + p.price + (p.unit || '') + ' →';
     if (scroll) $('checkout').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -425,8 +434,15 @@ window.ST_PIXEL_ID = '2580184572460750';
   $('pw').addEventListener('input', paintPw); paintPw();
   function say(id, t, ok) { var el = $(id); el.textContent = t || ''; el.className = 'msg' + (t ? ok ? ' ok' : ' err' : ''); }
   function showStep(n) {
-    $('acct').classList.toggle('hide', n !== 1); $('pay').classList.toggle('hide', n !== 2); $('done').classList.toggle('hide', n !== 3);
-    var s = $('stepBar').children; s[0].className = n >= 1 ? 'on' : ''; s[1].className = n >= 2 ? 'on' : '';
+    $('acct').classList.toggle('hide', n === 3); $('pay').classList.toggle('hide', n === 3 || plan === 'free'); $('done').classList.toggle('hide', n !== 3); $('stepBar').classList.toggle('hide', n === 3 || plan === 'free');
+  }
+  // Paid plans: nothing is created until PayPal confirms the payment.
+  function readLogin() {
+    var em = $('em').value.trim().toLowerCase(), pw = $('pw').value;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || em.length > 120) return 'Enter your email above first.';
+    var miss = rules(pw).filter(function (r) { return !r[1]; }).map(function (r) { return r[0].replace(/ like.*/, '').toLowerCase(); });
+    if (miss.length) return 'Create a password above first. It still needs: ' + miss.join(', ') + '.';
+    email = em; return '';
   }
   function friendly(err) {
     var m = String(err && (err.message || err.msg || err) || '');
@@ -444,6 +460,7 @@ window.ST_PIXEL_ID = '2580184572460750';
 
   $('acct').addEventListener('submit', async function (e) {
     e.preventDefault();
+    if (plan !== 'free') { var bad = readLogin(); say('msg1', bad || 'Now tap a payment button below 👇', !bad); if (!bad) $('pay').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     var em = $('em').value.trim().toLowerCase(), pw = $('pw').value;
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || em.length > 120) return say('msg1', 'Please enter a valid email.');
     var miss = rules(pw).filter(function (r) { return !r[1]; }).map(function (r) { return r[0].replace(/ like.*/, '').toLowerCase(); });
@@ -451,7 +468,7 @@ window.ST_PIXEL_ID = '2580184572460750';
     if (!client) return say('msg1', 'Couldn’t load secure sign-up. Please refresh and try again.');
     $('go').disabled = true; say('msg1', plan === 'free' ? 'Creating your account…' : 'Setting up your account…', true);
     try {
-      var r = await client.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: 'https://scaleandtell.app/', data: { src: (/[?&]from=page/.test(location.search) ? 'page-' : 'ad-') + PAGE_SEG } } });
+      var r = await client.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: 'https://scaleandtell.app/', data: { src: ((location.search.match(/[?&]from=(page|expo)/) || [0, 'ad'])[1]) + '-' + PAGE_SEG } } });
       if (r.error) throw r.error;
       existing = !!(r.data && r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length === 0);
       email = em; say('msg1', '');
@@ -461,7 +478,6 @@ window.ST_PIXEL_ID = '2580184572460750';
     } catch (err) { say('msg1', friendly(err)); }
     finally { $('go').disabled = false; }
   });
-  $('back').onclick = function () { showStep(1); };
 
   function loadSdk(clientId, sub) {
     var ns = sub ? 'paypalSub' : 'paypalOnce';
@@ -476,6 +492,7 @@ window.ST_PIXEL_ID = '2580184572460750';
     });
   }
   async function mountPay() {
+    mounted = plan;
     $('cardBtn').innerHTML = ''; $('ppBtn').innerHTML = '';
     say('msg2', 'Loading secure checkout…', true);
     try {
@@ -485,14 +502,23 @@ window.ST_PIXEL_ID = '2580184572460750';
       if (sub) { var pl = await invoke({ action: 'guest_plans' }); planId = pl.plans && pl.plans[plan]; if (!planId) throw Error('This plan isn’t available right now.'); }
       var opts = {
         style: { layout: 'vertical', shape: 'pill', height: 48 },
+        onClick: function (data, actions) {
+          var bad = readLogin();
+          if (bad) { say('msg2', bad); say('msg1', bad); $('em').scrollIntoView({ behavior: 'smooth', block: 'center' }); return actions.reject(); }
+          say('msg2', ''); say('msg1', '');
+          try { if (window.fbq) fbq('track', 'InitiateCheckout', { content_name: p.name }); } catch (x) {}
+          return actions.resolve();
+        },
         onApprove: async function (d) {
           say('msg2', 'Confirming your payment…', true);
           try {
-            if (sub) await invoke({ action: 'guest_subscribed', subscriptionId: d.subscriptionID, email: email });
+            var pw = $('pw').value;
+            if (sub) { var sr = await invoke({ action: 'guest_subscribed', subscriptionId: d.subscriptionID, email: email, password: pw, src: SRC + PAGE_SEG }); existing = !sr.created; }
             else {
               try { localStorage.setItem('stLpPending', JSON.stringify({ o: d.orderID, e: email, t: Date.now() })); } catch (x) {}
-              var c = await invoke({ action: 'guest_capture', orderId: d.orderID, email: email });
+              var c = await invoke({ action: 'guest_capture', orderId: d.orderID, email: email, password: pw, src: SRC + PAGE_SEG });
               if (!c.active) throw Error(c.error || 'Payment could not be confirmed.');
+              existing = !c.created;
               try { localStorage.removeItem('stLpPending'); } catch (x) {}
             }
             try { if (window.fbq) fbq('track', 'Purchase', { value: Number(p.price.replace('$', '')), currency: 'USD', content_name: p.name }); } catch (x) {}
@@ -503,7 +529,7 @@ window.ST_PIXEL_ID = '2580184572460750';
         onError: function () { say('msg2', 'Something went wrong with checkout. If you see a pending charge, don’t pay again. It will drop off, or email support@scaleandtell.app.'); }
       };
       if (sub) opts.createSubscription = function (data, actions) { return actions.subscription.create({ plan_id: planId, custom_id: 'e:' + email }); };
-      else opts.createOrder = async function () { var o = await invoke({ action: 'guest_create', email: email }); if (o.active) { finish('owned'); throw Error('owned'); } return o.id; };
+      else opts.createOrder = async function () { var o = await invoke({ action: 'guest_create', email: email, src: SRC + PAGE_SEG }); if (o.active) { finish('owned'); throw Error('owned'); } return o.id; };
       var card = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.CARD, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'black' } }));
       if (card.isEligible()) await card.render('#cardBtn');
       var ppb = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.PAYPAL, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'gold' } }));
@@ -518,8 +544,9 @@ window.ST_PIXEL_ID = '2580184572460750';
     if (kind === 'free') { $('doneTitle').textContent = existing ? 'Welcome back ♡' : 'Almost there! ♡'; $('doneText').innerHTML = existing ? 'You already have an account with <b>' + esc(email) + '</b>. Open Scale &amp; Tell and sign in.' : 'We just emailed <b>' + esc(email) + '</b>. Tap the link to confirm your account, then open Scale &amp; Tell and sign in.'; return; }
     $('doneTitle').textContent = 'Welcome, ' + p.name + '! 🎉';
     $('doneText').innerHTML = existing
-      ? 'Your plan is now on your account (<b>' + esc(email) + '</b>). Open Scale &amp; Tell and sign in. If it still shows your old plan, close the app all the way and open it again.'
-      : 'Your plan is unlocked and waiting. <b>Next step:</b> we emailed <b>' + esc(email) + '</b>. Tap the link to confirm your account, then sign in. That’s it!';
+      ? 'Your plan is now on your account (<b>' + esc(email) + '</b>). Open Scale &amp; Tell and sign in with your <b>existing password</b>. If it still shows your old plan, close the app all the way and open it again.'
+      : invited ? 'Your plan is paid and waiting. We emailed <b>' + esc(email) + '</b> a link to set your password, then sign in to Scale &amp; Tell.'
+      : 'Your account is ready! Open Scale &amp; Tell and sign in with <b>' + esc(email) + '</b> and the password you just created. No confirmation email needed.';
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
 
@@ -527,7 +554,7 @@ window.ST_PIXEL_ID = '2580184572460750';
   (async function () {
     var p = null; try { p = JSON.parse(localStorage.getItem('stLpPending') || 'null'); } catch (e) {}
     if (!p || !p.o || Date.now() - p.t > 3 * 864e5 || !client) return;
-    try { var c = await invoke({ action: 'guest_capture', orderId: p.o, email: p.e }); localStorage.removeItem('stLpPending'); if (c.active) { email = p.e; plan = 'founding_keeper'; choose(plan, false); finish('paid'); $('checkout').scrollIntoView(); } }
+    try { var c = await invoke({ action: 'guest_capture', orderId: p.o, email: p.e, src: SRC + PAGE_SEG }); existing = !c.created; invited = !!c.created; localStorage.removeItem('stLpPending'); if (c.active) { email = p.e; plan = 'founding_keeper'; choose(plan, false); finish('paid'); $('checkout').scrollIntoView(); } }
     catch (e) { if (!/unavailable|connect/i.test(e.message)) try { localStorage.removeItem('stLpPending'); } catch (x) {} }
   })();
 

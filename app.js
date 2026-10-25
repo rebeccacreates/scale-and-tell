@@ -750,7 +750,7 @@ function founderStudioMarkup() {
     '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feed a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p>' +
     (stCanUseBreeder()
       ? '<button class="action" onclick="openPanel(&quot;Racks & Breeding&quot;)">Open Racks &amp; Breeding</button>'
-      : '<p class="lcSmall">Part of <b>Founding Breeder</b> ($19.99 a year).</p><button class="action secondary" onclick="openPanel(&quot;Plans&quot;)">See plans</button>') +
+      : '<p class="lcSmall">Part of <b>Founding Breeder</b> ($39.99 a year).</p><button class="action secondary" onclick="openPanel(&quot;Plans&quot;)">See plans</button>') +
     "</div>" +
     '<div class="studioTile"><h3>Personalized Care Binder</h3><p>Your animal profiles, recent care history, upcoming tasks and saved vet details.</p>' +
     founderPackAction("binder", "Open Care Binder") +
@@ -2213,9 +2213,9 @@ function plansMarkup() {
       '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>',
     ) +
     '<h3 class="sectionTitle">For breeders &amp; rescues</h3><p class="lcSmall">Breeder plans add racks, rack feeding, pairings, clutches and hatchlings.</p>' +
-    card("founding_breeder", "$19.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches & litters", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
-    card("premium_breeder", "$29.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "<b>5 logins</b> for your team", "Your logo and colors on the app and printouts", "MorphMarket export", "Genetics calculator, invoices &amp; receipts, bulk import, shipping weather check, waitlist and sales summary"], soon("premium_breeder")) +
-    card("rescue", "$29.99 / year · $14.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>400 animals</b>", "Everything in Premium Breeder: 5 logins, your logo and colors, MorphMarket export, public page and Inbox", "Foster tracking, adoption contracts with e-signatures, a year-end impact report, a donate button and vet costs per animal", "Listing in Scale Hub → Reptile Rescues with an intake open / full switch", "Verified 501(c)(3)? Add your EIN under Business Tools → Rescue profile for the $14.99/yr price"], soon("rescue")) +
+    card("founding_breeder", "$39.99 / year", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches & litters", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", (isMember ? "✓ Founding Breeder badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ Founding Breeder badge")], soon("founding_breeder")) +
+    card("premium_breeder", "$59.99 / year", "Breeding businesses.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "<b>5 logins</b> for your team", "Your logo and colors on the app and printouts", "MorphMarket export", "Genetics calculator, invoices &amp; receipts, bulk import, shipping weather check, waitlist and sales summary"], soon("premium_breeder")) +
+    card("rescue", "$39.99 / year · $19.99 verified 501(c)(3)", "Reptile rescues.", ["Up to <b>400 animals</b>", "Everything in Premium Breeder: 5 logins, your logo and colors, MorphMarket export, public page and Inbox", "Foster tracking, adoption contracts with e-signatures, a year-end impact report, a donate button and vet costs per animal", "Listing in Scale Hub → Reptile Rescues with an intake open / full switch", "Verified 501(c)(3)? Add your EIN under Business Tools → Rescue profile for the $14.99/yr price"], soon("rescue")) +
     '<p class="lcSmall">Yearly plans renew through PayPal. Cancel anytime in <a href="https://www.paypal.com/myaccount/autopay/" target="_blank" rel="noopener">PayPal → Automatic payments</a>; you keep your plan until the end of the year you paid for.</p><p class="lcSmall">Already have more animals than a plan allows? You keep them all; you just can&#39;t add more until you upgrade.</p>'
   );
 }
@@ -7145,9 +7145,9 @@ function accessGateMarkup() {
     founderCheckoutMarkup() +
     '</div>' +
     '<div class="accessCard accessBreeder"><span class="accessTag">Breeders &amp; rescues</span><h2>More animals? Racks? A rescue?</h2><div class="accessPlans">' +
-    '<div><b>Founding Breeder</b><span>$19.99 / year</span><small>150 animals · racks, rack feeding, pairings, clutches · 3 logins</small></div>' +
-    '<div><b>Premium Breeder</b><span>$29.99 / year</span><small>400 animals · genetics calculator, invoices, waitlist · 5 logins</small></div>' +
-    '<div><b>Rescue</b><span>$29.99 / year · $14.99 verified 501(c)(3)</span><small>400 animals · intake, fosters, e-sign contracts · 5 logins</small></div>' +
+    '<div><b>Founding Breeder</b><span>$39.99 / year</span><small>150 animals · racks, rack feeding, pairings, clutches · 3 logins</small></div>' +
+    '<div><b>Premium Breeder</b><span>$59.99 / year</span><small>400 animals · genetics calculator, invoices, waitlist · 5 logins</small></div>' +
+    '<div><b>Rescue</b><span>$39.99 / year · $19.99 verified 501(c)(3)</span><small>400 animals · intake, fosters, e-sign contracts · 5 logins</small></div>' +
     '</div><button class="authButton" type="button" onclick="openPanel(\'Plans\')">See breeder &amp; rescue plans</button></div>' +
     '<details class="accessCode" id="memberCodeBox"><summary>Have a member or promo code?</summary><label class="authField" for="memberCode">Member or promo code</label><input id="memberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Member code" onkeydown="if(event.key===\'Enter\')accessRedeemCode()"><button class="authButton" type="button" onclick="accessRedeemCode()">Use code</button><p id="memberCodeStatus" class="authMessage" role="status"></p></details>' +
     '<button class="authLink" type="button" onclick="cloudSignOut()">Sign out</button></div>'
@@ -9469,7 +9469,7 @@ function agoText(date) {
 }
 function breederLocked() {
   return (
-    '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feeding a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p><p><b>Included with Founding Breeder</b> ($19.99 a year, up to 150 animals) and every breeder and rescue plan.</p><button class="action" onclick="openPanel(&quot;Plans&quot;)">See plans</button></div>'
+    '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feeding a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p><p><b>Included with Founding Breeder</b> ($39.99 a year, up to 150 animals) and every breeder and rescue plan.</p><button class="action" onclick="openPanel(&quot;Plans&quot;)">See plans</button></div>'
   );
 }
 function breederHome() {
@@ -10714,7 +10714,7 @@ const BIZ_PANELS = {
     if (stTeam?.role === "member")
       return '<p class="resourceIntro">You’re sharing <b>' + esc(stTeam.owner_email || "their") + '</b>’s journal: animals, logs, reminders and photos.</p><button class="action secondary" onclick="bizLeaveTeam()">Leave this journal</button><p id="bizMsg" class="helperLine" role="status"></p>';
     const mem = stTeam?.members || [], L = stLogins(), back = stCanTeam() ? bizBack() : '<button class="action secondary" onclick="openPanel(\'Menu\')">← Menu</button>';
-    if (L < 2) return '<p class="resourceIntro">Share your journal with family or helpers. Founding Keeper includes 3 logins; $29.99 plans include 5.</p><button class="action" onclick="openPanel(\'Plans\')">See plans</button>' + back;
+    if (L < 2) return '<p class="resourceIntro">Share your journal with family or helpers. Founding Keeper includes 3 logins; Premium Breeder and Rescue include 5.</p><button class="action" onclick="openPanel(\'Plans\')">See plans</button>' + back;
     return '<p class="resourceIntro">Invite up to ' + (L - 1) + ' people (' + L + ' logins total, including you). They sign in with their own email and password and share your journal: animals, logs, reminders and photos.</p>' +
       (mem.length ? mem.map((m) => '<div class="deviceCard"><div class="deviceHeading"><b>' + esc(m.email) + "</b><span>" + (m.status === "active" ? "✓ Joined" : "Invite sent") + '</span></div><div class="recordActions"><button onclick="bizRemoveMember(' + Number(m.id) + ')">Remove</button></div></div>').join("") : '<p class="helperLine">No one invited yet.</p>') +
       (mem.length < L - 1 ? '<label>Their email<input id="bizInvite" type="email" maxlength="254" placeholder="helper@example.com"></label><button class="action" onclick="bizInviteMember()">Send invite</button>' : '<p class="lcSmall">You’re using all ' + L + ' logins.</p>') +
@@ -10746,7 +10746,7 @@ const BIZ_PANELS = {
   "Rescue Profile": () => {
     const r = bizRescue || {}, f = (id, label, val, ph, max = 90) => '<label>' + label + '<input id="' + id + '" maxlength="' + max + '" value="' + esc(val || "") + '" placeholder="' + ph + '"></label>';
     const ver = { none: "Not verified", pending: "⏳ Verification pending", approved: "✓ Verified 501(c)(3)", declined: "Not approved. Contact support@scaleandtell.app" }[r.verification || "none"];
-    return '<p class="resourceIntro">Your rescue’s listing in Scale Hub → Reptile Rescues. Add your EIN to verify your 501(c)(3): verified rescues pay $14.99/yr instead of $29.99 and get a ✓ Verified mark.</p>' +
+    return '<p class="resourceIntro">Your rescue’s listing in Scale Hub → Reptile Rescues. Add your EIN to verify your 501(c)(3): verified rescues pay $19.99/yr instead of $39.99 and get a ✓ Verified mark.</p>' +
       '<div class="habitatSummary"><strong>Intake</strong><p>' + (r.org_name ? (r.intake_open === false ? "🔴 Intake full" : "🟢 Intake open") : "Save your profile first.") + "</p>" +
       (r.org_name ? '<button class="action secondary" onclick="bizSetIntake(' + (r.intake_open === false) + ')">' + (r.intake_open === false ? "Mark intake open" : "Mark intake full") + "</button>" : "") + "</div>" +
       f("rpOrg", "Rescue name", r.org_name, "Your rescue") + f("rpEin", "EIN (for 501(c)(3) verification, optional)", r.ein, "12-3456789", 12) +
@@ -12942,7 +12942,7 @@ const WHATS_NEW = [
   ["🏷", "Enclosure labels", "Print a QR label for any animal from its profile."],
   ["⏳", "Smoother start", "One loading screen, then your own layout and colors. No more flashing."],
   ["🩺", "Keeper Tools", "Vet and medication reminders, shed predictions, then-and-now photos and an emergency card (Founding Keeper)."],
-  ["♡", "Family sharing", "Founding Keeper includes 3 logins; $29.99 plans include 5."],
+  ["♡", "Family sharing", "Founding Keeper includes 3 logins; Premium Breeder and Rescue include 5."],
   ["💤", "Brumation mode", "Pause feeding reminders while an animal brumates."],
   ["🌡", "Works with Herpstat & Govee", "Live readings, plus your own too-hot and too-cold alerts."],
   ["🐀", "More animals", "Rodents, small mammals, amphibians, fish and more."],
@@ -13023,7 +13023,7 @@ const UPDATE_TEMPLATES = [
     body: "Hi keepers ♡\n\nNew this week in Scale & Tell:\n\n• Works with Herpstat thermostats: your Herpstat can send its temperatures, humidity and alarms straight into the app (Menu → Devices → Connect Herpstat).\n• Govee alert ranges: choose your own too-hot, too-cold and humidity limits for each sensor, and get a phone alert when it drifts.\n• More animals: rodents, small mammals, amphibians, fish and more, with litter and pup wording for rodent breeders.\n• Brumation mode pauses feeding reminders while an animal brumates.\n\nScale & Tell is independent and not affiliated with Spyder Robotics or Govee.\n\nClose the app all the way and open it again to get the update ♡\nScale & Tell",
     banner: "New: Herpstat & Govee alerts ♡" },
   { label: "Keeper Tools, family sharing & business tools", aud: "all", subject: "Keeper Tools, family sharing and more are here ♡",
-    body: "Hi keepers ♡\n\nBig update today:\n\n• Keeper Tools (Founding Keeper): vet and medication reminders, shed predictions from your own logs, then-and-now growth photos and an emergency card.\n• Family sharing: Founding Keeper includes 3 logins, and $29.99 plans include 5.\n• Watch & Learn: hand-picked videos by topic.\n• Feeding times: every feeding can now save the time.\n• Premium Breeder: genetics calculator, invoices and receipts, bulk import, shipping weather check, waitlist and sales summary.\n• Rescues: foster tracking, e-sign adoption contracts, a year-end impact report, a donate button and vet costs per animal.\n\nFounding Keeper is $14.99 once, and 10% of paid-plan profits go to a nonprofit reptile rescue.\n\nClose the app all the way and open it again to get the update ♡\nScale & Tell",
+    body: "Hi keepers ♡\n\nBig update today:\n\n• Keeper Tools (Founding Keeper): vet and medication reminders, shed predictions from your own logs, then-and-now growth photos and an emergency card.\n• Family sharing: Founding Keeper includes 3 logins, and Premium Breeder and Rescue include 5.\n• Watch & Learn: hand-picked videos by topic.\n• Feeding times: every feeding can now save the time.\n• Premium Breeder: genetics calculator, invoices and receipts, bulk import, shipping weather check, waitlist and sales summary.\n• Rescues: foster tracking, e-sign adoption contracts, a year-end impact report, a donate button and vet costs per animal.\n\nFounding Keeper is $14.99 once, and 10% of paid-plan profits go to a nonprofit reptile rescue.\n\nClose the app all the way and open it again to get the update ♡\nScale & Tell",
     banner: "New: Keeper Tools & family sharing ♡" },
 ];
 function stUseTemplate(i) {
@@ -13118,9 +13118,9 @@ function landingBottom() {
     f("✍", "E-sign contracts", "Adopters sign on their phone.") + f("★", "Impact report", "Year-end numbers for grants and donors.") + "</div>" +
     '<h2>Plans</h2><div class="landPlans">' +
     plan("Founding Keeper", "$14.99 once", "40 animals · 3 logins · reminders, designs, Care Binder &amp; Keeper Tools") +
-    plan("Founding Breeder", "$19.99 / year", "150 animals · racks, pairings, clutches · 3 logins") +
-    plan("Premium Breeder", "$29.99 / year", "400 animals · genetics, invoices, your logo · 5 logins") +
-    plan("Rescue", "$29.99 / year", "400 animals · fosters, contracts · $14.99 for verified 501(c)(3)s") +
+    plan("Founding Breeder", "$39.99 / year", "150 animals · racks, pairings, clutches · 3 logins") +
+    plan("Premium Breeder", "$59.99 / year", "400 animals · genetics, invoices, your logo · 5 logins") +
+    plan("Rescue", "$39.99 / year", "400 animals · fosters, contracts · $19.99 for verified 501(c)(3)s") +
     '</div><p class="landNote">No subscription for Founding Keeper. 10% of paid-plan profits are donated to a nonprofit reptile rescue ♡</p>' +
     '<p class="landNote">Works on iPhone, Android and computer. Works with Govee sensors and Herpstat thermostats (Scale &amp; Tell is independent and not affiliated with either company).</p>' +
     '<button class="authButton" onclick="authChooseMode(\'signup\');window.scrollTo({top:0,behavior:\'smooth\'})">Create my account</button>' +
