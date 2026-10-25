@@ -3065,6 +3065,20 @@ function careValues() {
     ["nightHumMax", "Night humidity maximum (%)", 0, 100],
   ];
 }
+/* Feeding rotation: an ordered list of meals; the next one advances with each "Ate". */
+function rotAteCount(a) {
+  return entries.filter((e) => e.animal === a && e.section === "Feeding Tracker" && e.detail === "Ate").length;
+}
+function rotNextIndex(a, ahead) {
+  const p = carePlans[a] || {}, r = Array.isArray(p.rotation) ? p.rotation : [];
+  if (!r.length) return -1;
+  const done = Math.max(0, rotAteCount(a) - (Number(p.rotStartCount) || 0));
+  return (((Number(p.rotStartIdx) || 0) + done + (ahead || 0)) % r.length + r.length) % r.length;
+}
+function rotMeal(a, ahead) {
+  const i = rotNextIndex(a, ahead), r = carePlans[a]?.rotation;
+  return i < 0 ? "" : r[i];
+}
 function carePlanForm(a) {
   let p = carePlans[a] || {};
   return (
@@ -3086,6 +3100,11 @@ function carePlanForm(a) {
       )
       .join("") +
     '<p class="muted">Night ranges are for animals whose temperature or humidity changes after lights-out (like crested geckos). Leave them blank if they stay the same.</p>' +
+    '<label>Feeding rotation (optional, one meal per line, in order)<textarea id="planRotation" rows="3" maxlength="500" placeholder="Crickets dusted with calcium\nCrickets dusted with calcium + D3\nCrickets dusted with multivitamin">' +
+    esc((Array.isArray(p.rotation) ? p.rotation : []).join("\n")) +
+    "</textarea></label>" +
+    (Array.isArray(p.rotation) && p.rotation.length ? '<label>Next meal is<select id="planRotNext">' + p.rotation.map((m, i) => '<option value="' + i + '"' + (i === rotNextIndex(selectedAnimal) ? " selected" : "") + ">" + esc(m) + "</option>").join("") + "</select></label>" : "") +
+    '<p class="muted">The rotation moves to the next meal each time you log “Ate.” It shows on Feed Day and on the pet-sitter sheet next to each upcoming feeding.</p>' +
     '<label>Feeding notes for sitters<textarea id="planFeedNotes" maxlength="500" placeholder="Which feeder, how many, supplements, how to offer (e.g. 2 small dubia dusted with calcium, in a bowl at night)">' +
     esc(p.feedNotes || "") +
     "</textarea></label>" +
@@ -3124,6 +3143,19 @@ function saveCarePlan() {
   }
   obj.notes = document.getElementById("planNotes").value.trim().slice(0, 500);
   obj.feedNotes = (document.getElementById("planFeedNotes")?.value || "").trim().slice(0, 500);
+  {
+    const prev = carePlans[selectedAnimal] || {};
+    const rot = (document.getElementById("planRotation")?.value || "").split(/\n+/).map((x) => x.trim().slice(0, 60)).filter(Boolean).slice(0, 8);
+    const same = JSON.stringify(rot) === JSON.stringify(prev.rotation || []);
+    const selEl = document.getElementById("planRotNext");
+    const curIdx = same && rot.length ? rotNextIndex(selectedAnimal) : 0;
+    const want = same && selEl ? Math.min(Math.max(0, Number(selEl.value) || 0), rot.length - 1) : 0;
+    if (rot.length) {
+      obj.rotation = rot;
+      if (same && want === curIdx && prev.rotStartCount !== undefined) { obj.rotStartIdx = prev.rotStartIdx || 0; obj.rotStartCount = prev.rotStartCount; }
+      else { obj.rotStartIdx = want; obj.rotStartCount = rotAteCount(selectedAnimal); }
+    }
+  }
   let old = carePlans[selectedAnimal];
   carePlans[selectedAnimal] = obj;
   if (!saveCarePlans()) {
@@ -5714,6 +5746,7 @@ async function importBackup() {
           !Array.isArray(p) &&
           (!p.notes || (typeof p.notes === "string" && p.notes.length <= 500)) &&
           (!p.feedNotes || (typeof p.feedNotes === "string" && p.feedNotes.length <= 500)) &&
+          (!p.rotation || (Array.isArray(p.rotation) && p.rotation.length <= 8 && p.rotation.every((m) => typeof m === "string" && m.length <= 60))) &&
           careValues().every(
             ([k, , lo, hi]) =>
               p[k] === undefined || p[k] === "" || (Number.isInteger(p[k]) && p[k] >= lo && p[k] <= hi),
@@ -12876,9 +12909,10 @@ function helpMarkup() {
 /* V3.86 · ONE list of releases. Add the newest at the top each update: the What's New popup, and the ready-made
    update emails + banners in Send Update Email all build themselves from it. */
 const ST_RELEASES = [
-  { v: "3.88", date: "2026-10-24", subject: "Day & night ranges and feeding notes for sitters ♡", banner: "New: day/night ranges ♡", items: [
+  { v: "3.88", date: "2026-10-24", subject: "Feeding rotations, day & night ranges and more ♡", banner: "New: feeding rotations ♡", items: [
     ["🌙", "Day & night ranges", "Add night temperature and humidity goals in an animal’s care plan, perfect for cresties and others that get more humid at night."],
     ["🍽", "Feeding notes for sitters", "Write which feeder, how many and which supplements in the care plan. It shows on the pet-sitter sheet along with your supplement schedule."],
+    ["🔁", "Feeding rotations", "Calcium, then calcium + D3, then vitamins? Prepared food one day, bugs the next? Set a rotation in the care plan and the app shows which meal is next on Feed Day and on the sitter sheet."],
   ] },
   { v: "3.86", date: "2026-10-23", subject: "Wish List, supplement schedules and more ♡", banner: "New: Wish List & supplement schedules ♡", items: [
     ["⭐", "Wish List", "Keep the animals you’re dreaming about, with photos. Menu → Wish List."],
@@ -13425,7 +13459,7 @@ BIZ_PANELS["Feed Day"] = () => {
         const f = lastFeed(a), st = rosterStatus(a);
         return '<div class="rfRow"><div class="rfName"><b>' + esc(a) + "</b><small" + (st.cls ? ' class="' + st.cls + '"' : "") + ">" + esc(st.text) + '</small></div><div class="rfChoice" role="radiogroup" aria-label="' + esc(a) + '">' +
           ["Ate", "Refused", "Skipped feeding"].map((o) => '<label><input type="radio" name="rf' + n + '" value="' + o + '"><span>' + (o === "Skipped feeding" ? "Skip" : o) + "</span></label>").join("") +
-          '</div><input class="rfPrey" id="fdPrey' + n + '" maxlength="60" list="fdPreyList" placeholder="Prey (optional)" value="' + esc(f?.preyType || "") + '"></div>';
+          '</div><input class="rfPrey" id="fdPrey' + n + '" maxlength="60" list="fdPreyList" placeholder="Prey (optional)" value="' + esc(f?.preyType || "") + '">' + (rotMeal(a, 0) ? '<small class="lcSmall" style="display:block;color:#4f7a2a;font-weight:700">🔁 Next meal: ' + esc(rotMeal(a, 0)) + "</small>" : "") + "</div>";
       }).join("") +
       '<button class="action" onclick="feedDaySave()">Save feedings</button>'
       : '<p class="helperLine">' + (feedDayFilter === "due" ? "Nobody is due right now ♡ Tap All to log anyway." : "No animals here.") + "</p>") +
@@ -13525,6 +13559,7 @@ function sitterFacts(a) {
     p, s, w, prey, sex: p.sex && !/unknown/i.test(p.sex) ? p.sex : "", morph: p.genes || p.morph || "", age: v69Age(p.hatchDate),
     feedEvery: Number(plan.feedDays) ? "Every " + plan.feedDays + " days" : "", lastFed: f ? niceDate(f.date) + " (" + v69Ago(f.date) + ")" : "",
     warm: range(plan.warmMin, plan.warmMax, "°F"), cool: range(plan.coolMin, plan.coolMax, "°F"), hum: range(plan.humidityMin, plan.humidityMax, "%"),
+    nextMeal: rotMeal(a, 0), rotation: Array.isArray(plan.rotation) && plan.rotation.length > 1 ? plan.rotation.join(" → ") : "",
     nightTemp: range(plan.nightMin, plan.nightMax, "°F"), nightHum: range(plan.nightHumMin, plan.nightHumMax, "%"), feedNotes: plan.feedNotes || "",
     supps: (typeof suppList === "function" ? suppList(a) : []).map((x) => { try { return x.name + " " + suppDue(a, x).text; } catch (e) { return x.name; } }).join(", "),
     substrate: s.substrate === "Other" ? s.substrateOther : s.substrate || "", uvb: v69HasUvb(s) || s.uvbType ? v69UvbLabel(s) : "",
@@ -13542,12 +13577,12 @@ sitterDocument = function (names, includeHealth, withHistory) {
   for (const a of names) {
     const x = sitterFacts(a);
     L.push("", "— " + a + " —", [species[a], x.sex, x.morph, x.age].filter(Boolean).join(" · "));
-    [["Feeds", [x.feedEvery, x.prey].filter(Boolean).join(" · ")], ["Last fed", x.lastFed], ["Weight", x.w ? v69Grams(x.w.g) : ""], ["Feeding notes", x.feedNotes], ["Supplements", x.supps], ["Warm side", x.warm], ["Cool side", x.cool], ["Humidity", x.hum && x.nightHum ? x.hum + " (day)" : x.hum], ["Night temps", x.nightTemp], ["Night humidity", x.nightHum],
+    [["Feeds", [x.feedEvery, x.prey].filter(Boolean).join(" · ")], ["Last fed", x.lastFed], ["Weight", x.w ? v69Grams(x.w.g) : ""], ["Next meal", x.nextMeal], ["Rotation", x.rotation], ["Feeding notes", x.feedNotes], ["Supplements", x.supps], ["Warm side", x.warm], ["Cool side", x.cool], ["Humidity", x.hum && x.nightHum ? x.hum + " (day)" : x.hum], ["Night temps", x.nightTemp], ["Night humidity", x.nightHum],
       ["Enclosure", x.p.enclosure], ["Substrate", x.substrate], ["Heat", x.s.heat], ["UVB", x.uvb], ["Lights", x.s.lightHours ? x.s.lightHours + " hrs/day" : ""], ["Care", x.p.sitterInstructions || x.p.notes], ["Handling", x.p.handlingNotes]]
       .filter((r) => r[1]).forEach((r) => L.push(r[0] + ": " + r[1]));
     if (!re) {
       const up = entries.filter((e) => e.animal === a && e.section === "Calendar" && !e.done).sort((p, q) => p.date.localeCompare(q.date)).slice(0, 4);
-      if (up.length) L.push("Coming up: " + up.map((e) => niceDate(e.date) + " " + e.detail).join(" · "));
+      if (up.length) { let k = 0; L.push("Coming up: " + up.map((e) => niceDate(e.date) + " " + e.detail + (/feed/i.test(e.detail || "") && rotMeal(a, 0) ? " (" + rotMeal(a, k++) + ")" : "")).join(" · ")); }
     }
     if (withHistory) {
       const w = sortedAnimalEntries(a, "Weight Tracker").slice(-6).reverse();
@@ -13601,7 +13636,7 @@ async function sitterMakePretty() {
     const x = sitterFacts(a);
     const up = re ? [] : entries.filter((e) => e.animal === a && e.section === "Calendar" && !e.done).sort((p, q) => p.date.localeCompare(q.date)).slice(0, 5);
     const facts = fact("🍽", "Feeding", [x.feedEvery, x.prey].filter(Boolean).join(" · ")) + fact("🗓", "Last meal", x.lastFed) + fact("⚖", "Weight", x.w ? v69Grams(x.w.g) + " · " + niceDate(x.w.date) : "") +
-      fact("🔥", "Warm side", x.warm) + fact("❄", "Cool side", x.cool) + fact("💧", x.nightHum ? "Humidity (day)" : "Humidity", x.hum) + fact("🌙", "Night temps", x.nightTemp) + fact("🌙", "Night humidity", x.nightHum) + fact("💊", "Supplements", x.supps) + fact("✨", "Last shed", x.shed);
+      fact("🔥", "Warm side", x.warm) + fact("❄", "Cool side", x.cool) + fact("💧", x.nightHum ? "Humidity (day)" : "Humidity", x.hum) + fact("🌙", "Night temps", x.nightTemp) + fact("🌙", "Night humidity", x.nightHum) + fact("💊", "Supplements", x.supps) + fact("🍽", "Next meal", x.nextMeal) + fact("🔁", "Feeding rotation", x.rotation) + fact("✨", "Last shed", x.shed);
     const setup = fact("📐", "Enclosure", x.p.enclosure) + fact("🪵", "Substrate", x.substrate) + fact("🔥", "Heat", x.s.heat) + fact("☀", "UVB / lighting", x.uvb) + fact("🕗", "Lights on", x.s.lightHours ? x.s.lightHours + " hours a day" : "") + fact("🌿", "Hides & décor", x.s.decor);
     const hist = (list, f) => list.length ? "<table>" + list.map(f).join("") + "</table>" : "";
     let history = "";
@@ -13620,7 +13655,7 @@ async function sitterMakePretty() {
       (x.feedNotes ? '<div class="note"><b>🍽 Feeding notes</b><p>' + T(x.feedNotes) + "</p></div>" : "") +
       (x.p.handlingNotes ? '<div class="note warn"><b>✋ Handling</b><p>' + T(x.p.handlingNotes) + "</p></div>" : "") +
       (setup ? "<h3>🏡 Setup</h3><div class=\"facts\">" + setup + "</div>" : "") +
-      (up.length ? "<h3>📅 Coming up</h3><ul class=\"up\">" + up.map((e) => "<li><b>" + T(niceDate(e.date)) + "</b> " + T(e.detail) + "</li>").join("") + "</ul>" : "") +
+      (up.length ? (() => { let k = 0; return "<h3>📅 Coming up</h3><ul class=\"up\">" + up.map((e) => "<li><b>" + T(niceDate(e.date)) + "</b> " + T(e.detail) + (/feed/i.test(e.detail || "") && x.nextMeal ? ' · <span style="color:#4f7a2a;font-weight:700">🍽 ' + T(rotMeal(a, k++)) + "</span>" : "") + "</li>").join("") + "</ul>"; })() : "") +
       history + (health.length ? "<h3>🩺 Health notes</h3><ul class=\"up\">" + health.map((e) => "<li><b>" + T(niceDate(e.date)) + "</b> " + T([e.detail, e.medication, e.dose, e.notes].filter(Boolean).join(" · ")) + "</li>").join("") + "</ul>" : "") + "</section>";
   }).join("");
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
