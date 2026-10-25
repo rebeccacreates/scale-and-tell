@@ -2827,7 +2827,7 @@ function recordMeta(e) {
     .join(" · ");
 }
 let logLimit = 150;
-const LOG_ICONS = { "Feeding Tracker": "🍽", "Shed History": "✨", "Weight Tracker": "⚖", "Enclosure Care": "🏠", "UVB & Lighting": "☀", Supplements: "💊", Observations: "👁", "Health & Vet": "🩺", Breeding: "💞", Ledger: "$" };
+const LOG_ICONS = { "Feeding Tracker": "🍽", "Shed History": "✨", "Weight Tracker": "⚖", "Enclosure Care": "🏠", "UVB & Lighting": "☀", Supplements: "💊", Observations: "👁", Length: "📏", "Health & Vet": "🩺", Breeding: "💞", Ledger: "$" };
 function logList(items) {
   if (!items.length) return '<p class="muted">No records yet ♡</p>';
   const pos = new Map(entries.map((e, i) => [e, i]));
@@ -3716,7 +3716,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.89";
+const SCALE_LC_VERSION = "3.90";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -12909,6 +12909,10 @@ function helpMarkup() {
 /* V3.86 · ONE list of releases. Add the newest at the top each update: the What's New popup, and the ready-made
    update emails + banners in Send Update Email all build themselves from it. */
 const ST_RELEASES = [
+  { v: "3.90", date: "2026-10-25", subject: "Overnight feeder check-ins + length tracking ♡", banner: "New: overnight feeder check-ins ♡", items: [
+    ["🌙", "Left a feeder overnight?", "Log it as “🌙 Overnight” on Feed Day (or “Left overnight” in a feeding log). The next day, Home asks if it was eaten or removed, and you get a reminder."],
+    ["📏", "Length tracking", "Log measured length in inches or cm next to weights on the animal’s Weight page. See a length chart, and it shows on the pet-sitter sheet."],
+  ] },
   { v: "3.89", date: "2026-10-25", subject: "No more double logs ♡", banner: "New: duplicate log check ♡", items: [
     ["✅", "“Saved” every time", "You’ll see a quick confirmation each time a log is saved, so you know it worked."],
     ["🛑", "No more double logs", "Log the exact same thing twice for the same day and the app checks with you first."],
@@ -13463,7 +13467,7 @@ BIZ_PANELS["Feed Day"] = () => {
       feedDayRows.map((a, n) => {
         const f = lastFeed(a), st = rosterStatus(a);
         return '<div class="rfRow"><div class="rfName"><b>' + esc(a) + "</b><small" + (st.cls ? ' class="' + st.cls + '"' : "") + ">" + esc(st.text) + '</small></div><div class="rfChoice" role="radiogroup" aria-label="' + esc(a) + '">' +
-          ["Ate", "Refused", "Skipped feeding"].map((o) => '<label><input type="radio" name="rf' + n + '" value="' + o + '"><span>' + (o === "Skipped feeding" ? "Skip" : o) + "</span></label>").join("") +
+          ["Ate", "Refused", "Left overnight", "Skipped feeding"].map((o) => '<label><input type="radio" name="rf' + n + '" value="' + o + '"><span>' + (o === "Skipped feeding" ? "Skip" : o === "Left overnight" ? "🌙 Overnight" : o) + "</span></label>").join("") +
           '</div><input class="rfPrey" id="fdPrey' + n + '" maxlength="60" list="fdPreyList" placeholder="Prey (optional)" value="' + esc(f?.preyType || "") + '">' + (rotMeal(a, 0) ? '<small class="lcSmall" style="display:block;color:#4f7a2a;font-weight:700">🔁 Next meal: ' + esc(rotMeal(a, 0)) + "</small>" : "") + "</div>";
       }).join("") +
       '<button class="action" onclick="feedDaySave()">Save feedings</button>'
@@ -13479,7 +13483,7 @@ function feedDaySave() {
     const choice = document.querySelector('input[name="rf' + n + '"]:checked')?.value;
     if (!choice || !animals.includes(a)) return;
     const prey = (document.getElementById("fdPrey" + n)?.value || "").trim().slice(0, 60);
-    add.push({ section: "Feeding Tracker", animal: a, detail: choice, date, notes: "", preyType: choice === "Skipped feeding" ? "" : prey, preyWeight: "", response: choice === "Refused" ? "Refused" : "", ...(time ? { feedingTime: time } : {}) });
+    add.push({ section: "Feeding Tracker", animal: a, detail: choice === "Left overnight" ? "Offered" : choice, date, notes: "", preyType: choice === "Skipped feeding" ? "" : prey, preyWeight: "", response: choice === "Refused" ? "Refused" : choice === "Left overnight" ? "Left overnight" : "", ...(time ? { feedingTime: time } : {}) });
   });
   if (!add.length) return alert("Mark at least one animal first.");
   const before = entries;
@@ -13569,6 +13573,7 @@ function sitterFacts(a) {
     supps: (typeof suppList === "function" ? suppList(a) : []).map((x) => { try { return x.name + " " + suppDue(a, x).text; } catch (e) { return x.name; } }).join(", "),
     substrate: s.substrate === "Other" ? s.substrateOther : s.substrate || "", uvb: v69HasUvb(s) || s.uvbType ? v69UvbLabel(s) : "",
     shed: stNoShed(a) ? "" : (v69Latest(a, "Shed History") ? niceDate(v69Latest(a, "Shed History").date) : ""),
+    len: (function () { try { const L = stLastLength(a); return L ? L.detail + " · " + niceDate(L.date) : ""; } catch (x) { return ""; } })(),
   };
 }
 /* Plain text (for texting) */
@@ -13582,7 +13587,7 @@ sitterDocument = function (names, includeHealth, withHistory) {
   for (const a of names) {
     const x = sitterFacts(a);
     L.push("", "— " + a + " —", [species[a], x.sex, x.morph, x.age].filter(Boolean).join(" · "));
-    [["Feeds", [x.feedEvery, x.prey].filter(Boolean).join(" · ")], ["Last fed", x.lastFed], ["Weight", x.w ? v69Grams(x.w.g) : ""], ["Next meal", x.nextMeal], ["Rotation", x.rotation], ["Feeding notes", x.feedNotes], ["Supplements", x.supps], ["Warm side", x.warm], ["Cool side", x.cool], ["Humidity", x.hum && x.nightHum ? x.hum + " (day)" : x.hum], ["Night temps", x.nightTemp], ["Night humidity", x.nightHum],
+    [["Feeds", [x.feedEvery, x.prey].filter(Boolean).join(" · ")], ["Last fed", x.lastFed], ["Weight", x.w ? v69Grams(x.w.g) : ""], ["Length", x.len], ["Next meal", x.nextMeal], ["Rotation", x.rotation], ["Feeding notes", x.feedNotes], ["Supplements", x.supps], ["Warm side", x.warm], ["Cool side", x.cool], ["Humidity", x.hum && x.nightHum ? x.hum + " (day)" : x.hum], ["Night temps", x.nightTemp], ["Night humidity", x.nightHum],
       ["Enclosure", x.p.enclosure], ["Substrate", x.substrate], ["Heat", x.s.heat], ["UVB", x.uvb], ["Lights", x.s.lightHours ? x.s.lightHours + " hrs/day" : ""], ["Care", x.p.sitterInstructions || x.p.notes], ["Handling", x.p.handlingNotes]]
       .filter((r) => r[1]).forEach((r) => L.push(r[0] + ": " + r[1]));
     if (!re) {
@@ -13640,7 +13645,7 @@ async function sitterMakePretty() {
   const cards = o.names.map((a) => {
     const x = sitterFacts(a);
     const up = re ? [] : entries.filter((e) => e.animal === a && e.section === "Calendar" && !e.done).sort((p, q) => p.date.localeCompare(q.date)).slice(0, 5);
-    const facts = fact("🍽", "Feeding", [x.feedEvery, x.prey].filter(Boolean).join(" · ")) + fact("🗓", "Last meal", x.lastFed) + fact("⚖", "Weight", x.w ? v69Grams(x.w.g) + " · " + niceDate(x.w.date) : "") +
+    const facts = fact("🍽", "Feeding", [x.feedEvery, x.prey].filter(Boolean).join(" · ")) + fact("🗓", "Last meal", x.lastFed) + fact("⚖", "Weight", x.w ? v69Grams(x.w.g) + " · " + niceDate(x.w.date) : "") + fact("📏", "Length", x.len) +
       fact("🔥", "Warm side", x.warm) + fact("❄", "Cool side", x.cool) + fact("💧", x.nightHum ? "Humidity (day)" : "Humidity", x.hum) + fact("🌙", "Night temps", x.nightTemp) + fact("🌙", "Night humidity", x.nightHum) + fact("💊", "Supplements", x.supps) + fact("🍽", "Next meal", x.nextMeal) + fact("🔁", "Feeding rotation", x.rotation) + fact("✨", "Last shed", x.shed);
     const setup = fact("📐", "Enclosure", x.p.enclosure) + fact("🪵", "Substrate", x.substrate) + fact("🔥", "Heat", x.s.heat) + fact("☀", "UVB / lighting", x.uvb) + fact("🕗", "Lights on", x.s.lightHours ? x.s.lightHours + " hours a day" : "") + fact("🌿", "Hides & décor", x.s.decor);
     const hist = (list, f) => list.length ? "<table>" + list.map(f).join("") + "</table>" : "";
@@ -14526,4 +14531,148 @@ function stDupUndo(e) {
     } catch (x) {}
     return baseFeedDay.apply(this, arguments);
   };
+})();
+
+
+/* --- 3.90 · Overnight feeder check-in + length log --- */
+function stOvIsOpen(e) {
+  return e && e.section === "Feeding Tracker" && e.response === "Left overnight" && (!e.detail || e.detail === "Offered") && !e.ovDone;
+}
+function stOvPending() {
+  const t = today(), oldest = advanceDate(t, -7);
+  return entries.filter((e) => stOvIsOpen(e) && e.date < t && e.date >= oldest && animals.includes(e.animal)).sort((a, b) => a.date.localeCompare(b.date));
+}
+/* New overnight feedings get a next-day reminder (one per feeding). */
+function stOvSweep() {
+  let changed = false;
+  const t = today();
+  entries.slice().forEach((e) => {
+    if (!stOvIsOpen(e) || e.ovId) return;
+    e.ovId = "ov" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    changed = true;
+    const next = advanceDate(e.date, 1);
+    if (next < t) return;
+    entries.push({ section: "Calendar", animal: e.animal, detail: "Check overnight feeder", date: next, notes: "Did " + e.animal + " eat the " + (e.preyType || "feeder") + " left overnight? Answer on the Home screen.", repeatDays: 0, done: false, kind: "care", autoKey: "ov:" + e.ovId });
+  });
+  if (changed) { try { save(); } catch (x) {} }
+  return changed;
+}
+function stOvAnswer(id, how) {
+  const e = entries.find((x) => x.ovId === id);
+  if (!e) return;
+  e.ovDone = true;
+  if (how === "ate") { e.detail = "Ate"; e.response = "Left overnight · eaten"; }
+  else if (how === "removed") { e.detail = "Refused"; e.response = "Left overnight · removed"; }
+  if ((how === "ate" || how === "removed") && e.preyType && !e.fz) {
+    try { const fz = feederUse(e.preyType, 1); if (fz && fz.name) e.fz = { name: fz.name, n: fz.n }; } catch (x) {}
+  }
+  entries.forEach((x) => { if (x.section === "Calendar" && !x.done && x.autoKey === "ov:" + id) { x.done = true; x.completedAt = new Date().toISOString(); } });
+  try { save(); } catch (x) {}
+  render();
+  stToast(how === "ate" ? "✓ Saved ♡ " + e.animal + " ate" : how === "removed" ? "✓ Saved ♡ " + e.animal + " didn’t eat, feeder removed" : "Okay, we won’t ask about that one ♡");
+}
+(function () {
+  const base = renderHomeToday;
+  renderHomeToday = function () {
+    try { stOvSweep(); } catch (x) {}
+    const r = base.apply(this, arguments);
+    try {
+      const box = document.getElementById("homeToday");
+      const list = stOvPending().slice(0, 3);
+      if (box && list.length && !box.querySelector(".stOvCard")) {
+        const d = document.createElement("div");
+        d.className = "homeTodayCard stOvCard";
+        d.innerHTML = "<h2>🌙 Overnight feeders</h2>" + list.map((e) =>
+          '<div class="stOvRow"><p>Did <b>' + esc(e.animal) + "</b> eat the " + esc(e.preyType || "feeder") + " left overnight " + (e.date === advanceDate(today(), -1) ? "last night" : "on " + esc(niceDate(e.date))) + '?</p><div class="homeTodayActions">' +
+          '<button onclick="stOvAnswer(\'' + e.ovId + '\',\'ate\')">✓ Ate</button><button onclick="stOvAnswer(\'' + e.ovId + '\',\'removed\')">✕ Removed</button><button class="stOvSkip" onclick="stOvAnswer(\'' + e.ovId + '\',\'skip\')">Not sure</button></div></div>').join("");
+        box.prepend(d);
+      }
+    } catch (x) {}
+    return r;
+  };
+})();
+/* Feeding form: picking "Left overnight" sets it to Offered and explains the check-in. */
+document.addEventListener("change", (ev) => {
+  try {
+    const t = ev.target;
+    if (!t || t.id !== "feedingResponse") return;
+    const det = document.getElementById("detail"), hint = document.getElementById("stOvHint");
+    if (t.value === "Left overnight") {
+      if (det && [...det.options].some((o) => o.value === "Offered")) det.value = "Offered";
+      if (!hint) { const p = document.createElement("p"); p.id = "stOvHint"; p.className = "lcSmall"; p.textContent = "🌙 Tomorrow we’ll ask if it was eaten or removed, and update this log for you."; t.closest("label")?.after(p); }
+    } else if (hint) hint.remove();
+  } catch (x) {}
+});
+
+/* Length log: inches or cm, next to weights. */
+function stLenUnit() { try { return localStorage.getItem("stLenUnit") === "cm" ? "cm" : "in"; } catch (x) { return "in"; } }
+function stLenParse(e) {
+  const m = String(e.detail || "").match(/([\d.]+)\s*(in|cm)/i);
+  if (!m) return null;
+  const v = parseFloat(m[1]);
+  return Number.isFinite(v) && v > 0 ? { v, u: m[2].toLowerCase() } : null;
+}
+function stLastLength(a) {
+  return entries.filter((e) => e.animal === a && e.section === "Length" && stLenParse(e)).sort((x, y) => y.date.localeCompare(x.date))[0] || null;
+}
+function saveLength() {
+  const date = document.getElementById("date")?.value || today(), v = Number(document.getElementById("lenValue")?.value), u = document.getElementById("lenUnit")?.value === "cm" ? "cm" : "in";
+  if (!validDate(date) || !Number.isFinite(v) || v <= 0 || v > 1000) return alert("Enter a valid date and length.");
+  try { localStorage.setItem("stLenUnit", u); } catch (x) {}
+  const e = { section: "Length", animal: selectedAnimal, detail: Number(v.toFixed(2)) + " " + u, date, notes: "" };
+  entries.push(e);
+  if (stDupUndo(e)) return;
+  save();
+  render();
+  stToast("✓ Saved ♡ " + e.animal + " · " + e.detail);
+}
+function lengthChart(a) {
+  const unit = stLenUnit(), conv = (p) => (p.u === unit ? p.v : unit === "cm" ? p.v * 2.54 : p.v / 2.54);
+  const byDate = new Map();
+  entries.filter((e) => e.animal === a && e.section === "Length").forEach((e) => { const p = stLenParse(e); if (p) byDate.set(e.date, conv(p)); });
+  const w = [...byDate].map(([date, n]) => ({ date, n })).sort((x, y) => x.date.localeCompare(y.date)).slice(-24);
+  if (!w.length) return "";
+  const f = (n) => Number(n.toFixed(1)) + " " + unit;
+  if (w.length < 2) return '<div class="growth"><strong>📏 Length</strong><small>' + esc(f(w[0].n)) + " on " + esc(niceDate(w[0].date)) + ". Log another measurement later to see a chart.</small></div>";
+  let lo = Math.min(...w.map((x) => x.n)), hi = Math.max(...w.map((x) => x.n));
+  const pad = (hi - lo) * 0.12 || hi * 0.05 || 1;
+  lo = Math.max(0, lo - pad); hi = hi + pad;
+  const X = (i) => 46 + (i * 262) / (w.length - 1), Y = (n) => 120 - ((n - lo) / (hi - lo)) * 100;
+  const pts = w.map((x, i) => X(i).toFixed(1) + "," + Y(x.n).toFixed(1)), first = w[0], last = w[w.length - 1], delta = last.n - first.n;
+  return '<div class="growth"><strong>📏 Length trend</strong><svg viewBox="0 0 320 150" role="img" aria-label="Length history for ' + esc(a) + '">' +
+    '<line x1="46" y1="20" x2="308" y2="20" class="gGrid"/><line x1="46" y1="70" x2="308" y2="70" class="gGrid"/><line x1="46" y1="120" x2="308" y2="120" class="gGrid"/>' +
+    '<text x="40" y="24" class="gLab" text-anchor="end">' + esc(f(hi)) + '</text><text x="40" y="124" class="gLab" text-anchor="end">' + esc(f(lo)) + "</text>" +
+    '<polyline points="' + pts.join(" ") + '" class="gLine"/>' + pts.map((p, i) => '<circle cx="' + p.split(",")[0] + '" cy="' + p.split(",")[1] + '" r="' + (i === pts.length - 1 ? 4.5 : 3) + '" class="gDot"/>').join("") +
+    '<text x="46" y="142" class="gLab">' + esc(niceDate(first.date).replace(/^\w+, /, "")) + '</text><text x="308" y="142" class="gLab" text-anchor="end">' + esc(niceDate(last.date).replace(/^\w+, /, "")) + "</text></svg><small>" +
+    esc(f(first.n)) + " → <b>" + esc(f(last.n)) + "</b> (" + (delta >= 0 ? "+" : "−") + esc(f(Math.abs(delta))) + ") across " + w.length + " measurements</small></div>";
+}
+(function () {
+  const baseGrowth = growthChart;
+  growthChart = function (a) {
+    let h = baseGrowth.apply(this, arguments);
+    try { h += lengthChart(a); } catch (x) {}
+    return h;
+  };
+  const baseRender = render;
+  render = function () {
+    const r = baseRender.apply(this, arguments);
+    try {
+      const btn = document.querySelector('button[onclick="saveWeight()"]');
+      if (current === "Weight Tracker" && btn && !document.getElementById("lenValue")) {
+        const u = stLenUnit(), wrap = document.createElement("div");
+        wrap.className = "stLenBox";
+        wrap.innerHTML = '<h3>📏 Length (optional)</h3><div class="stLenRow"><label>Length<input type="number" id="lenValue" min="0.1" max="1000" step="0.1" inputmode="decimal" placeholder="e.g. 36"></label><label>Unit<select id="lenUnit"><option value="in"' + (u === "in" ? " selected" : "") + '>inches</option><option value="cm"' + (u === "cm" ? " selected" : "") + '>cm</option></select></label></div><button class="action secondary" onclick="saveLength()">Save length</button>' +
+          lengthChart(selectedAnimal) + '<h3>Length history</h3>' + logList(entries.filter((e) => e.section === "Length" && e.animal === selectedAnimal));
+        btn.after(wrap);
+      }
+    } catch (x) {}
+    return r;
+  };
+})();
+(function () {
+  try {
+    const st = document.createElement("style");
+    st.textContent = ".stOvCard{border:2px solid #f6b93b}.stOvRow{margin-top:8px}.stOvRow p{margin:0 0 6px}.stOvSkip{opacity:.75}.stLenBox{margin-top:18px}.stLenRow{display:flex;gap:10px}.stLenRow label{flex:1}";
+    document.head.appendChild(st);
+  } catch (x) {}
 })();
