@@ -3716,7 +3716,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.90";
+const SCALE_LC_VERSION = "3.91";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -10592,7 +10592,7 @@ async function bizSaveBrand() {
       const up = await cloudClient.storage.from(CLOUD_BUCKET).upload(logo, file, { upsert: true, contentType: file.type });
       if (up.error) throw up.error;
     }
-    const accent = /^#[0-9a-f]{6}$/i.test(v("bizAccent")) ? v("bizAccent") : null;
+    const accent = document.getElementById("bizAccentOn")?.checked === false ? null : /^#[0-9a-f]{6}$/i.test(v("bizAccent")) ? v("bizAccent") : null;
     const { data, error } = await cloudClient.rpc("save_brand", { p_name: v("bizName").trim().slice(0, 60), p_accent: accent, p_logo: logo || null });
     if (error) throw error;
     if (data !== "ok") return say(data === "plan" ? "Branding is part of Premium Breeder and Rescue plans." : "Couldn’t save that logo.");
@@ -10741,6 +10741,7 @@ const BIZ_PANELS = {
       '<label>Business name<input id="bizName" maxlength="60" value="' + esc(b.business_name || "") + '"></label>' +
       '<label>Logo (PNG, JPG or WebP)<input id="bizLogo" type="file" accept="image/png,image/jpeg,image/webp"></label>' +
       '<label>Brand color<input id="bizAccent" type="color" value="' + esc(b.accent || "#79538e") + '"></label>' +
+      '<label class="stChkRow"><input type="checkbox" id="bizAccentOn"' + (!bizBrand || b.accent ? " checked" : "") + '> Color the whole app with my brand color</label><p class="lcSmall">Turn this off to use your Founding Keeper design (Original, Forest Green, Deep Purple or Warm Cream) instead. Your logo still shows.</p>' +
       '<button class="action" onclick="bizSaveBrand()">Save branding</button><p id="bizMsg" class="helperLine" role="status">' + esc(bizMsg) + "</p>" + bizBack();
   },
   "Rescue Profile": () => {
@@ -12909,6 +12910,9 @@ function helpMarkup() {
 /* V3.86 · ONE list of releases. Add the newest at the top each update: the What's New popup, and the ready-made
    update emails + banners in Send Update Email all build themselves from it. */
 const ST_RELEASES = [
+  { v: "3.91", date: "2026-10-25", subject: "Brand color on or off ♡", banner: "New: brand color on/off ♡", items: [
+    ["🎨", "Brand color on or off", "Breeders and rescues with a brand color can now switch it off (Business Tools → Branding) to use a Founding Keeper design instead."],
+  ] },
   { v: "3.90", date: "2026-10-25", subject: "Overnight feeder check-ins + length tracking ♡", banner: "New: overnight feeder check-ins ♡", items: [
     ["🌙", "Left a feeder overnight?", "Log it as “🌙 Overnight” on Feed Day (or “Left overnight” in a feeding log). The next day, Home asks if it was eaten or removed, and you get a reminder."],
     ["📏", "Length tracking", "Log measured length in inches or cm next to weights on the animal’s Weight page. See a length chart, and it shows on the pet-sitter sheet."],
@@ -14675,4 +14679,31 @@ function lengthChart(a) {
     st.textContent = ".stOvCard{border:2px solid #f6b93b}.stOvRow{margin-top:8px}.stOvRow p{margin:0 0 6px}.stOvSkip{opacity:.75}.stLenBox{margin-top:18px}.stLenRow{display:flex;gap:10px}.stLenRow label{flex:1}";
     document.head.appendChild(st);
   } catch (x) {}
+})();
+
+/* --- 3.91 · Explain why a design doesn't show while a brand color is on --- */
+(function () {
+  const baseSave = founderSaveTheme;
+  founderSaveTheme = function () {
+    const r = baseSave.apply(this, arguments);
+    try {
+      if (stBrandActive()) {
+        const t = document.getElementById("studioThemeStatus");
+        if (t) t.textContent = "✓ " + ST_THEME_NAMES[stSavedTheme] + " saved. Your brand color is on, so it shows instead. Turn it off in Business Tools → Branding to see this design.";
+      }
+    } catch (x) {}
+    return r;
+  };
+  const baseRender = render;
+  render = function () {
+    const r = baseRender.apply(this, arguments);
+    try {
+      const t = document.getElementById("studioThemeStatus");
+      if (t && stBrandActive() && stPreviewTheme === null && !t.dataset.brandNote) {
+        t.dataset.brandNote = "1";
+        t.textContent = "Your brand color is on, so it replaces these designs. To use one, turn off “Color the whole app with my brand color” in Business Tools → Branding.";
+      }
+    } catch (x) {}
+    return r;
+  };
 })();
