@@ -3716,7 +3716,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.91";
+const SCALE_LC_VERSION = "3.92";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -10219,7 +10219,7 @@ async function stMailSend(test) {
   const msg = (t) => { stMailState.msg = t; const m = document.getElementById("mailMsg"); if (m) m.textContent = t; };
   if (!stMailState.subject || !stMailState.body) return msg("Add a subject and a message.");
   const grp = stMailState.aud || "all";
-  if (!test && !confirm("Send “" + stMailState.subject + "” to " + (stMailState.stats?.groups?.[grp] ?? "everyone in this group who's subscribed") + " " + (grp === "all" ? "" : grp + " ") + "now?")) return;
+  if (!test && !confirm("Send “" + stMailState.subject + "” to " + (stMailState.stats?.groups?.[grp] ?? "everyone in this group who's subscribed") + " " + (grp === "all" ? "" : grp === "group" ? "people on the Herps & Hers group list " : grp + " ") + "now?")) return;
   msg(test ? "Sending you a test…" : "Sending…");
   try {
     const r = await hubInvoke({ action: "email_broadcast", subject: stMailState.subject, body: stMailState.body, test, audience: stMailState.aud || "all" });
@@ -12015,7 +12015,7 @@ BIZ_PANELS["Send Update Email"] = () => {
   if (!stMailState.stats) setTimeout(stMailStats, 0);
   const st = stMailState.stats;
   return '<p class="resourceIntro">Email everyone who has app update emails turned on. Each email has an unsubscribe link.</p>' +
-    '<label>Send to<select id="mailAud" onchange="stMailState.aud=this.value;render()">' + [["all", "Everyone"], ["keepers", "Keepers"], ["breeders", "Breeders"], ["rescues", "Rescues"]].map(([k, l]) => '<option value="' + k + '"' + ((stMailState.aud || "all") === k ? " selected" : "") + ">" + l + (st?.groups ? " (" + (st.groups[k] ?? 0) + ")" : "") + "</option>").join("") + "</select></label>" +
+    '<label>Send to<select id="mailAud" onchange="stMailState.aud=this.value;render()">' + [["all", "Everyone"], ["keepers", "Keepers"], ["breeders", "Breeders"], ["rescues", "Rescues"], ["group", "Herps & Hers group list"]].map(([k, l]) => '<option value="' + k + '"' + ((stMailState.aud || "all") === k ? " selected" : "") + ">" + l + (st?.groups ? " (" + (st.groups[k] ?? 0) + ")" : "") + "</option>").join("") + "</select></label>" +
     '<p class="lcSmall"><b>' + (st ? (st.groups?.[stMailState.aud || "all"] ?? st.on) + " people" : "…") + "</b> will get this email (everyone in that group with update emails on).</p>" +
     '<label>Subject<input id="mailSubj" maxlength="140" value="' + esc(stMailState.subject) + '" placeholder="e.g. New in Scale & Tell: Watch & Learn"></label>' +
     '<label>Message<textarea id="mailBody" rows="10" maxlength="8000" placeholder="Hi keepers ♡&#10;&#10;Here’s what’s new…">' + esc(stMailState.body) + "</textarea></label>" +
@@ -14705,5 +14705,51 @@ function lengthChart(a) {
       }
     } catch (x) {}
     return r;
+  };
+})();
+
+/* --- 3.92 · Herps & Hers group email list (admin) --- */
+let stMktMsg = "";
+function stMktParse(text) {
+  const rows = [], seen = new Set();
+  String(text || "").split(/\r?\n/).forEach((line) => {
+    const found = line.match(/[^\s,;<>"']+@[^\s,;<>"']+\.[^\s,;<>"']+/g) || [];
+    if (!found.length) return;
+    const cells = line.split(/[,;\t]/).map((c) => c.replace(/^["'\s]+|["'\s]+$/g, "")).filter((c) => c && !c.includes("@"));
+    const name = (cells.find((c) => /^[A-Za-z][A-Za-z .'-]{0,40}$/.test(c) && !/^(name|email|first|last|answer|question)/i.test(c)) || "").split(" ")[0];
+    found.forEach((e) => { const k = e.toLowerCase(); if (!seen.has(k)) { seen.add(k); rows.push({ email: k, name }); } });
+  });
+  return rows;
+}
+async function stMktImport() {
+  const say = (t) => { stMktMsg = t; const m = document.getElementById("mktMsg"); if (m) m.textContent = t; };
+  if (!document.getElementById("mktConsent")?.checked) return say("Tick the box to confirm these people asked to get emails.");
+  let text = document.getElementById("mktPaste")?.value || "";
+  const f = document.getElementById("mktFile")?.files?.[0];
+  if (f) { if (f.size > 3000000) return say("That file is too big. Use a CSV under 3 MB."); text += "\n" + (await f.text()); }
+  const rows = stMktParse(text);
+  if (!rows.length) return say("No email addresses found. Paste one per line, or upload a CSV.");
+  say("Adding " + rows.length + "…");
+  try {
+    const r = await hubInvoke({ action: "mkt_import", rows, source: (document.getElementById("mktSource")?.value || "fb-group").trim().slice(0, 40), consent: true });
+    stMktMsg = "✓ Added " + r.added + (r.already ? " · " + r.already + " were already on the list" : "") + (r.invalid ? " · " + r.invalid + " skipped (not valid)" : "") + " ♡";
+    stMailState.stats = null;
+    render();
+  } catch (e) { say(e.message); }
+}
+(function () {
+  const base = BIZ_PANELS["Send Update Email"];
+  BIZ_PANELS["Send Update Email"] = function () {
+    const h = base.apply(this, arguments);
+    if (!window.__stIsAdmin) return h;
+    const g = stMailState.stats?.groupList, n = stMailState.stats?.groups?.group;
+    return h + '<h3 class="sectionTitle">📋 Herps &amp; Hers group email list</h3>' +
+      '<p class="lcSmall">People who gave their email when joining the group (or anywhere else they asked for emails). Choose <b>Herps &amp; Hers group list</b> in “Send to” above to email them. Anyone who already has a Scale &amp; Tell account is left out (they get the app emails), and every email has an unsubscribe link and your business address.</p>' +
+      (g ? '<p class="lcSmall"><b>' + (n ?? 0) + "</b> will get group emails · " + g.total + " on the list · " + g.unsubscribed + " unsubscribed</p>" : "") +
+      '<label>Paste emails (one per line, or “Name, email”)<textarea id="mktPaste" rows="5" placeholder="jess@example.com&#10;Dani, dani@example.com"></textarea></label>' +
+      '<label>Or upload a CSV (Google Sheet → File → Download → CSV)<input id="mktFile" type="file" accept=".csv,text/csv,.txt"></label>' +
+      '<label>Where they came from<input id="mktSource" maxlength="40" value="fb-group"></label>' +
+      '<label class="stChkRow"><input type="checkbox" id="mktConsent"> These people asked to get emails from us</label>' +
+      '<button class="action" onclick="stMktImport()">Add to the group list</button><p class="helperLine" id="mktMsg" role="status">' + esc(stMktMsg) + "</p>";
   };
 })();
