@@ -96,6 +96,7 @@ section{padding:56px 0}
 .card[aria-checked=true] .pick{background:var(--plum);color:#fff}
 .give{max-width:760px;margin:22px auto 0;text-align:center;font-size:15px;color:var(--soft)}
 /* checkout */
+.claimHead{text-align:center;margin:8px 0 6px}.claimHead .big{font-size:40px}.claimHead h3{font:italic 700 24px Georgia,serif;color:var(--plum);margin:4px 0}.claimHead p{color:var(--soft);margin:0 0 6px}
 .checkout{max-width:620px;margin:34px auto 0;background:#fff;border:2px solid var(--plum);border-radius:24px;padding:26px 24px;box-shadow:0 22px 50px #45205b25;scroll-margin-top:80px}
 .sum{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--lav);border-radius:14px;padding:14px 16px;margin-bottom:18px}
 .sum b{color:var(--plum);font-size:18px}
@@ -337,6 +338,7 @@ window.ST_PIXEL_ID = '2580184572460750';
   <div class="checkout" id="checkout" style="text-align:left">
     <div class="sum"><div><small style="color:var(--soft);font-weight:700">YOUR PLAN</small><br><b id="sumName">Founding Keeper</b></div><div class="amt" id="sumAmt">$14.99<small>one time</small></div></div>
     <p class="payFirst" id="stepBar">🔒 Pick your login, then pay below. Your account is created the moment your payment goes through.</p>
+    <div id="claimHead" class="hide claimHead"><div class="big">✅</div><h3>Payment received! One last step</h3><p>Create your login so you can open the app. Use any email you like.</p></div>
 
     <form id="acct" novalidate>
       <label for="em">Email</label>
@@ -392,7 +394,7 @@ window.ST_PIXEL_ID = '2580184572460750';
   var PAGE_SEG = 'pets';
   var DEFAULT = { pets: 'founding_keeper', breed: 'founding_breeder', rescue: 'rescue' };
   var seg = PAGE_SEG, plan = 'founding_keeper', email = '', client = null, cfg = null, existing = false, mounted = '';
-  var invited = false, SRC = ((location.search.match(/[?&]from=(page|expo)/) || [0, 'ad'])[1]) + '-';
+  var invited = false, claim = '', SRC = ((location.search.match(/[?&]from=(page|expo)/) || [0, 'ad'])[1]) + '-';
   var $ = function (id) { return document.getElementById(id); };
   try { client = window.supabase.createClient(URL_, KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }); } catch (e) {}
 
@@ -415,7 +417,8 @@ window.ST_PIXEL_ID = '2580184572460750';
     $('go').classList.toggle('hide', k !== 'free');
     $('pay').classList.toggle('hide', k === 'free');
     $('stepBar').classList.toggle('hide', k === 'free');
-    $('acct').classList.remove('hide'); $('done').classList.add('hide');
+    $('acct').classList.toggle('hide', !!p.once && !claim); $('done').classList.add('hide');
+    $('stepBar').textContent = p.once ? '🔒 Pay first, then create your login right after. Takes 10 seconds.' : '🔒 Pick your login, then pay below. Your account is created the moment your payment goes through.';
     if (k !== 'free' && mounted !== k) mountPay();
     $('stickyBtn').textContent = (k === 'founding_keeper' ? 'Get everything' : 'Get ' + p.name) + ' · ' + p.price + (p.unit || '') + ' →';
     if (scroll) $('checkout').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -461,6 +464,7 @@ window.ST_PIXEL_ID = '2580184572460750';
 
   $('acct').addEventListener('submit', async function (e) {
     e.preventDefault();
+    if (claim) return claimLogin();
     if (plan !== 'free') { var bad = readLogin(); say('msg1', bad || 'Now tap a payment button below 👇', !bad); if (!bad) $('pay').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     var em = $('em').value.trim().toLowerCase(), pw = $('pw').value;
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || em.length > 120) return say('msg1', 'Please enter a valid email.');
@@ -504,7 +508,7 @@ window.ST_PIXEL_ID = '2580184572460750';
       var opts = {
         style: { layout: 'vertical', shape: 'pill', height: 48 },
         onClick: function (data, actions) {
-          var bad = readLogin();
+          var bad = p.once ? '' : readLogin();
           if (bad) { say('msg2', bad); say('msg1', bad); $('em').scrollIntoView({ behavior: 'smooth', block: 'center' }); return actions.reject(); }
           say('msg2', ''); say('msg1', '');
           try { if (window.fbq) fbq('track', 'InitiateCheckout', { content_name: p.name }); } catch (x) {}
@@ -516,11 +520,13 @@ window.ST_PIXEL_ID = '2580184572460750';
             var pw = $('pw').value;
             if (sub) { var sr = await invoke({ action: 'guest_subscribed', subscriptionId: d.subscriptionID, email: email, password: pw, src: SRC + PAGE_SEG }); existing = !sr.created; }
             else {
-              try { localStorage.setItem('stLpPending', JSON.stringify({ o: d.orderID, e: email, t: Date.now() })); } catch (x) {}
-              var c = await invoke({ action: 'guest_capture', orderId: d.orderID, email: email, password: pw, src: SRC + PAGE_SEG });
-              if (!c.active) throw Error(c.error || 'Payment could not be confirmed.');
-              existing = !c.created;
+              try { localStorage.setItem('stLpPending', JSON.stringify({ o: d.orderID, g: 1, t: Date.now() })); } catch (x) {}
+              var c = await invoke({ action: 'guest_capture', orderId: d.orderID, src: SRC + PAGE_SEG });
+              if (!c.paid) throw Error(c.error || 'Payment could not be confirmed.');
               try { localStorage.removeItem('stLpPending'); } catch (x) {}
+              try { if (window.fbq) fbq('track', 'Purchase', { value: Number(p.price.replace('$', '')), currency: 'USD', content_name: p.name }); } catch (x) {}
+              if (c.claimed) return finish(plan);
+              return showClaim(c.claim, c.email);
             }
             try { if (window.fbq) fbq('track', 'Purchase', { value: Number(p.price.replace('$', '')), currency: 'USD', content_name: p.name }); } catch (x) {}
             finish(plan);
@@ -530,7 +536,7 @@ window.ST_PIXEL_ID = '2580184572460750';
         onError: function () { say('msg2', 'Something went wrong with checkout. If you see a pending charge, don’t pay again. It will drop off, or email support@scaleandtell.app.'); }
       };
       if (sub) opts.createSubscription = function (data, actions) { return actions.subscription.create({ plan_id: planId, custom_id: 'e:' + email }); };
-      else opts.createOrder = async function () { var o = await invoke({ action: 'guest_create', email: email, src: SRC + PAGE_SEG }); if (o.active) { finish('owned'); throw Error('owned'); } return o.id; };
+      else opts.createOrder = async function () { var o = await invoke({ action: 'guest_create', src: SRC + PAGE_SEG }); return o.id; };
       var card = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.CARD, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'black' } }));
       if (card.isEligible()) await card.render('#cardBtn');
       var ppb = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.PAYPAL, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'gold' } }));
@@ -538,7 +544,32 @@ window.ST_PIXEL_ID = '2580184572460750';
       say('msg2', '');
     } catch (err) { say('msg2', friendly(err)); }
   }
+  function showClaim(tok, em) {
+    claim = tok;
+    try { localStorage.setItem('stLpClaim', JSON.stringify({ c: tok, t: Date.now() })); } catch (x) {}
+    $('pay').classList.add('hide'); $('stepBar').classList.add('hide'); $('done').classList.add('hide');
+    $('claimHead').classList.remove('hide'); $('acct').classList.remove('hide');
+    if (em && !$('em').value) $('em').value = em;
+    $('go').textContent = 'Create my login →'; $('go').classList.remove('hide');
+    say('msg2', ''); say('msg1', '');
+    setTimeout(function () { $('checkout').scrollIntoView({ behavior: 'smooth', block: 'start' }); try { $('pw').focus({ preventScroll: true }); } catch (e) {} }, 60);
+  }
+  async function claimLogin() {
+    var bad = readLogin();
+    if (bad) return say('msg1', bad.replace(' above first', ''));
+    $('go').disabled = true; say('msg1', 'Creating your login…', true);
+    try {
+      var r = await invoke({ action: 'guest_claim', claim: claim, email: email, password: $('pw').value, src: SRC + PAGE_SEG });
+      if (!r.active) throw Error(r.error || 'Couldn’t create your login.');
+      existing = r.created === false && !r.already; invited = false;
+      try { localStorage.removeItem('stLpClaim'); } catch (x) {}
+      $('claimHead').classList.add('hide'); claim = '';
+      finish(plan);
+    } catch (err) { say('msg1', friendly(err)); }
+    finally { $('go').disabled = false; }
+  }
   function finish(kind) {
+    $('claimHead').classList.add('hide');
     showStep(3);
     var p = PLANS[plan];
     if (kind === 'owned') { $('doneTitle').textContent = 'You already have it ♡'; $('doneText').innerHTML = 'Founding Keeper is already on <b>' + esc(email) + '</b>. Sign in to Scale &amp; Tell to use it.'; return; }
@@ -551,10 +582,21 @@ window.ST_PIXEL_ID = '2580184572460750';
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
 
+  // Paid but no login yet (closed the tab, or tapped the link in the receipt email): show the login step.
+  (async function () {
+    var tok = new URLSearchParams(location.search).get('claim') || '';
+    if (!tok) { try { var sv = JSON.parse(localStorage.getItem('stLpClaim') || 'null'); if (sv && Date.now() - sv.t < 30 * 864e5) tok = sv.c; } catch (e) {} }
+    if (!tok || !client) return;
+    try { var ci = await invoke({ action: 'guest_claim_info', claim: tok }); plan = 'founding_keeper'; choose(plan, false);
+      if (ci.claimed) { try { localStorage.removeItem('stLpClaim'); } catch (x) {} $('doneTitle').textContent = 'You’re all set ♡'; showStep(3); $('doneText').innerHTML = 'Your login is already created. Open Scale &amp; Tell and sign in.'; }
+      else showClaim(tok, ci.email);
+    } catch (e) {}
+  })();
   // A payment approved but not confirmed (closed tab, lost signal) is finished on the next visit.
   (async function () {
     var p = null; try { p = JSON.parse(localStorage.getItem('stLpPending') || 'null'); } catch (e) {}
     if (!p || !p.o || Date.now() - p.t > 3 * 864e5 || !client) return;
+    if (p.g) { try { var g = await invoke({ action: 'guest_capture', orderId: p.o, src: SRC + PAGE_SEG }); localStorage.removeItem('stLpPending'); if (g.paid && !g.claimed) { plan = 'founding_keeper'; choose(plan, false); showClaim(g.claim, g.email); } } catch (e) {} return; }
     try { var c = await invoke({ action: 'guest_capture', orderId: p.o, email: p.e, src: SRC + PAGE_SEG }); existing = !c.created; invited = !!c.created; localStorage.removeItem('stLpPending'); if (c.active) { email = p.e; plan = 'founding_keeper'; choose(plan, false); finish('paid'); $('checkout').scrollIntoView(); } }
     catch (e) { if (!/unavailable|connect/i.test(e.message)) try { localStorage.removeItem('stLpPending'); } catch (x) {} }
   })();
@@ -567,7 +609,7 @@ window.ST_PIXEL_ID = '2580184572460750';
   var io = 'IntersectionObserver' in window && new IntersectionObserver(function (es) { es.forEach(function (x) { $('sticky').style.transform = x.isIntersecting ? 'translateY(120%)' : ''; }); });
   if (io) { io.observe($('checkout')); }
   $('sticky').style.transition = 'transform .2s';
-  $('stickyBtn').addEventListener('click', function () { setTimeout(function () { try { $('em').focus({ preventScroll: true }); } catch (e) {} }, 500); });
+  $('stickyBtn').addEventListener('click', function () { setTimeout(function () { try { if (!$('acct').classList.contains('hide')) $('em').focus({ preventScroll: true }); } catch (e) {} }, 500); });
   $('eye').onclick = function () { var t = $('pw').type === 'password'; $('pw').type = t ? 'text' : 'password'; $('eye').textContent = t ? 'Hide' : 'Show'; };
   var fx = $('fx'), dots = $('fxdots').children;
   fx.addEventListener('scroll', function () { var w = fx.firstElementChild.getBoundingClientRect().width + 14, i = Math.round(fx.scrollLeft / w); for (var k = 0; k < dots.length; k++) dots[k].className = k === i ? 'on' : ''; }, { passive: true });
