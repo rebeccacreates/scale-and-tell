@@ -97,6 +97,7 @@ section{padding:56px 0}
 .give{max-width:760px;margin:22px auto 0;text-align:center;font-size:15px;color:var(--soft)}
 /* checkout */
 .quickPay{margin:16px 0 4px;background:#fff;border:2px solid var(--plum);border-radius:20px;padding:14px 14px 8px;box-shadow:0 14px 34px #45205b22;text-align:left}.qpTop{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}.qpTop b{font-size:18px;color:var(--plum)}.qpSpots,.spotsBar{display:inline-block;align-self:flex-start;background:#f6b93b;color:#2b1238;font-weight:900;font-size:14px;border-radius:99px;padding:6px 12px}.spotsBar{margin:12px 0 0}.qpNote{font-size:13px;color:var(--soft);margin:4px 0 6px;text-align:center}
+.tbS{display:none}@media(max-width:520px){.tbL{display:none}.tbS{display:inline}#topBtn{white-space:nowrap}}
 .claimHead{text-align:center;margin:8px 0 6px}.claimHead .big{font-size:40px}.claimHead h3{font:italic 700 24px Georgia,serif;color:var(--plum);margin:4px 0}.claimHead p{color:var(--soft);margin:0 0 6px}
 .checkout{max-width:620px;margin:34px auto 0;background:#fff;border:2px solid var(--plum);border-radius:24px;padding:26px 24px;box-shadow:0 22px 50px #45205b25;scroll-margin-top:80px}
 .sum{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--lav);border-radius:14px;padding:14px 16px;margin-bottom:18px}
@@ -272,7 +273,7 @@ window.ST_PIXEL_ID = '2580184572460750';
 
 <header class="top"><div class="wrap">
   <a class="brand" href="#"><img src="./icon-192.png" alt="">Scale &amp; Tell</a>
-  <a class="cta" href="#checkout">Get everything</a>
+  <a class="cta" href="#checkout" id="topBtn"><span class="tbL">Get your limited pricing now!</span><span class="tbS">Get limited pricing</span></a>
 </div></header>
 
 <!-- HERO -->
@@ -376,7 +377,7 @@ window.ST_PIXEL_ID = '2580184572460750';
   <p><a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a> · <a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></p>
 </div></footer>
 
-<div class="sticky" id="sticky"><a class="cta" href="#checkout" id="stickyBtn">Get everything · $14.99 →</a></div>
+<div class="sticky" id="sticky"><a class="cta" href="#checkout" id="stickyBtn">Get your limited pricing now! →</a></div>
 
 <script src="./supabase.min.js?v=2.57.4"></script>
 <script>
@@ -422,7 +423,7 @@ window.ST_PIXEL_ID = '2580184572460750';
     $('acct').classList.toggle('hide', !!p.once && !claim); $('done').classList.add('hide');
     $('stepBar').textContent = p.once ? '🔒 Pay first, then create your login right after. Takes 10 seconds.' : '🔒 Pick your login, then pay below. Your account is created the moment your payment goes through.';
     if (k !== 'free' && mounted !== k) mountPay();
-    $('stickyBtn').textContent = (k === 'founding_keeper' ? 'Get everything' : 'Get ' + p.name) + ' · ' + p.price + (p.unit || '') + ' →';
+    $('stickyBtn').textContent = k === 'founding_keeper' ? 'Get your limited pricing now! →' : 'Get ' + p.name + ' · ' + p.price + (p.unit || '') + ' →';
     if (scroll) $('checkout').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   function setSeg(s) {
@@ -619,6 +620,8 @@ window.ST_PIXEL_ID = '2580184572460750';
     var hw = document.querySelector('.hero .cta.two') || document.querySelector('.hero .cta');
     (hw ? hw.parentNode : document.querySelector('.hero .wrap')).insertBefore(qpb, hw ? hw.nextSibling : null);
     if (hw) hw.style.display = 'none';
+    ['topBtn', 'stickyBtn'].forEach(function (id) { if ($(id)) $(id).setAttribute('href', '#quickPay'); });
+    qpb.style.scrollMarginTop = '80px';
   }
   // Launch spots: a live count of Founding Keeper spots left at the launch price.
   if (PAGE_SEG === 'pets') (async function () {
