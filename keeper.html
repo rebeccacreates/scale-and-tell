@@ -96,6 +96,7 @@ section{padding:56px 0}
 .card[aria-checked=true] .pick{background:var(--plum);color:#fff}
 .give{max-width:760px;margin:22px auto 0;text-align:center;font-size:15px;color:var(--soft)}
 /* checkout */
+.quickPay{margin:16px 0 4px;background:#fff;border:2px solid var(--plum);border-radius:20px;padding:14px 14px 8px;box-shadow:0 14px 34px #45205b22;text-align:left}.qpTop{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}.qpTop b{font-size:18px;color:var(--plum)}.qpSpots,.spotsBar{display:inline-block;align-self:flex-start;background:#f6b93b;color:#2b1238;font-weight:900;font-size:14px;border-radius:99px;padding:6px 12px}.spotsBar{margin:12px 0 0}.qpNote{font-size:13px;color:var(--soft);margin:4px 0 6px;text-align:center}
 .claimHead{text-align:center;margin:8px 0 6px}.claimHead .big{font-size:40px}.claimHead h3{font:italic 700 24px Georgia,serif;color:var(--plum);margin:4px 0}.claimHead p{color:var(--soft);margin:0 0 6px}
 .checkout{max-width:620px;margin:34px auto 0;background:#fff;border:2px solid var(--plum);border-radius:24px;padding:26px 24px;box-shadow:0 22px 50px #45205b25;scroll-margin-top:80px}
 .sum{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--lav);border-radius:14px;padding:14px 16px;margin-bottom:18px}
@@ -332,11 +333,12 @@ window.ST_PIXEL_ID = '2580184572460750';
 <section class="plans" id="plans" style="scroll-margin-top:54px"><div class="wrap center">
   <div class="cards" id="cards" role="radiogroup" aria-label="Plans" hidden style="display:none"></div>
 
-<div class="anchorBox"><div class="lim">⏳ Limited pricing for app launch</div><h3>Paid reptile apps charge <em>every year.</em></h3><div class="ar"><span>Monthly reptile app</span><s>$83.88/yr</s></div><div class="ar"><span>Yearly reptile app</span><s>$69.99/yr</s></div><div class="ar us"><span>Scale &amp; Tell</span><span>$14.99 once</span></div><small>No subscription. Pay once, yours forever.</small><p class="tgt">Sounds too good to be true? <b>It isn’t! 💜</b></p><a class="anchorCta" href="#checkout">Grab launch pricing now →</a></div>
+<div class="anchorBox"><div class="lim"><span class="spotsLeft">⏳ Limited pricing for app launch</span></div><h3>Paid reptile apps charge <em>every year.</em></h3><div class="ar"><span>Monthly reptile app</span><s>$83.88/yr</s></div><div class="ar"><span>Yearly reptile app</span><s>$69.99/yr</s></div><div class="ar us"><span>Scale &amp; Tell</span><span>$14.99 once</span></div><small>No subscription. Pay once, yours forever.</small><p class="tgt">Sounds too good to be true? <b>It isn’t! 💜</b></p><a class="anchorCta" href="#checkout">Grab launch pricing now →</a></div>
 <section class="builtBox" aria-label="Built for keepers, by keepers"><div class="bbTag">💜 Built for keepers, by keepers</div><h3>You asked. <em>We built it.</em></h3><p class="bbSub">Every one of these came straight from keepers in our community.</p><ul class="bbList"><li><span>✓</span>Log several things at once</li><li><span>✓</span>Wish List with photos</li><li><span>✓</span>Feeding rotations</li><li><span>✓</span>Day &amp; night ranges</li></ul><p class="bbBy">Requested by <b>Shelby B.</b>, <b>Samantha P.</b> &amp; <b>Mara F.</b></p></section>
   <div class="reviews" aria-label="What keepers say"><h3 class="revH">What keepers are saying 💜</h3><div class="revRow"><figure class="review"><div class="stars" aria-hidden="true">★★★★★</div><blockquote>“I absolutely love Scale &amp; Tell! It’s made it so much easier to keep track of sheds, weights, food and food quantity. I use the app daily. 10/10 recommend!”</blockquote><figcaption>Anne E. · uses it daily</figcaption></figure><figure class="review"><div class="stars" aria-hidden="true">★★★★★</div><blockquote>“So much easier to set up and use than other apps we’ve tried. I love that it can be shared with another user and easily give info to a pet sitter.”</blockquote><figcaption>Mara F. · crested gecko &amp; blue tongue keeper</figcaption></figure><figure class="review"><div class="stars" aria-hidden="true">★★★★★</div><blockquote>“Love how everything is organized. You put so much thought and love into this app. This is literally the coolest thing ever ✨”</blockquote><figcaption>Cari D. · keeper</figcaption></figure></div></div>
   <div class="checkout" id="checkout" style="text-align:left">
     <div class="sum"><div><small style="color:var(--soft);font-weight:700">YOUR PLAN</small><br><b id="sumName">Founding Keeper</b></div><div class="amt" id="sumAmt">$14.99<small>one time</small></div></div>
+    <p class="spotsBar"><span class="spotsLeft">🔥 Limited launch pricing</span></p>
     <p class="payFirst" id="stepBar">🔒 Pick your login, then pay below. Your account is created the moment your payment goes through.</p>
     <div id="claimHead" class="hide claimHead"><div class="big">✅</div><h3>Payment received! One last step</h3><p>Create your login so you can open the app. Use any email you like.</p></div>
 
@@ -436,7 +438,7 @@ window.ST_PIXEL_ID = '2580184572460750';
   function rules(pw) { return [['At least 8 characters', pw.length >= 8], ['A capital letter', /[A-Z]/.test(pw)], ['A number', /[0-9]/.test(pw)], ['A symbol like ! @ # $', /[^A-Za-z0-9]/.test(pw)]]; }
   function paintPw() { $('pwCheck').innerHTML = rules($('pw').value).map(function (r) { return '<li class="' + (r[1] ? 'ok' : '') + '">' + (r[1] ? '✓ ' : '○ ') + r[0] + '</li>'; }).join(''); }
   $('pw').addEventListener('input', paintPw); paintPw();
-  function say(id, t, ok) { var el = $(id); el.textContent = t || ''; el.className = 'msg' + (t ? ok ? ' ok' : ' err' : ''); }
+  function say(id, t, ok) { var el = $(id); el.textContent = t || ''; el.className = 'msg' + (t ? ok ? ' ok' : ' err' : ''); if (id === 'msg2' && $('msgQ')) say('msgQ', t, ok); }
   function showStep(n) {
     $('acct').classList.toggle('hide', n === 3); $('pay').classList.toggle('hide', n === 3 || plan === 'free'); $('done').classList.toggle('hide', n !== 3); $('stepBar').classList.toggle('hide', n === 3 || plan === 'free');
   }
@@ -541,13 +543,20 @@ window.ST_PIXEL_ID = '2580184572460750';
       if (card.isEligible()) await card.render('#cardBtn');
       var ppb = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.PAYPAL, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'gold' } }));
       if (ppb.isEligible()) await ppb.render('#ppBtn');
+      if (p.once && $('quickPay')) {
+        $('qpCard').innerHTML = ''; $('qpPP').innerHTML = '';
+        var qc = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.CARD, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'black' } }));
+        if (qc.isEligible()) await qc.render('#qpCard');
+        var qp = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.PAYPAL, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'gold' } }));
+        if (qp.isEligible()) await qp.render('#qpPP');
+      }
       say('msg2', '');
     } catch (err) { say('msg2', friendly(err)); }
   }
   function showClaim(tok, em) {
     claim = tok;
     try { localStorage.setItem('stLpClaim', JSON.stringify({ c: tok, t: Date.now() })); } catch (x) {}
-    $('pay').classList.add('hide'); $('stepBar').classList.add('hide'); $('done').classList.add('hide');
+    $('pay').classList.add('hide'); $('stepBar').classList.add('hide'); $('done').classList.add('hide'); if ($('quickPay')) $('quickPay').classList.add('hide');
     $('claimHead').classList.remove('hide'); $('acct').classList.remove('hide');
     if (em && !$('em').value) $('em').value = em;
     $('go').textContent = 'Create my login →'; $('go').classList.remove('hide');
@@ -601,6 +610,25 @@ window.ST_PIXEL_ID = '2580184572460750';
     catch (e) { if (!/unavailable|connect/i.test(e.message)) try { localStorage.removeItem('stLpPending'); } catch (x) {} }
   })();
 
+  // Keeper page: a second checkout right under the top button, so nobody has to scroll to pay.
+  if (PAGE_SEG === 'pets' && document.querySelector('.hero')) {
+    var qpb = document.createElement('div');
+    qpb.className = 'quickPay'; qpb.id = 'quickPay';
+    qpb.innerHTML = '<div class="qpTop"><b>Founding Keeper · $14.99 once</b><span class="qpSpots"><span class="spotsLeft">🔥 Limited launch pricing</span></span></div>' +
+      '<div id="qpCard" class="paybox"></div><div id="qpPP" class="paybox"></div><p class="qpNote">🔒 Pay first, then create your login. Takes 10 seconds. No subscription.</p><p class="msg" id="msgQ" role="status"></p>';
+    var hw = document.querySelector('.hero .cta.two') || document.querySelector('.hero .cta');
+    (hw ? hw.parentNode : document.querySelector('.hero .wrap')).insertBefore(qpb, hw ? hw.nextSibling : null);
+    if (hw) hw.style.display = 'none';
+  }
+  // Launch spots: a live count of Founding Keeper spots left at the launch price.
+  if (PAGE_SEG === 'pets') (async function () {
+    try {
+      var r = await client.rpc('st_launch_spots'); var n = Number(r.data);
+      if (r.error || !Number.isFinite(n)) return;
+      var t = n > 0 ? '🔥 Limited launch pricing: only ' + n + ' spot' + (n === 1 ? '' : 's') + ' left!' : '🔥 Launch pricing ends soon';
+      document.querySelectorAll('.spotsLeft').forEach(function (el) { el.textContent = t; });
+    } catch (e) {}
+  })();
   // Ads can link straight to a plan: start.html?plan=founding_breeder
   var q = new URLSearchParams(location.search).get('plan');
   if (q && PLANS[q] && PLANS[q].seg === PAGE_SEG) { setSeg(PAGE_SEG); choose(q, false); } else setSeg(PAGE_SEG);
