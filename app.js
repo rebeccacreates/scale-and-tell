@@ -612,7 +612,7 @@ function founderCheckoutMarkup() {
     (stOwnsEntitlements() && stSkus.includes("member")
       ? '<label class="authField" for="founderGroupName">Your name in the Herps &amp; Hers group (optional)</label><input id="founderGroupName" maxlength="80" autocomplete="name" placeholder="So we can add your badge in the group ♡">'
       : "") +
-    '<div id="paypalButtons" aria-label="Pay with PayPal"></div><p id="founderPayStatus" class="studioStatus" role="status"></p><p class="lcSmall">Every paid plan supports the Herps &amp; Hers community&#39;s growth and future projects, and Scale &amp; Tell&#39;s growth. 10% of paid-plan profits are donated to a nonprofit reptile rescue.</p></div>'
+    '<div id="paypalButtons" aria-label="Pay with PayPal"></div><p id="founderPayStatus" class="studioStatus" role="status"></p><p class="lcSmall">Every paid plan supports the Herps &amp; Hers community&#39;s growth and future projects, and Scale &amp; Tell&#39;s growth. 10% of paid-plan profits go to reptile rescues that members help pick.</p></div>'
   );
 }
 function founderPayStatus(msg) {
@@ -731,10 +731,10 @@ async function founderMountPayPal() {
 function founderStudioMarkup() {
   let access = stCanUsePack();
   return (
-    '<div class="studioTile studioIntro"><h3>Here’s what you get as a Founding Keeper ♡</h3><p><strong>$14.99 · one-time, optional.</strong> Your everyday care tracking and cloud journal remain free.</p><p><b>Everything you get:</b></p><ul class="fkList"><li>Room for <b>40 animals</b></li><li><b>3 logins</b> to share your journal with family</li><li><b>Vet &amp; medication reminders</b> on your phone</li><li><b>Shed predictions</b> from each animal’s own history</li><li><b>Photo progress</b>: then-and-now growth photos to share</li><li><b>Emergency card</b>: printable and lock-screen</li><li>Four app designs, your Care Binder, My Year in Scales and keeper printables</li><li>Your ✓ Founding Keeper badge</li></ul><p>Browse the designs and keepsakes below.</p>' +
+    '<div class="studioTile studioIntro"><h3>Here’s what you get as a Founding Keeper ♡</h3><p><strong>Free for 7 days, then $4.99/mo or $48/yr. Optional.</strong> Your everyday care tracking and cloud journal remain free.</p><p><b>Everything you get:</b></p><ul class="fkList"><li>Room for <b>40 animals</b></li><li><b>3 logins</b> to share your journal with family</li><li><b>Vet &amp; medication reminders</b> on your phone</li><li><b>Shed predictions</b> from each animal’s own history</li><li><b>Photo progress</b>: then-and-now growth photos to share</li><li><b>Emergency card</b>: printable and lock-screen</li><li>Four app designs, your Care Binder, My Year in Scales and keeper printables</li><li>Your ✓ Founding Keeper badge</li></ul><p>Browse the designs and keepsakes below.</p>' +
     (access
       ? '<p class="studioPackNote">✓ Your verified Founding Keeper access is active.</p>'
-      : '<p class="studioPackNote">Unlocks automatically on this account right after payment. No subscription.</p>' +
+      : '<p class="studioPackNote">Starts with a 7-day free trial. Cancel anytime in PayPal before day 7 and you pay nothing.</p>' +
         founderCheckoutMarkup()) +
     "</div>" +
     '<div class="studioTile"><h3>Four beautiful app looks ♡</h3><p>The classic look is free. Preview the three additional styles here; applying them requires a verified Founding Keeper purchase.</p><div class="studioThemes">' +
@@ -750,7 +750,7 @@ function founderStudioMarkup() {
     '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feed a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p>' +
     (stCanUseBreeder()
       ? '<button class="action" onclick="openPanel(&quot;Racks & Breeding&quot;)">Open Racks &amp; Breeding</button>'
-      : '<p class="lcSmall">Part of <b>Founding Breeder</b> ($39.99 a year).</p><button class="action secondary" onclick="openPanel(&quot;Plans&quot;)">See plans</button>') +
+      : '<p class="lcSmall">Part of <b>Founding Breeder</b> ($69.99 a year or $7.99 a month, 7 days free).</p><button class="action secondary" onclick="openPanel(&quot;Plans&quot;)">See plans</button>') +
     "</div>" +
     '<div class="studioTile"><h3>Personalized Care Binder</h3><p>Your animal profiles, recent care history, upcoming tasks and saved vet details.</p>' +
     founderPackAction("binder", "Open Care Binder") +
@@ -761,7 +761,7 @@ function founderStudioMarkup() {
     '<div class="studioTile"><h3>Keeper Printables</h3><p>Large photo-based enclosure cards, emergency quick-reference cards and a blank feeding record.</p>' +
     founderPackAction("printables", "Open Keeper Printables") +
     "</div>" +
-    '<p class="lcSmall">One-time $14.99, no recurring charge. Paid securely through PayPal (PayPal balance or card). Your journal, reminders and backups stay free.</p>'
+    '<p class="lcSmall">7 days free, then $4.99 a month or $48 a year through PayPal (PayPal balance or card). Cancel anytime. Your journal, reminders and backups stay free.</p>'
   );
 }
 function founderText(x) {
@@ -1091,7 +1091,7 @@ function tourMarkup() {
         ? '<div class="tourSlide"><p class="planChecking">Checking your plan…</p></div>'
         : stCanUsePack()
         ? '<div class="tourSlide"><div class="tourPack"><h4>You&#39;re a Founding Keeper ♡</h4><p>Thank you for supporting Scale &amp; Tell! Your extras are unlocked: Keeper Tools (vet &amp; med reminders, shed predictions, photo progress, emergency card), Family Sharing, four app designs, your Care Binder, My Year in Scales, printable keeper cards and room for ' + stAnimalLimit() + ' animals on your ' + esc(ST_PLANS[stPlan()]?.name || "plan") + ' plan.</p><button class="action secondary" onclick="tourDone(\'founder\')">Open Founding Keeper Studio</button></div></div>'
-        : '<div class="tourSlide"><div class="tourPack"><h4>Want more? Become a Founding Keeper ♡</h4><p><b>$14.99 once · optional.</b> Room for 40 animals, 3 logins for family, vet &amp; medication reminders, shed predictions, photo progress, an emergency card, four app designs, a Care Binder and keepsakes. Breeding? See <b>Founding Breeder</b> for racks, pairings and clutches.</p><button class="action secondary" onclick="tourDone(\'founder\')">See the Founding Keeper extras</button></div><p class="lcSmall">Your animals, care logs, reminders, photos and backups are all included already. The extras are just a bonus.</p></div>';
+        : '<div class="tourSlide"><div class="tourPack"><h4>Want more? Become a Founding Keeper ♡</h4><p><b>Free for 7 days, then $4.99/mo or $48/yr · optional.</b> Room for 40 animals, 3 logins for family, vet &amp; medication reminders, shed predictions, photo progress, an emergency card, four app designs, a Care Binder and keepsakes. Breeding? See <b>Founding Breeder</b> for racks, pairings and clutches.</p><button class="action secondary" onclick="tourDone(\'founder\')">See the Founding Keeper extras</button></div><p class="lcSmall">Your animals, care logs, reminders, photos and backups are all included already. The extras are just a bonus.</p></div>';
   return '<div class="tourShell" aria-live="polite">' + page + nav + "</div>";
 }
 function tourGo(step) {
@@ -1155,7 +1155,7 @@ function menuMarkup() {
       ? '<div class="menuBadgeRow">' + stBadgeMarkup() + '<button class="authLink" onclick="stShareBadge()">Share my badge</button></div>'
       : "") +
     (stPlan() === "member"
-      ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Upgrade&quot;)"><strong>♡ Become a Founding Keeper</strong><small>$14.99 once · your badge in the Herps &amp; Hers group with a weekly shout-out, 40 animals, 3 logins, vet reminders and more</small></button>'
+      ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Upgrade&quot;)"><strong>♡ Become a Founding Keeper</strong><small>7 days free · your badge in the Herps &amp; Hers group with a weekly shout-out, 40 animals, 3 logins, vet reminders and more</small></button>'
       : "") +
     '<p class="resourceIntro">Everything your keeper journal needs, in one place.</p><button class="menuTile" onclick="openPanel(&quot;Plans&quot;)"><strong>Plans &amp; animal spaces</strong><small>' +
     animals.length +
@@ -1165,7 +1165,7 @@ function menuMarkup() {
     (stPlan() === "member"
       ? ""
       : '<button class="menuTile menuFeature" onclick="openPanel(&quot;Founding Keeper Studio&quot;)"><strong>♡ Founding Keeper</strong><small>' +
-        (stCanUsePack() ? "Your designs, Care Binder and keepsakes" : "$14.99 once · 40 animals, 3 logins, vet reminders, shed predictions and more") +
+        (stCanUsePack() ? "Your designs, Care Binder and keepsakes" : "7 days free · 40 animals, 3 logins, vet reminders, shed predictions and more") +
         "</small></button>") +
     (!stCanTeam() && (stLogins() > 1 || (stTeam?.role === "member" && !stTeamIsBiz()))
       ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Team Logins&quot;)"><strong>♡ Family Sharing</strong><small>' +
@@ -2161,7 +2161,7 @@ function memberUpgradeMarkup(onHome) {
   return (
     '<div class="memberUpgrade">' +
     (onHome ? '<button class="memberUpgradeX" aria-label="Hide for a week" onclick="memberUpgradeSnooze()">×</button>' : "") +
-    '<span class="accessTag">Herps &amp; Hers member</span><h3>Become a Founding Keeper ♡</h3><p>Upgrade once for <b>$14.99</b> and get:</p><ul>' +
+    '<span class="accessTag">Herps &amp; Hers member</span><h3>Become a Founding Keeper ♡</h3><p>Try it <b>free for 7 days</b> (then $4.99/mo or $48/yr) and get:</p><ul>' +
     "<li>Your <b>Founding Keeper badge in the Herps &amp; Hers group</b>, announced in our weekly post</li>" +
     "<li>Room for <b>40 animals</b> (you have " + stAnimalLimit() + ")</li>" +
     "<li><b>3 logins</b> to share with family</li>" +
@@ -3716,7 +3716,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.92";
+const SCALE_LC_VERSION = "3.93";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -7141,13 +7141,13 @@ function accessGateMarkup() {
     '<div id="accessGate"><h1>Welcome to Scale &amp; Tell ♡</h1><p class="authIntro">Signed in as <b>' +
     esc(cloudSession?.user?.email || "your account") +
     "</b>. One last step to open your journal.</p>" +
-    '<div class="accessCard"><h2>Founding Keeper · $14.99 once</h2><p>For hobby keepers. One payment, yours forever. Up to <b>40 animals</b> and <b>3 logins</b> for family, vet &amp; medication reminders, shed predictions, photo progress, an emergency card, four app designs, Care Binder, My Year in Scales and keeper printables.</p>' +
+    '<div class="accessCard"><h2>Founding Keeper · 7 days free</h2><p>For hobby keepers. Then $4.99 a month or $48 a year, cancel anytime. Up to <b>40 animals</b> and <b>3 logins</b> for family, vet &amp; medication reminders, shed predictions, photo progress, an emergency card, four app designs, Care Binder, My Year in Scales and keeper printables.</p>' +
     founderCheckoutMarkup() +
     '</div>' +
     '<div class="accessCard accessBreeder"><span class="accessTag">Breeders &amp; rescues</span><h2>More animals? Racks? A rescue?</h2><div class="accessPlans">' +
-    '<div><b>Founding Breeder</b><span>$39.99 / year</span><small>150 animals · racks, rack feeding, pairings, clutches · 3 logins</small></div>' +
-    '<div><b>Premium Breeder</b><span>$59.99 / year</span><small>400 animals · genetics calculator, invoices, waitlist · 5 logins</small></div>' +
-    '<div><b>Rescue</b><span>$39.99 / year · $19.99 verified 501(c)(3)</span><small>400 animals · intake, fosters, e-sign contracts · 5 logins</small></div>' +
+    '<div><b>Founding Breeder</b><span>$69.99 / year · 7 days free</span><small>150 animals · racks, rack feeding, pairings, clutches · 3 logins</small></div>' +
+    '<div><b>Premium Breeder</b><span>$79.99 / year · 7 days free</span><small>400 animals · genetics calculator, invoices, waitlist · 5 logins</small></div>' +
+    '<div><b>Rescue</b><span>$79.99 / year · half off for verified 501(c)(3)s</span><small>400 animals · intake, fosters, e-sign contracts · 5 logins</small></div>' +
     '</div><button class="authButton" type="button" onclick="openPanel(\'Plans\')">See breeder &amp; rescue plans</button></div>' +
     '<details class="accessCode" id="memberCodeBox"><summary>Have a member or promo code?</summary><label class="authField" for="memberCode">Member or promo code</label><input id="memberCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" placeholder="Member code" onkeydown="if(event.key===\'Enter\')accessRedeemCode()"><button class="authButton" type="button" onclick="accessRedeemCode()">Use code</button><p id="memberCodeStatus" class="authMessage" role="status"></p></details>' +
     '<button class="authLink" type="button" onclick="cloudSignOut()">Sign out</button></div>'
@@ -9469,7 +9469,7 @@ function agoText(date) {
 }
 function breederLocked() {
   return (
-    '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feeding a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p><p><b>Included with Founding Breeder</b> ($39.99 a year, up to 150 animals) and every breeder and rescue plan.</p><button class="action" onclick="openPanel(&quot;Plans&quot;)">See plans</button></div>'
+    '<div class="studioTile"><h3>Breeder tools ♡</h3><p>Racks and tubs, feeding a whole rack in one go, pairings with lock and ovulation dates, clutches and incubation, and hatchlings linked to their parents.</p><p><b>Included with Founding Breeder</b> ($69.99 a year or $7.99 a month, up to 150 animals) and every breeder and rescue plan.</p><button class="action" onclick="openPanel(&quot;Plans&quot;)">See plans</button></div>'
   );
 }
 function breederHome() {
@@ -10747,7 +10747,7 @@ const BIZ_PANELS = {
   "Rescue Profile": () => {
     const r = bizRescue || {}, f = (id, label, val, ph, max = 90) => '<label>' + label + '<input id="' + id + '" maxlength="' + max + '" value="' + esc(val || "") + '" placeholder="' + ph + '"></label>';
     const ver = { none: "Not verified", pending: "⏳ Verification pending", approved: "✓ Verified 501(c)(3)", declined: "Not approved. Contact support@scaleandtell.app" }[r.verification || "none"];
-    return '<p class="resourceIntro">Your rescue’s listing in Scale Hub → Reptile Rescues. Add your EIN to verify your 501(c)(3): verified rescues pay $19.99/yr instead of $39.99 and get a ✓ Verified mark.</p>' +
+    return '<p class="resourceIntro">Your rescue’s listing in Scale Hub → Reptile Rescues. Upload your 501(c)(3) letter below to get verified: verified rescues pay half ($39.99/yr or $4.99/mo) and get a ✓ Verified mark. If you already subscribed, your price drops automatically once you’re approved.</p>' +
       '<div class="habitatSummary"><strong>Intake</strong><p>' + (r.org_name ? (r.intake_open === false ? "🔴 Intake full" : "🟢 Intake open") : "Save your profile first.") + "</p>" +
       (r.org_name ? '<button class="action secondary" onclick="bizSetIntake(' + (r.intake_open === false) + ')">' + (r.intake_open === false ? "Mark intake open" : "Mark intake full") + "</button>" : "") + "</div>" +
       f("rpOrg", "Rescue name", r.org_name, "Your rescue") + f("rpEin", "EIN (for 501(c)(3) verification, optional)", r.ein, "12-3456789", 12) +
@@ -12130,7 +12130,7 @@ function keeperMoreButtons() {
 /* ---------- Keeper Tools hub (Founding Keeper +) ---------- */
 let vetAnimal = "", progressAnimal = "";
 BIZ_PANELS["Keeper Tools"] = () => {
-  if (!stCanUsePack()) return '<p class="resourceIntro">Keeper Tools come with Founding Keeper ($14.99 once) and every paid plan.</p><button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>';
+  if (!stCanUsePack()) return '<p class="resourceIntro">Keeper Tools come with Founding Keeper (7 days free, then $4.99/mo or $48/yr) and every paid plan.</p><button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Become a Founding Keeper</button>';
   const t = (name, title, sub) => '<button class="resourceTile" onclick="' + name + '"><strong>' + title + "</strong><small>" + sub + "</small></button>";
   const preds = animals.map((a) => [a, shedPredict(a)]).filter(([a, x]) => x && !stNoShed(a)).sort((x, y) => x[1].next.localeCompare(y[1].next)).slice(0, 6);
   const meds = animals.flatMap((a) => (profiles[a]?.meds || []).filter((m) => !m.end || m.end >= today()).map((m) => a + ": " + m.drug));
@@ -12910,6 +12910,12 @@ function helpMarkup() {
 /* V3.86 · ONE list of releases. Add the newest at the top each update: the What's New popup, and the ready-made
    update emails + banners in Send Update Email all build themselves from it. */
 const ST_RELEASES = [
+  { v: "3.93", date: "2026-10-31", subject: "Free trials, verified rescues & the founders chat ♡", banner: "New: 7-day free trial on every plan ♡", items: [
+    ["🎁", "Try any plan free for 7 days", "Every plan now starts with a 7-day free trial, monthly or yearly. Bought Founding Keeper for $14.99? You keep it forever."],
+    ["✅", "Verified rescues pay half", "Rescues can upload their 501(c)(3) letter in Business Tools → Rescue Profile. Once approved, the price drops automatically."],
+    ["💜", "Recommend a rescue", "10% of profits go to reptile rescues, and you help pick them. Find “Recommend a reptile rescue” under Plans or Scale Hub → Reptile Rescues."],
+    ["💬", "Founders chat", "Paid members can join the Scale & Tell Founders chat on Messenger from the Plans page."],
+  ] },
   { v: "3.91", date: "2026-10-25", subject: "Brand color on or off ♡", banner: "New: brand color on/off ♡", items: [
     ["🎨", "Brand color on or off", "Breeders and rescues with a brand color can now switch it off (Business Tools → Branding) to use a Founding Keeper design instead."],
   ] },
@@ -13130,11 +13136,11 @@ function landingBottom() {
     f("♧", "Intake to adoption", "Quarantine, medical, available and adopted.") + f("⌂", "Fosters", "Each foster sees only their animals.") +
     f("✍", "E-sign contracts", "Adopters sign on their phone.") + f("★", "Impact report", "Year-end numbers for grants and donors.") + "</div>" +
     '<h2>Plans</h2><div class="landPlans">' +
-    plan("Founding Keeper", "$14.99 once", "40 animals · 3 logins · reminders, designs, Care Binder &amp; Keeper Tools") +
-    plan("Founding Breeder", "$39.99 / year", "150 animals · racks, pairings, clutches · 3 logins") +
-    plan("Premium Breeder", "$59.99 / year", "400 animals · genetics, invoices, your logo · 5 logins") +
-    plan("Rescue", "$39.99 / year", "400 animals · fosters, contracts · $19.99 for verified 501(c)(3)s") +
-    '</div><p class="landNote">No subscription for Founding Keeper. 10% of paid-plan profits are donated to a nonprofit reptile rescue ♡</p>' +
+    plan("Founding Keeper", "$48 / year or $4.99 / month", "40 animals · 3 logins · reminders, designs, Care Binder &amp; Keeper Tools") +
+    plan("Founding Breeder", "$69.99 / year", "150 animals · racks, pairings, clutches · 3 logins") +
+    plan("Premium Breeder", "$79.99 / year", "400 animals · genetics, invoices, your logo · 5 logins") +
+    plan("Rescue", "$79.99 / year", "400 animals · fosters, contracts · half off for verified 501(c)(3)s") +
+    '</div><p class="landNote">Every plan starts with a 7-day free trial. 10% of paid-plan profits go to reptile rescues that members help pick ♡</p>' +
     '<p class="landNote">Works on iPhone, Android and computer. Works with Govee sensors and Herpstat thermostats (Scale &amp; Tell is independent and not affiliated with either company).</p>' +
     '<button class="authButton" onclick="authChooseMode(\'signup\');window.scrollTo({top:0,behavior:\'smooth\'})">Create my account</button>' +
     '<p class="landFoot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="mailto:support@scaleandtell.app">Contact</a></p></section>';
@@ -13781,7 +13787,7 @@ function tourUpgradeMarkup() {
   if (stPlanChecking()) return '<div class="tourSlide"><p class="planChecking">Checking your plan…</p></div>';
   if (stCanUsePack())
     return '<div class="tourSlide"><h3>You’re all set ♡</h3><div class="tourPack"><h4>' + esc(ST_PLANS[stPlan()]?.name || "Your plan") + ' is active</h4><p>Thank you for supporting Scale &amp; Tell! Room for ' + stAnimalLimit() + ' animals, family logins, Keeper Tools, four app designs and your Care Binder are unlocked.</p><button class="action secondary" onclick="tourDone(\'founder\')">See my extras</button></div></div>';
-  return '<div class="tourSlide"><h3>Optional: want more? ⭐</h3><p>Everything you need is already included. If you’d like extras, <b>Founding Keeper</b> is <b>$14.99 one time</b>, with no subscription:</p><ul class="tourList"><li>Room for <b>40 animals</b> and <b>3 logins</b> for family</li><li>Vet &amp; medication reminders, shed predictions, then &amp; now photos, emergency card</li><li>Four app designs and your Care Binder</li></ul>' +
+  return '<div class="tourSlide"><h3>Optional: want more? ⭐</h3><p>Everything you need is already included. If you’d like extras, try <b>Founding Keeper</b> <b>free for 7 days</b> (then $4.99/mo or $48/yr):</p><ul class="tourList"><li>Room for <b>40 animals</b> and <b>3 logins</b> for family</li><li>Vet &amp; medication reminders, shed predictions, then &amp; now photos, emergency card</li><li>Four app designs and your Care Binder</li></ul>' +
     '<button class="action secondary" onclick="tourDone(\'founder\')">See Founding Keeper</button><p class="lcSmall">Breeder or rescue? Menu → <b>Plans</b>. 10% of paid-plan profits go to a nonprofit reptile rescue 💚</p></div>';
 }
 tourMarkup = function () {
@@ -14753,3 +14759,146 @@ async function stMktImport() {
       '<button class="action" onclick="stMktImport()">Add to the group list</button><p class="helperLine" id="mktMsg" role="status">' + esc(stMktMsg) + "</p>";
   };
 })();
+
+/* ===================== V3.93 · 7-day free trials on every plan, verified rescues, recommend a rescue, founders chat ===================== */
+const ST_SUB = {
+  keeper_yearly: { grant: "founding_keeper", price: "$48", per: "year", label: "Yearly", note: "just $4/mo · save 20%" },
+  keeper_monthly: { grant: "founding_keeper", price: "$4.99", per: "month", label: "Monthly" },
+  founding_breeder: { grant: "founding_breeder", price: "$69.99", per: "year", label: "Yearly", note: "save 27%" },
+  breeder_monthly: { grant: "founding_breeder", price: "$7.99", per: "month", label: "Monthly" },
+  premium_breeder: { grant: "premium_breeder", price: "$79.99", per: "year", label: "Yearly", note: "save 33%" },
+  premium_monthly: { grant: "premium_breeder", price: "$9.99", per: "month", label: "Monthly" },
+  rescue: { grant: "rescue", price: "$79.99", per: "year", label: "Yearly", note: "save 33%", vPrice: "$39.99" },
+  rescue_monthly: { grant: "rescue", price: "$9.99", per: "month", label: "Monthly", vPrice: "$4.99" },
+};
+const ST_FOUNDERS_CHAT = "https://m.me/ch/dYRuULRreESLHav5/";
+function stPixelTrack(ev, data) {
+  // Tells Meta ads which ad brought a paying member (same pixel as the landing pages).
+  try {
+    if (!window.fbq) {
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq("init", "2580184572460750");
+    }
+    fbq("track", ev, data || {});
+  } catch (e) {}
+}
+function stIsVerifiedRescue() { return bizRescue?.verification === "approved"; }
+stStartSub = async function (sku) {
+  const box = document.getElementById("sub-" + sku), S = ST_SUB[sku];
+  if (!box || !S) return;
+  if (!cloudSession || !cloudClient) { box.innerHTML = '<p class="planSoon">Sign in first, then choose your plan.</p>'; return; }
+  const isMember = stOwnsEntitlements() && stSkus.includes("member");
+  box.innerHTML = (isMember ? '<label class="lcSmall">Your name in the Herps &amp; Hers group (optional)<input id="subGroup-' + sku + '" maxlength="80"></label>' : "") +
+    '<p class="planSoon" id="subMsg-' + sku + '">Loading secure checkout…</p><div id="subBtns-' + sku + '"></div>';
+  const msg = (t) => { const m = document.getElementById("subMsg-" + sku); if (m) m.textContent = t; };
+  try {
+    const conf = await founderPayPalConfig();
+    if (!stPlanIds || !stPlanIds[sku]) stPlanIds = (await founderInvoke({ action: "plans" })).plans || {};
+    const vKey = sku === "rescue" ? "rescue_verified" : sku === "rescue_monthly" ? "rescue_verified_monthly" : "";
+    const planKey = vKey && stPlanIds[vKey] ? vKey : sku;
+    if (!stPlanIds[planKey]) throw Error("This plan isn't available yet. Please try again soon.");
+    const pp = await stLoadPayPalSub(conf.clientId);
+    msg(conf.live ? "Free for 7 days, then " + (planKey !== sku ? S.vPrice : S.price) + " a " + S.per + ". Cancel anytime in PayPal." : "Test mode: no real money is charged.");
+    await pp.Buttons({
+      style: { shape: "pill", label: "subscribe" },
+      onClick: () => stPixelTrack("InitiateCheckout", { content_name: ST_PLANS[S.grant].name }),
+      createSubscription: (data, actions) => actions.subscription.create({ plan_id: stPlanIds[planKey], custom_id: cloudSession.user.id }),
+      onApprove: async (data) => {
+        msg("Starting your free trial…");
+        const groupName = document.getElementById("subGroup-" + sku)?.value || "";
+        for (let i = 0; i < 6; i++) {
+          try {
+            const r = await founderInvoke({ action: "subscribed", subscriptionId: data.subscriptionID, groupName });
+            if (r.active) {
+              stPixelTrack("StartTrial", { value: Number(String(planKey !== sku ? S.vPrice : S.price).replace("$", "")), currency: "USD", content_name: ST_PLANS[S.grant].name });
+              await founderRefreshEntitlement(); stToast("Your free trial started ♡ Welcome, " + ST_PLANS[S.grant].name + "!"); render(); return;
+            }
+          } catch (e) { msg(e.message); }
+          await new Promise((r) => setTimeout(r, 5000));
+        }
+        msg("Your trial started. Your plan unlocks automatically within a few minutes.");
+      },
+      onError: () => msg("PayPal had a problem. Please try again."),
+    }).render("#subBtns-" + sku);
+  } catch (e) { msg(e.message || "Checkout is unavailable right now."); }
+};
+function stTrialChoices(yearly, monthly) {
+  const b = (sku) => { const S = ST_SUB[sku]; return '<button class="action' + (S.per === "month" ? " secondary" : "") + '" onclick="stStartSub(\'' + sku + '\')">' + S.label + ": " + S.price + " / " + S.per + (S.note ? " (" + S.note + ")" : "") + "</button>"; };
+  return '<div class="subBox" id="sub-' + yearly + '">' + b(yearly) + "</div>" + '<div class="subBox" id="sub-' + monthly + '">' + b(monthly) + "</div>" +
+    '<p class="lcSmall">7 days free. Nothing is charged today. Cancel in PayPal before day 7 and you pay $0.</p>';
+}
+function stFoundersChatMarkup() {
+  const p = stPlan();
+  if (!p || p === "member") return "";
+  return '<div class="habitatSummary"><strong>💬 Scale &amp; Tell Founders chat</strong><p>Request features, report bugs and see new things first, right on Messenger.</p><a class="action" href="' + ST_FOUNDERS_CHAT + '" target="_blank" rel="noopener">Join the founders chat</a></div>';
+}
+let stRecMsg = "";
+function stRecommendMarkup() {
+  return '<details class="diyGuide"><summary><b>💜 Recommend a reptile rescue</b><span>10% of profits</span></summary>' +
+    '<p class="lcSmall">10% of Scale &amp; Tell’s paid-plan profits go to reptile rescues, and members help pick which ones. Know one that deserves it?</p>' +
+    '<label>Rescue name<input id="recName" maxlength="120"></label><label>City and state<input id="recLoc" maxlength="120"></label>' +
+    '<label>Website or Facebook link (optional)<input id="recLink" maxlength="300"></label><label>Why them? (optional)<textarea id="recWhy" rows="3" maxlength="600"></textarea></label>' +
+    '<button class="action" onclick="stRecommendSend()">Send recommendation</button><p class="helperLine" id="recMsg" role="status">' + esc(stRecMsg) + "</p></details>";
+}
+async function stRecommendSend() {
+  const v = (id) => (document.getElementById(id)?.value || "").trim(), m = document.getElementById("recMsg");
+  if (v("recName").length < 2) { if (m) m.textContent = "Add the rescue’s name."; return; }
+  try { await hubInvoke({ action: "recommend_rescue", name: v("recName"), location: v("recLoc"), link: v("recLink"), why: v("recWhy") }); stRecMsg = ""; ["recName", "recLoc", "recLink", "recWhy"].forEach((id) => { const e = document.getElementById(id); if (e) e.value = ""; }); if (m) m.textContent = "Thank you! 💜 We’ll take a look."; }
+  catch (e) { if (m) m.textContent = e.message || "Couldn’t send. Please try again."; }
+}
+plansMarkup = function () {
+  const mine = stPlan(), used = animals.length, isMember = stOwnsEntitlements() && stSkus.includes("member");
+  const card = (key, price, who, perks, choices) => '<div class="planCard' + (mine === key ? " planMine" : "") + '"><div class="planHead"><h3>' + esc(ST_PLANS[key].name) + (mine === key ? ' <span class="stBadge">Your plan</span>' : "") +
+    '</h3><span class="planPrice">' + price + '</span></div><p class="planWho">' + who + "</p><ul>" + perks.map((x) => "<li>" + x + "</li>").join("") + "</ul>" + (mine === key ? "" : choices) + "</div>";
+  const badge = (n) => (isMember ? "✓ " + n + " badge in the app <b>and in the Herps &amp; Hers group</b>, announced in our weekly post" : "✓ " + n + " badge");
+  return '<p class="resourceIntro">You&#39;re using <b>' + used + " of " + stAnimalLimit() + "</b> animal spaces." + (stCanUseBreeder() ? " Breeder tools are on." : "") + " <b>Every plan starts with a 7-day free trial.</b></p>" +
+    stFoundersChatMarkup() +
+    '<h3 class="sectionTitle">For keepers</h3>' +
+    card("founding_keeper", "$48 / year or $4.99 / month", "For hobby keepers.", ["Up to <b>40 animals</b>", "Pet-sitter sheet, feeder freezer, reminders, photos and backups", "Four app designs, Care Binder, My Year in Scales, printables", "<b>3 logins</b> to share with family", "Medication &amp; vet reminders, shed predictions, photo progress and an emergency card", badge("Founding Keeper")], stTrialChoices("keeper_yearly", "keeper_monthly")) +
+    '<h3 class="sectionTitle">For breeders &amp; rescues</h3><p class="lcSmall">Breeder plans add racks, rack feeding, pairings, clutches, hatchlings and Expo Mode.</p>' +
+    card("founding_breeder", "$69.99 / year or $7.99 / month", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches &amp; litters", "Expo Mode that works without signal", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", badge("Founding Breeder")], stTrialChoices("founding_breeder", "breeder_monthly")) +
+    card("premium_breeder", "$79.99 / year or $9.99 / month", "Breeding businesses. Only $10 more a year.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "<b>5 logins</b> for your team", "Your logo and colors on the app and printouts", "MorphMarket export", "Genetics calculator, invoices &amp; receipts, bulk import, shipping weather check, waitlist and sales summary"], stTrialChoices("premium_breeder", "premium_monthly")) +
+    card("rescue", (stIsVerifiedRescue() ? "$39.99 / year or $4.99 / month (verified)" : "$79.99 / year or $9.99 / month"), "Reptile rescues.", ["Up to <b>400 animals</b>", "Everything in Premium Breeder: 5 logins, your logo and colors, MorphMarket export, public page and Inbox", "Foster tracking, adoption contracts with e-signatures, a year-end impact report, a donate button and vet costs per animal", "Listing in Scale Hub → Reptile Rescues with an intake open / full switch", "<b>Verified 501(c)(3)? You pay half.</b> Upload your 501(c)(3) letter under Business Tools → Rescue Profile. If you already subscribed, your price drops automatically once you’re approved."], stTrialChoices("rescue", "rescue_monthly")) +
+    '<p class="lcSmall">Plans renew through PayPal after the free trial. Cancel anytime in <a href="https://www.paypal.com/myaccount/autopay/" target="_blank" rel="noopener">PayPal → Automatic payments</a>; you keep your plan until the end of the time you paid for. Bought Founding Keeper for $14.99? You keep it forever ♡</p><p class="lcSmall">Already have more animals than a plan allows? You keep them all; you just can&#39;t add more until you upgrade.</p>' +
+    stRecommendMarkup();
+};
+// The one-time $14.99 checkout is retired: Founding Keeper now starts with a 7-day free trial (past buyers keep their plan).
+founderCheckoutMarkup = function () {
+  if (!cloudSession) return '<p class="lcSmall">Sign in to start your free trial.</p>';
+  return '<div class="founderCheckout">' + stTrialChoices("keeper_yearly", "keeper_monthly") +
+    '<p class="lcSmall">Every paid plan supports Scale &amp; Tell’s growth, and 10% of paid-plan profits go to reptile rescues that members help pick.</p></div>';
+};
+founderMountPayPal = async function () {};
+(function () {
+  const base = founderStudioMarkup;
+  founderStudioMarkup = function () { return stFoundersChatMarkup() + base.apply(this, arguments); };
+})();
+// Rescue Profile: upload the 501(c)(3) letter for verification (Rebecca approves in one tap; the price drops automatically).
+(function () {
+  const base = BIZ_PANELS["Rescue Profile"];
+  BIZ_PANELS["Rescue Profile"] = function () {
+    const r = bizRescue || {}, h = base.apply(this, arguments);
+    const tile = r.verification === "approved" ? '<div class="habitatSummary"><strong>✓ Verified 501(c)(3)</strong><p>You’re on the half-off verified price.</p></div>'
+      : '<div class="habitatSummary"><strong>501(c)(3) letter</strong><p>' + (r.verification === "pending" ? "⏳ We’re reviewing your letter, usually within a day. Your price drops automatically once it’s approved." : "Upload your IRS determination letter (PDF or photo) to pay half: $39.99/yr or $4.99/mo.") + "</p>" +
+        (r.org_name ? '<input type="file" id="rpLetter" accept="application/pdf,image/*"><button class="action secondary" onclick="stRescueLetter()">Upload letter</button>' : '<p class="lcSmall">Save your rescue profile first.</p>') + '<p class="helperLine" id="rpLetterMsg" role="status"></p></div>';
+    return h.replace('<button class="action" onclick="bizSaveRescue()">', tile + '<button class="action" onclick="bizSaveRescue()">');
+  };
+  const rescuesBase = BIZ_PANELS["Reptile Rescues"];
+  if (rescuesBase) BIZ_PANELS["Reptile Rescues"] = function () { return rescuesBase.apply(this, arguments).replace('<button class="action secondary" onclick="openPanel(\'Scale Hub\')">Back to Scale Hub</button>', stRecommendMarkup() + '<button class="action secondary" onclick="openPanel(\'Scale Hub\')">Back to Scale Hub</button>'); };
+})();
+async function stRescueLetter() {
+  const f = document.getElementById("rpLetter")?.files?.[0], m = document.getElementById("rpLetterMsg");
+  const say = (t) => { if (m) m.textContent = t; };
+  if (!f) return say("Choose the letter first.");
+  if (!/^(application\/pdf|image\/)/.test(f.type) || f.size > 10000000) return say("Use a PDF or photo under 10 MB.");
+  say("Uploading…");
+  try {
+    const path = cloudSession.user.id + "/rescue/501c3-" + Date.now() + "." + (f.type === "application/pdf" ? "pdf" : (f.type.split("/")[1] || "jpg").replace("jpeg", "jpg"));
+    const up = await cloudClient.storage.from(CLOUD_BUCKET).upload(path, f, { upsert: true, contentType: f.type });
+    if (up.error) throw up.error;
+    const r = await hubInvoke({ action: "rescue_letter", path });
+    bizRescue = null;
+    say(r?.status === "approved" ? "You’re already verified ♡" : "Thank you! We’ll review it, usually within a day. ♡");
+    setTimeout(render, 1500);
+  } catch (e) { say(e.message || "Couldn’t upload. Please try again."); }
+}

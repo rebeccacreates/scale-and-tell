@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#45205b">
+<meta name="robots" content="noindex">
+<title>Scale &amp; Tell · Your setup form</title>
+<link rel="icon" href="./icon-192.png">
+<style>
+:root{--plum:#45205b;--plum2:#79538e;--ink:#34213f;--soft:#60486b;--cream:#fffaf7;--lav:#f4e5f3;--line:#dfcde6;--gold:#f6b93b;--gold2:#e9a21a;--leaf:#4f7a2a;--bad:#a3263b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 80px}
+h1{font:italic 700 32px/1.15 Georgia,serif;color:var(--plum);margin:10px 0 6px}
+h2{font:italic 700 24px Georgia,serif;color:var(--plum);margin:0 0 4px}
+.lead{color:var(--soft)}
+.part{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px 16px;margin:18px 0;box-shadow:0 8px 22px #45205b10}
+.part > p{color:var(--soft);margin:0 0 10px;font-size:14.5px}
+label{display:block;font-weight:700;color:var(--plum);margin:10px 0 4px;font-size:14.5px}
+input,select,textarea{width:100%;padding:12px;border:1.5px solid #a98ab8;border-radius:10px;font:16px system-ui,Arial;color:var(--ink);background:#fff}
+textarea{min-height:76px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.card{border:2px solid var(--line);border-radius:16px;padding:12px 14px;margin:12px 0;position:relative;background:#fdfafe}
+.card h3{margin:0;font-size:16px;color:var(--plum2)}
+.rm{position:absolute;top:8px;right:10px;border:0;background:none;color:var(--bad);font-weight:800;cursor:pointer}
+.add{border:2px dashed var(--plum2);background:#fff;color:var(--plum);font-weight:800;border-radius:12px;padding:12px;width:100%;cursor:pointer;margin-top:6px}
+.files{font-size:13.5px;color:var(--soft);margin-top:4px}
+.btn{display:block;width:100%;border:0;cursor:pointer;font:800 19px system-ui,Arial;color:#2b1238;background:linear-gradient(180deg,#ffd067,var(--gold));border-radius:14px;padding:17px;box-shadow:0 4px 0 var(--gold2);margin-top:18px}
+.msg{font-weight:700;margin-top:10px}.err{color:var(--bad)}.ok{color:var(--leaf)}
+.hide{display:none!important}
+.brand{display:flex;align-items:center;gap:10px;font:italic 700 22px Georgia,serif;color:var(--plum)}
+.brand img{width:34px;height:34px;border-radius:9px}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><img src="./icon-192.png" alt="">Scale &amp; Tell</div>
+  <div id="loading"><p>Loading your form…</p></div>
+  <div id="bad" class="hide"><h1>Hmm, we couldn’t find your form</h1><p id="badMsg"></p></div>
+  <div id="thanks" class="hide"><h1>Got it! Thank you 💜</h1><p>Rebecca will set up your account and email you a quick tour when it’s ready. Questions? Email <a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a>.</p></div>
+  <form id="f" class="hide" novalidate>
+    <h1>Let’s set up your collection 🦎</h1>
+    <p class="lead">Tell us about your animals and we’ll build everything for you. Only your name and email are required. Skip anything you don’t know. Short on time? Just upload photos of your notebook or spreadsheet in Part 1.</p>
+
+    <div class="part">
+      <h2>Part 1: About you</h2>
+      <div class="row"><div><label>Your name *</label><input id="a_name" maxlength="80"></div><div><label>Email you signed up with *</label><input id="a_email" type="email" maxlength="120"></div></div>
+      <div class="row"><div><label>Time zone</label><select id="a_tz"></select></div><div><label>When should reminders come?</label><select id="a_rem"><option>Morning</option><option>Evening</option><option>The night before feed day</option></select></div></div>
+      <div class="row"><div><label>Sitter or helper name (optional)</label><input id="a_sitter" maxlength="80"></div><div><label>Their phone (optional)</label><input id="a_sitterPhone" maxlength="30"></div></div>
+      <label>Govee or Herpstat sensors? Which enclosures are they in? (optional)</label><input id="a_sensors" maxlength="300">
+      <label>Shortcut: upload notebook pages, a spreadsheet or an old app export</label><input type="file" id="up_records" multiple accept="image/*,.pdf,.csv,.xls,.xlsx,.txt,.doc,.docx"><div class="files" id="fl_records"></div>
+    </div>
+
+    <div class="part">
+      <h2>Part 2: Each animal</h2>
+      <p>Add one card per animal. Photos become their profile pictures.</p>
+      <div id="animals"></div>
+      <button type="button" class="add" id="addAnimal">+ Add another animal</button>
+    </div>
+
+    <div class="part">
+      <h2>Part 3: Feeder freezer</h2>
+      <p>What feeders do you keep on hand?</p>
+      <div id="freezer"></div>
+      <button type="button" class="add" id="addFreezer">+ Add a feeder</button>
+    </div>
+
+    <div class="part hide" id="partBiz">
+      <h2>Part 4: Your breeding business</h2>
+      <div class="row"><div><label>Business name</label><input id="b_name" maxlength="90"></div><div><label>Brand colors (or “match my logo”)</label><input id="b_colors" maxlength="90"></div></div>
+      <label>Logo</label><input type="file" id="up_logo" accept="image/*,.pdf"><div class="files" id="fl_logo"></div>
+      <label>Website, MorphMarket store and social links</label><textarea id="b_links" maxlength="600"></textarea>
+      <div class="row"><div><label>City and state</label><input id="b_city" maxlength="90"></div><div><label>Do you ship?</label><select id="b_ship"><option></option><option>Yes</option><option>No</option><option>Local pickup only</option></select></div></div>
+      <label>Pairings (male, female, pairing dates, lock dates, ovulation, pre-lay shed, lay date, clutch size, incubation temp)</label><textarea id="b_pairings" maxlength="4000"></textarea>
+      <label>Upcoming expos (for Expo Mode)</label><textarea id="b_expos" maxlength="1000"></textarea>
+      <label>Extra logins for helpers (names and emails)</label><textarea id="b_logins" maxlength="1000"></textarea>
+    </div>
+
+    <div class="part hide" id="partRescue">
+      <h2>Part 5: Your rescue</h2>
+      <div class="row"><div><label>Rescue name</label><input id="r_name" maxlength="90"></div><div><label>Brand colors</label><input id="r_colors" maxlength="90"></div></div>
+      <label>Logo</label><input type="file" id="up_rlogo" accept="image/*,.pdf"><div class="files" id="fl_rlogo"></div>
+      <label>Website and social links, city and state</label><textarea id="r_links" maxlength="600"></textarea>
+      <label>501(c)(3) letter (for half-price verified pricing)</label><input type="file" id="up_letter" accept="image/*,.pdf"><div class="files" id="fl_letter"></div>
+      <label>Fosters and volunteers (names, emails and which animals they care for)</label><textarea id="r_fosters" maxlength="3000"></textarea>
+      <label>Extra logins for your team (names and emails)</label><textarea id="r_logins" maxlength="1000"></textarea>
+    </div>
+
+    <button class="btn" id="send" type="submit">Send my setup form →</button>
+    <p class="msg" id="msg" role="status"></p>
+  </form>
+</div>
+<script>
+'use strict';
+(function () {
+  var SB = 'https://fitlubsbesadknkjimqd.supabase.co', KEY = 'sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG';
+  var t = (new URLSearchParams(location.search).get('t') || '').replace(/[^0-9a-f-]/gi, '').slice(0, 36);
+  var $ = function (id) { return document.getElementById(id); }, files = [], sku = '', busy = 0;
+  async function call(body) {
+    var r = await fetch(SB + '/functions/v1/founder-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY }, body: JSON.stringify(Object.assign({ t: t }, body)) });
+    var j = {}; try { j = await r.json(); } catch (e) {}
+    if (!r.ok) throw Error(j.error || 'Something went wrong. Please try again.');
+    return j;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
+  async function upload(input, listEl, label) {
+    for (var i = 0; i < input.files.length; i++) {
+      var f = input.files[i];
+      if (f.size > 25 * 1024 * 1024) { listEl.innerHTML += '<div class="err">' + esc(f.name) + ' is over 25 MB. Email it to support@scaleandtell.app instead.</div>'; continue; }
+      var line = document.createElement('div'); line.textContent = '⏳ ' + f.name; listEl.appendChild(line); busy++;
+      try {
+        var u = await call({ action: 'intake_upload', name: f.name });
+        var r = await fetch(u.url, { method: 'PUT', headers: { 'Content-Type': f.type || 'application/octet-stream', 'x-upsert': 'false' }, body: f });
+        if (!r.ok) throw Error('Upload failed');
+        files.push({ path: u.path, label: (typeof label === 'function' ? label() : label) + ': ' + f.name });
+        line.textContent = '✓ ' + f.name;
+      } catch (e) { line.className = 'err'; line.textContent = '✕ ' + f.name + ': ' + (e.message || 'upload failed'); }
+      busy--;
+    }
+    input.value = '';
+  }
+  var isB = function () { return /breeder|premium/.test(sku); }, isR = function () { return /rescue/.test(sku); };
+  var nA = 0;
+  function animalCard() {
+    var i = ++nA, el = document.createElement('div'); el.className = 'card'; el.dataset.kind = 'animal';
+    var f = function (k, l, ph) { return '<div><label>' + l + '</label><input data-k="' + k + '" maxlength="300" placeholder="' + (ph || '') + '"></div>'; };
+    el.innerHTML = '<h3>Animal ' + i + '</h3>' + (i > 1 ? '<button type="button" class="rm">Remove</button>' : '') +
+      '<label>Profile photo</label><input type="file" class="up" accept="image/*" multiple><div class="files"></div>' +
+      '<div class="row">' + f('name', 'Name or ID', 'Oro') + f('species', 'Species, morph or locale', 'Ball python, banana') + '</div>' +
+      '<div class="row">' + f('sex', 'Sex') + f('hatch', 'Hatch date or approximate age') + '</div>' +
+      '<div class="row">' + f('weight', 'Current weight (g)') + f('length', 'Length') + '</div>' +
+      '<div class="row">' + f('from', 'Where from (breeder, store, rescue, rehome)') + f('got', 'Date you got them') + '</div>' +
+      f('enclosure', 'Enclosure: type and size, substrate, heat and lighting, temp and humidity targets') +
+      f('diet', 'Diet: prey type, size, live / frozen-thawed / pre-killed, how often') +
+      '<div class="row">' + f('lastFed', 'Last fed date') + f('lastShed', 'Last shed date') + '</div>' +
+      f('health', 'Health: meds, vet name, anything to watch for') + f('notes', 'Quirks and notes', 'only eats at night') +
+      (isB() ? '<div class="row">' + f('status', 'Status (pet, holdback, breeder, for sale)') + f('price', 'Price') + '</div><div class="row">' + f('sire', 'Sire') + f('dam', 'Dam') + '</div><div class="row">' + f('genetics', 'Genetics and het %') + f('rack', 'Rack or tub label') + '</div>' : '') +
+      (isR() ? '<div class="row">' + f('intake', 'Intake date') + f('cameIn', 'How they came in (surrender, found, transfer)') + '</div>' + f('history', 'History from the previous owner') + '<div class="row">' + f('intakeCondition', 'Condition and weight at intake') + f('quarantine', 'Quarantine status') + '</div><div class="row">' + f('foster', 'Foster home') + f('adoption', 'Adoption status') + '</div>' + f('fee', 'Adoption fee') : '');
+    $('animals').appendChild(el);
+    var up = el.querySelector('.up');
+    up.addEventListener('change', function () { upload(up, el.querySelector('.files'), function () { return 'Photo of ' + (el.querySelector('[data-k=name]').value || 'animal ' + i); }); });
+    var rm = el.querySelector('.rm'); if (rm) rm.onclick = function () { el.remove(); };
+  }
+  function freezerRow() {
+    var el = document.createElement('div'); el.className = 'card'; el.dataset.kind = 'freezer';
+    el.innerHTML = '<button type="button" class="rm">Remove</button><div class="row"><div><label>Prey type and size</label><input data-k="prey" maxlength="120" placeholder="Small rats"></div><div><label>How many on hand</label><input data-k="count" maxlength="20"></div></div>' +
+      '<div class="row"><div><label>Where you buy them</label><input data-k="supplier" maxlength="120"></div><div><label>“Running low” alert at</label><input data-k="lowAt" maxlength="20" placeholder="5 left"></div></div>';
+    $('freezer').appendChild(el); el.querySelector('.rm').onclick = function () { el.remove(); };
+  }
+  function read(kind) { return Array.prototype.map.call(document.querySelectorAll('.card[data-kind=' + kind + ']'), function (c) { var o = {}; c.querySelectorAll('[data-k]').forEach(function (i) { if (i.value.trim()) o[i.dataset.k] = i.value.trim(); }); return o; }).filter(function (o) { return Object.keys(o).length; }); }
+  var v = function (id) { var e = $(id); return e ? e.value.trim() : ''; };
+  // time zones
+  var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {}
+  ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu', 'America/Puerto_Rico', 'Europe/London'].concat(tz ? [tz] : []).filter(function (x, i, a) { return a.indexOf(x) === i; })
+    .forEach(function (z) { var o = document.createElement('option'); o.value = o.textContent = z; if (z === tz) o.selected = true; $('a_tz').appendChild(o); });
+  [['up_records', 'fl_records', 'Records'], ['up_logo', 'fl_logo', 'Business logo'], ['up_rlogo', 'fl_rlogo', 'Rescue logo'], ['up_letter', 'fl_letter', '501(c)(3) letter']].forEach(function (x) { var i = $(x[0]); i.addEventListener('change', function () { upload(i, $(x[1]), x[2]); }); });
+  $('addAnimal').onclick = animalCard; $('addFreezer').onclick = freezerRow;
+  $('f').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var m = $('msg');
+    if (!v('a_name') || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('a_email'))) { m.className = 'msg err'; m.textContent = 'Add your name and email at the top.'; return; }
+    if (busy) { m.className = 'msg err'; m.textContent = 'Wait for your uploads to finish, then tap Send again.'; return; }
+    var data = { about: { name: v('a_name'), email: v('a_email'), timeZone: v('a_tz'), reminders: v('a_rem'), sitter: v('a_sitter'), sitterPhone: v('a_sitterPhone'), sensors: v('a_sensors') }, animals: read('animal'), freezer: read('freezer') };
+    if (isB()) data.business = { name: v('b_name'), colors: v('b_colors'), links: v('b_links'), city: v('b_city'), ships: v('b_ship'), pairings: v('b_pairings'), expos: v('b_expos'), helperLogins: v('b_logins') };
+    if (isR()) data.rescue = { name: v('r_name'), colors: v('r_colors'), links: v('r_links'), fosters: v('r_fosters'), teamLogins: v('r_logins') };
+    $('send').disabled = true; m.className = 'msg ok'; m.textContent = 'Sending…';
+    try { await call({ action: 'intake_submit', data: data, files: files }); $('f').classList.add('hide'); $('thanks').classList.remove('hide'); scrollTo(0, 0); }
+    catch (err) { m.className = 'msg err'; m.textContent = err.message; $('send').disabled = false; }
+  });
+  (async function () {
+    try {
+      var info = await call({ action: 'intake_info' });
+      sku = info.sku || '';
+      $('loading').classList.add('hide');
+      if (info.submitted) { $('thanks').classList.remove('hide'); return; }
+      $('f').classList.remove('hide'); $('a_email').value = info.email || '';
+      $('partBiz').classList.toggle('hide', !isB()); $('partRescue').classList.toggle('hide', !isR());
+      animalCard(); freezerRow();
+    } catch (e) { $('loading').classList.add('hide'); $('bad').classList.remove('hide'); $('badMsg').textContent = e.message + ' If you bought the setup, email support@scaleandtell.app and we’ll send a new link.'; }
+  })();
+})();
+</script>
+</body>
+</html>

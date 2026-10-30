@@ -5,13 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#45205b">
 <meta name="color-scheme" content="light">
-<title>Scale &amp; Tell for Breeders · Your whole operation in one app</title>
-<meta name="description" content="Racks, rack feeding, pairings, clutches, genetics, waitlist and sales in one app. From $39.99 a year.">
-<meta property="og:title" content="Scale & Tell for Breeders · Racks, pairings, clutches & sales in one app">
-<meta property="og:description" content="Racks, rack feeding, pairings, clutches, genetics, waitlist and sales in one app. From $39.99 a year.">
+<title>Scale &amp; Tell for Breeders · Your clutch is due in 35 days</title>
+<meta name="description" content="Racks, pairings, clutches, every feeding and Expo Mode in one app on your phone. Try it free for 7 days.">
+<meta property="og:title" content="Your clutch is due in 35 days… did you write that down?">
+<meta property="og:description" content="Racks, pairings, clutches, every feeding and Expo Mode in one app on your phone. Try it free for 7 days.">
 <meta property="og:image" content="https://scaleandtell.app/share-preview.jpg">
-<meta property="og:url" content="https://scaleandtell.app/breeder.html">
+<meta property="og:url" content="https://scaleandtell.app/breeder">
 <link rel="icon" href="./icon-192.png">
+<link rel="preconnect" href="https://www.paypal.com">
+<link rel="preconnect" href="https://www.paypalobjects.com">
+<link rel="preconnect" href="https://fitlubsbesadknkjimqd.supabase.co">
 <link rel="preload" as="image" href="./lp-b-racks.webp">
 <style>
 :root{--plum:#45205b;--plum2:#79538e;--ink:#34213f;--soft:#60486b;--cream:#fffaf7;--lav:#f4e5f3;--lav2:#ead7ef;--line:#dfcde6;--gold:#f6b93b;--gold2:#e9a21a;--leaf:#4f7a2a;--ok:#2f6b2f;--bad:#a3263b}
@@ -96,6 +99,9 @@ section{padding:56px 0}
 .card[aria-checked=true] .pick{background:var(--plum);color:#fff}
 .give{max-width:760px;margin:22px auto 0;text-align:center;font-size:15px;color:var(--soft)}
 /* checkout */
+.quickPay{margin:16px 0 4px;background:#fff;border:2px solid var(--plum);border-radius:20px;padding:14px 14px 8px;box-shadow:0 14px 34px #45205b22;text-align:left}.qpTop{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}.qpTop b{font-size:18px;color:var(--plum)}.qpSpots,.spotsBar{display:inline-block;align-self:flex-start;background:#f6b93b;color:#2b1238;font-weight:900;font-size:14px;border-radius:99px;padding:6px 12px}.spotsBar{margin:12px 0 0}.qpNote{font-size:13px;color:var(--soft);margin:4px 0 6px;text-align:center}
+.tbS{display:none}@media(max-width:520px){.tbL{display:none}.tbS{display:inline}#topBtn{white-space:nowrap}}
+.claimHead{text-align:center;margin:8px 0 6px}.claimHead .big{font-size:40px}.claimHead h3{font:italic 700 24px Georgia,serif;color:var(--plum);margin:4px 0}.claimHead p{color:var(--soft);margin:0 0 6px}
 .checkout{max-width:620px;margin:34px auto 0;background:#fff;border:2px solid var(--plum);border-radius:24px;padding:26px 24px;box-shadow:0 22px 50px #45205b25;scroll-margin-top:80px}
 .sum{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--lav);border-radius:14px;padding:14px 16px;margin-bottom:18px}
 .sum b{color:var(--plum);font-size:18px}
@@ -254,327 +260,372 @@ footer{padding:20px 0 96px}
 .reviews{max-width:980px;margin:0 auto 22px}.revH{font:italic 700 24px Georgia,serif;color:#45205b;text-align:center;margin:0 0 12px}.revRow{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 10px;-webkit-overflow-scrolling:touch}.revRow .review{flex:0 0 min(84%,300px);scroll-snap-align:start;margin:0}
 .review{max-width:560px;margin:0 auto 22px;background:#fff;border:2px solid #e8dcee;border-radius:20px;padding:18px 20px;text-align:left}.review .stars{color:#f2b53a;font-size:20px;letter-spacing:2px}.review blockquote{margin:6px 0 8px;font:italic 600 17px/1.4 Georgia,serif;color:#45205b}.review figcaption{font-size:13px;color:var(--soft);font-weight:700}
 .payFirst{font-size:14px;color:var(--soft);background:#f6eef9;border-radius:12px;padding:10px 12px;margin:10px 0 14px;line-height:1.4}
+/* ---- V3.93 Brunson rebuild ---- */
+.banner{background:#2b1238;color:#fff;text-align:center;font-weight:800;font-size:14.5px;padding:9px 14px;line-height:1.35}
+.banner b{color:#ffd067}
+.hook{font:italic 800 clamp(34px,6vw,58px)/1.06 Georgia,"Times New Roman",serif;color:var(--plum);letter-spacing:-.6px;margin:0 0 12px}
+.subhead{font:700 clamp(19px,2.4vw,23px)/1.35 system-ui,Arial,sans-serif;color:var(--ink);margin:0 0 10px}
+.tryline{font-size:17px;color:var(--soft);margin:0 0 4px}
+.tryline b{color:var(--leaf)}
+.hero2{background:linear-gradient(180deg,#f4e5f3 0%,#fffaf7 100%);padding:28px 0 34px}
+.hero2 .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:34px;align-items:start}
+.order{background:#fff;border:2px solid var(--plum);border-radius:22px;padding:18px 18px 12px;box-shadow:0 18px 44px #45205b26;margin-top:16px;scroll-margin-top:70px}
+.order h3{font:italic 700 22px Georgia,serif;margin:0 0 10px}
+.opt{display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:14px;padding:12px 14px;margin:8px 0;cursor:pointer;background:#fff;position:relative}
+.opt input{width:22px;height:22px;margin:0;flex:0 0 22px;accent-color:#45205b}
+.opt .ot{flex:1;line-height:1.25}
+.opt .ot b{display:block;font-size:17px;color:var(--ink)}
+.opt .ot small{color:var(--soft);font-size:13.5px;font-weight:600}
+.opt .op{font:800 18px system-ui,Arial;color:var(--ink);text-align:right;white-space:nowrap}
+.opt .op small{display:block;font-size:12px;color:var(--soft);font-weight:700}
+.opt.on{border-color:var(--plum);background:#faf5fc;box-shadow:0 0 0 3px #79538e22}
+.opt .bv{position:absolute;top:-10px;right:12px;background:var(--gold);color:#2b1238;font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;border-radius:99px;padding:3px 9px}
+.grp{font-size:12.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--plum2);margin:14px 0 2px}
+.bump{display:flex;gap:12px;align-items:flex-start;background:#fff8e6;border:2px dashed var(--gold2);border-radius:14px;padding:12px 14px;margin:10px 0;cursor:pointer}
+.bump input{width:22px;height:22px;margin:2px 0 0;flex:0 0 22px;accent-color:#45205b}
+.bump b{color:#8a4b00}
+.bump span{font-size:14.5px;line-height:1.35}
+.due{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-weight:800}
+.due .amt{font-size:26px;color:var(--leaf)}
+.due small{display:block;font-weight:600;color:var(--soft);font-size:13px}
+.pp{min-height:110px;margin-top:10px}
+.ppnote{font-size:13px;color:var(--soft);text-align:center;margin:6px 0 2px}
+.verified{background:#eef5e6;border-radius:12px;padding:10px 12px;font-size:14.5px;color:#2f4d16;margin:8px 0}
+.storyBox{display:grid;grid-template-columns:260px 1fr;gap:26px;align-items:start;max-width:900px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:24px;padding:26px;box-shadow:0 14px 34px #45205b14}
+.storyBox img{border-radius:18px;width:100%;object-fit:cover}
+.storyBox h2{margin-bottom:8px}
+.storyBox p b{color:var(--plum)}
+.sig{font:italic 700 22px Georgia,serif;color:var(--plum)}
+.stack2{background:var(--plum);color:#fff;border-radius:26px;padding:30px 26px;max-width:820px;margin:0 auto;box-shadow:0 24px 50px #45205b40}
+.stack2 h2{color:#fff;text-align:center}
+.stack2 .lead{text-align:center;opacity:.9;margin-bottom:14px}
+.si{display:flex;gap:14px;justify-content:space-between;padding:13px 0;border-bottom:1px dashed #ffffff40}
+.si .sl{flex:1}
+.si .sl b{color:#ffd067}
+.si .sl span{display:block;opacity:.88;font-size:15px}
+.si .sv{white-space:nowrap;font-weight:800;font-size:15px;opacity:.95}
+.si .sv s{color:#ffb4b4}
+.total{text-align:center;margin-top:18px}
+.total .was{font:italic 700 24px Georgia,serif}
+.total .was s{color:#ffb4b4}
+.total .now{font:800 26px/1.25 system-ui,Arial;color:#ffd067;margin-top:6px}
+.stack2 .cta{margin-top:18px}
+.plain{max-width:820px;margin:26px auto 0}
+.plain h3{font:italic 700 22px Georgia,serif}
+.plain ul{list-style:none;padding:0;margin:8px 0 18px;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.plain li{padding:4px 0 4px 26px;position:relative;font-size:16px}
+.plain li:before{content:"✓";position:absolute;left:0;color:var(--leaf);font-weight:900}
+.anchor2{max-width:700px;margin:0 auto;background:linear-gradient(160deg,#45205b,#2b1238);color:#fff;border-radius:22px;padding:22px 22px;text-align:center;font-size:18px;line-height:1.5}
+.anchor2 b{color:#ffd067}
+.promise{max-width:700px;margin:0 auto;text-align:center;border:3px solid var(--leaf);border-radius:22px;padding:22px;background:#fff}
+.promise .seal{font-size:46px;line-height:1}
+.promise h2{color:var(--leaf)}
+.ps{max-width:700px;margin:0 auto;font-size:18px}
+.ps p:first-child:before{content:"P.S. ";font-weight:900;color:var(--plum)}
+.mission{max-width:700px;margin:0 auto;text-align:center;font:italic 600 20px/1.45 Georgia,serif;color:var(--plum)}
+.switch{background:#fff8e6;border:2px solid var(--gold2);border-radius:18px;padding:16px;margin:0 0 16px;text-align:center}
+.switch h3{font:italic 700 22px Georgia,serif;margin:0 0 6px}
+.switch p{margin:0 0 10px;color:var(--ink)}
+footer .fb{display:inline-flex;align-items:center;gap:6px}
+@media (max-width:820px){
+  .hero2 .wrap{grid-template-columns:1fr;gap:18px}
+  .hero2 .phone{display:none}
+  .hero2{padding:18px 0 26px}
+  .hook{font-size:36px}
+  .storyBox{grid-template-columns:1fr;padding:20px}
+  .storyBox img{max-height:300px}
+  .si{flex-direction:column;gap:4px}
+  .plain ul{grid-template-columns:1fr}
+  .order{padding:16px 14px 10px}
+}
+
 </style>
 <script>
-/* Meta Pixel: paste your Pixel ID between the quotes (numbers only). Leave empty to turn tracking off. */
-window.ST_PIXEL_ID = '2580184572460750';
 (function (id) {
-  if (!/^\d{8,20}$/.test(id)) return;
   !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', id); fbq('track', 'PageView'); fbq('track', 'ViewContent', { content_name: document.title });
-})(window.ST_PIXEL_ID);
+  fbq('init', id); fbq('track', 'PageView'); fbq('track', 'ViewContent', { content_name: 'breeder' });
+})('2580184572460750');
 </script>
 </head>
 <body>
 <noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=2580184572460750&ev=PageView&noscript=1"></noscript>
-
+<div class="banner" id="spots">🥚 <b>Founding Breeder pricing</b>: lock in today’s price for life.</div>
 <header class="top"><div class="wrap">
   <a class="brand" href="#"><img src="./icon-192.png" alt="">Scale &amp; Tell</a>
-  <a class="cta" href="#checkout">Get everything</a>
+  <a class="cta" href="#order"><span class="tbL">Start my FREE trial</span><span class="tbS">Try it free</span></a>
 </div></header>
 
-<!-- HERO -->
-<section class="hero"><div class="wrap">
+<section class="hero2"><div class="wrap">
   <div>
-    <h1>Your whole breeding operation. <span class="hl">One app.</span></h1>
-    <p class="sub">Racks, pairings, clutches, genetics, sales and <b>Expo Mode</b> for shows. Ditch the spreadsheet.</p>
-    <div class="ctas">
-      <a class="cta two big" href="#checkout">Yes! Give me everything →<small>All-in-one · from $39.99/year · cancel anytime</small></a>
+    <h1 class="hook">Your clutch is due in 35 days… did you write that down?</h1>
+    <p class="subhead">Racks, pairings, clutches, every feeding and Expo Mode for show day, in one app on your phone.</p>
+    <p class="tryline">Try it <b>FREE for 7 days</b>. Built by a keeper, for breeders who are done with spreadsheets.</p>
+    <div class="order" id="order">
+      <div id="payStep">
+        <h3>Start your free 7-day trial</h3>
+        <div class="grp">Founding Breeder · 150 animals, 3 logins</div><label class="opt"><input type="radio" name="plan" value="founding_breeder" checked><span class="ot"><b>Yearly · $69.99/yr</b><small>Save 27% vs monthly</small></span><span class="op">$69.99<small>per year</small></span><span class="bv">Best value</span></label><label class="opt"><input type="radio" name="plan" value="breeder_monthly"><span class="ot"><b>Monthly</b><small>Billed monthly</small></span><span class="op">$7.99<small>per month</small></span></label><div class="grp">Premium Breeder · 400 animals, 5 logins, genetics &amp; your logo</div><label class="opt"><input type="radio" name="plan" value="premium_breeder"><span class="ot"><b>Yearly · $79.99/yr</b><small>Only $10 more a year · save 33%</small></span><span class="op">$79.99<small>per year</small></span></label><label class="opt"><input type="radio" name="plan" value="premium_monthly"><span class="ot"><b>Monthly</b><small>Billed monthly</small></span><span class="op">$9.99<small>per month</small></span></label><label class="bump"><input type="checkbox" id="bumpSetup"><span><b>YES! Set it up for me (+$15, one time):</b> Rebecca adds your animals, reminders and feeding schedule for you. You just fill out a short form.</span></label>
+        <div class="due"><span>Due today<small id="dueTxt"></small></span><span class="amt" id="dueAmt">$0</span></div>
+        <p class="ppnote" id="ppLoading">Loading secure checkout…</p>
+        <div class="pp"><div id="ppCard"></div><div id="ppPal"></div></div>
+        <p class="msg" id="msgPay" role="status"></p>
+        <p class="ppnote">🔒 Secure checkout by PayPal. No PayPal account needed. Cancel before day 7 and you pay nothing.</p>
+      </div>
+      <div id="claimStep" class="hide">
+        <div class="claimHead"><div class="big">✅</div><h3>Your free trial started!</h3><p>Last step: create your login so you can open the app.</p></div>
+        <div id="switchBox" class="switch hide"><h3>Want 2+ months free?</h3><p id="switchTxt"></p><div id="switchBtn"></div><p class="msg" id="msgSwitch" role="status"></p></div>
+        <p id="setupNote" class="payFirst hide">📬 We also emailed you your <b>setup form</b>. Fill it out whenever you’re ready and we’ll build everything for you.</p>
+        <form id="acct" novalidate>
+          <label for="em">Email</label>
+          <input id="em" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com">
+          <label for="pw">Create a password</label>
+          <div class="pwrap"><input id="pw" type="password" autocomplete="new-password" minlength="8" required placeholder="Create a password"><button class="eye" type="button" id="eye" aria-label="Show password">Show</button></div>
+          <ul class="pwCheck" id="pwCheck" aria-live="polite"></ul>
+          <button class="cta block" id="go" type="submit" style="margin-top:14px">Create my login →</button>
+          <p class="msg" id="msgClaim" role="status"></p>
+        </form>
+      </div>
+      <div id="doneStep" class="hide done">
+        <div class="big">🎉</div>
+        <h2>You’re in!</h2>
+        <p id="doneText"></p>
+        <a class="cta" href="https://scaleandtell.app/">Open Scale &amp; Tell →</a>
+      </div>
     </div>
-    <div class="trust"><span>Limited launch pricing</span><span>Up to 400 animals</span><span>Team logins</span><span>Any phone or computer</span></div>
   </div>
-  <div class="phone">
-    <img src="./lp-b-racks.webp" alt="Scale and Tell app" width="560" height="1212">
-    <div class="tag">🥚 7 eggs due Nov 27</div>
-    <div class="tag tag2">🎪 Expo Mode ready</div>
-  </div>
+  <div class="phone"><img src="./lp-b-racks.webp" alt="Scale and Tell app" width="560" height="1212"></div>
 </div></section>
 
-<!-- SEE IT -->
+<section id="story"><div class="wrap"><div class="storyBox">
+  <img src="./lp-oro-story.webp" alt="Oro, Rebecca's ball python" loading="lazy" width="520" height="640">
+  <div>
+    <h2>Hi, I'm Rebecca 👋</h2>
+    <p>I started Herps &amp; Hers, and I keep Oro &amp; Kane (ball pythons) and Roux (corn snake).</p>
+    <p><b>The day I lost track.</b> My “system” was notes on the tanks and my notes app, and I never kept up with it. Then one feed night I stood there with a thawed rat and honestly couldn’t remember if Oro had eaten Tuesday or Thursday.</p>
+    <p><b>The trip that scared me.</b> When I had to go out of town, someone else had to feed them for me. I spent the whole trip filled with anxiety. Did they eat for her? Did they feed successfully? Are they warm enough for digestion? Is humidity right?</p>
+    <p><b>The night I felt helpless.</b> One feed night, Oro was in shed and taking a while to finish his meal. When I came back, he had a piece of substrate stuck in his mouth, and I panicked. We’d never had an issue like that with any of them, and I had no one to ask in real life. So there I was posting in groups and vet groups and watching YouTube videos, my anxiety sky high and my poor baby uncomfortable. That night is why Scale &amp; Tell has vet resources, urgent-care warning signs and a care library built right in.</p>
+    <p><b>Then the group spoke up.</b> When I asked the Herps &amp; Hers community I founded for like-minded, empowered female reptile enthusiasts, keepers, breeders and rescues all said the same thing: “I wish there was ONE app that just did all of it.”</p>
+    <p><b>So I built it.</b> Scale &amp; Tell is the app I wished I had: every feeding, shed and weight in a few taps, a sitter sheet I can send in one tap, and alerts when temps drift. And because it’s built with our community, when members ask for something, I build it, often same day.</p>
+    <p>I’d love for you to try it free for 7 days.</p>
+    <p class="sig">— Rebecca 💜</p>
+  </div>
+</div></div></section>
+
+<section><div class="wrap">
+  <div class="stack2">
+    <h2>Here’s everything you get</h2>
+    <p class="lead">Start your free trial today and you get all of this. Only in Scale &amp; Tell:</p>
+    <div class="si"><div class="sl">📦 <b>Sold an animal? Send the buyer its full records in one tap.</b><span>Feedings, sheds, weights and photos go with it.</span></div><div class="sv">(Value: <s>$49</s>)</div></div><div class="si"><div class="sl">🎪 <b>Expo Mode that works without signal.</b><span>Your table on your phone; tap Sold when one goes home.</span></div><div class="sv">(Value: <s>$79</s>)</div></div><div class="si"><div class="sl">🌡️ <b>Live Govee &amp; Herpstat alerts</b><span>across your racks.</span></div><div class="sv">(Value: <s>$49</s>)</div></div><div class="si"><div class="sl">💌 <b>One-tap sitter sheet</b><span>so someone can cover feed day.</span></div><div class="sv">(Value: <s>$29</s>)</div></div><div class="si"><div class="sl">📥 <b>Import from a photo.</b><span>Snap your breeding notebook or rack cards and they become records.</span></div><div class="sv">(Value: <s>$39</s>)</div></div><div class="si"><div class="sl">🌐 <b>Your public breeder page with an inquiry inbox.</b><span>Buyers message you without digging through Facebook.</span></div><div class="sv">(Value: <s>$59</s>)</div></div><div class="si"><div class="sl">🛠️ <b>Built with you:</b><span>ask for a feature and it’s often live the same day.</span></div><div class="sv">(Value: priceless)</div></div>
+    <div class="total"><div class="was">Total value: <s>$304/yr</s></div><div class="now">Today: just $69.99/yr, and your first 7 days are FREE.</div></div>
+    <a class="cta block" href="#order">Start my FREE 7-day trial →</a>
+  </div>
+  <div class="plain"><h3>Founding Breeder ($69.99/yr or $7.99/mo)</h3><ul><li>Up to 150 animals, 3 logins</li><li>Racks, tubs, pairings and lock dates</li><li>Clutches and litters with due-date countdowns</li><li>Feed a whole rack at once (Feed Day)</li><li>Everything in Keeper</li></ul><h3>Premium Breeder ($79.99/yr or $9.99/mo), only $10 more a year</h3><ul><li>Up to 400 animals, 5 logins</li><li>Genetics calculator</li><li>Bulk import from a spreadsheet or MorphMarket export, plus MorphMarket export</li><li>Waitlist, invoices, sales summary and shipping weather check</li><li>Your logo and colors on the app and printouts</li></ul></div>
+</div></section>
+
 <section class="fxsec"><div class="wrap">
-  <div class="fx" id="fx">
-    <figure class="fxc"><div class="fxshot"><img src="./lp-b-racks.webp" alt="Racks and breeding" loading="lazy" width="560" height="1212"></div><figcaption>🗄 Racks, pairings &amp; clutches</figcaption></figure>
-    <figure class="fxc"><div class="fxshot"><img src="./lp-b-expo.webp" alt="Expo Mode" loading="lazy" width="560" height="1212"></div><figcaption>🎪 Expo Mode: tap Sold at shows</figcaption></figure>
-    <figure class="fxc"><div class="fxshot"><img src="./lp-b-feedday.webp" alt="Rack feeding" loading="lazy" width="560" height="1212"></div><figcaption>🍽 Feed a whole rack in 1 tap</figcaption></figure>
-    <figure class="fxc"><div class="fxshot"><img src="./lp-b-genetics.webp" alt="Genetics calculator" loading="lazy" width="560" height="1212"></div><figcaption>🧬 Genetics odds ★</figcaption></figure>
-    <figure class="fxc"><div class="fxshot"><img src="./lp-b-waitlist.webp" alt="Waitlist" loading="lazy" width="560" height="1212"></div><figcaption>📋 Waitlist &amp; deposits ★</figcaption></figure>
-  </div>
-  <div class="fxdots" id="fxdots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+  <div class="fx" id="fx"><figure class="fxc"><div class="fxshot"><img src="./lp-b-racks.webp" alt="" loading="lazy" width="560" height="1212"></div><figcaption>🗄 Racks, pairings &amp; clutches</figcaption></figure><figure class="fxc"><div class="fxshot"><img src="./lp-b-expo.webp" alt="" loading="lazy" width="560" height="1212"></div><figcaption>🎪 Expo Mode: tap Sold</figcaption></figure><figure class="fxc"><div class="fxshot"><img src="./lp-b-feedday.webp" alt="" loading="lazy" width="560" height="1212"></div><figcaption>🍽 Feed a whole rack</figcaption></figure><figure class="fxc"><div class="fxshot"><img src="./lp-b-genetics.webp" alt="" loading="lazy" width="560" height="1212"></div><figcaption>🧬 Genetics odds (Premium)</figcaption></figure></div>
+  <div class="fxdots" id="fxdots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
 </div></section>
 
-<!-- ALL IN ONE -->
-<section class="aio"><div class="wrap narrow center">
-  <h2>Everything your breeding business needs.</h2>
-  <div class="aiogrid"><div><i>🗄</i>Racks &amp; tubs</div><div><i>🍽</i>Rack feeding</div><div><i>💞</i>Pairings &amp; locks</div><div><i>🥚</i>Clutches &amp; litters</div><div><i>🧬</i>Genetics ★</div><div><i>📋</i>Waitlist ★</div><div><i>🧾</i>Invoices ★</div><div><i>🛒</i>Listings &amp; sales</div><div><i>🌐</i>Public page</div><div><i>📥</i>Inquiry Inbox</div><div><i>👥</i>Team logins</div><div><i>🎪</i>Expo Mode</div></div>
-  <p class="hint" style="margin-top:8px">★ = Premium Breeder</p>
-  <a class="cta block" href="#checkout" style="margin-top:18px">Get it all from $39.99/yr →</a>
+<section><div class="wrap"><div class="anchor2">Marketplace breeding tools start at <b>$132/yr</b>, and they don’t track your feedings. Founding Breeder is <b>$69.99/yr</b> for everything above, on your phone at the rack and on your computer. And your first 7 days are free.</div></div></section>
+
+<section style="padding-top:10px"><div class="wrap"><section class="builtBox" aria-label="Built with keepers"><div class="bbTag">💜 Built with keepers</div><h3>You asked. <em>We built it.</em></h3><p class="bbSub">Every one of these came straight from members of our community.</p><ul class="bbList"><li><span>✓</span>Log several things at once</li><li><span>✓</span>Overnight feeder check-ins</li><li><span>✓</span>Feeding rotations</li><li><span>✓</span>Day &amp; night ranges</li></ul><p class="bbBy">Requested by <b>Shelby B.</b>, <b>Samantha P.</b> &amp; <b>Mara F.</b></p></section>
+  <div class="reviews" aria-label="What keepers say"><h3 class="revH">What keepers are saying 💜</h3><div class="revRow"><figure class="review"><div class="stars" aria-hidden="true">★★★★★</div><blockquote>“I absolutely love Scale &amp; Tell! It’s made it so much easier to keep track of sheds, weights, food and food quantity. I use the app daily. 10/10 recommend!”</blockquote><figcaption>Anne E. · uses it daily</figcaption></figure><figure class="review"><div class="stars" aria-hidden="true">★★★★★</div><blockquote>“So much easier to set up and use than other apps we’ve tried. I love that it can be shared with another user and easily give info to a pet sitter.”</blockquote><figcaption>Mara F. · crested gecko &amp; blue tongue keeper</figcaption></figure><figure class="review"><div class="stars" aria-hidden="true">★★★★★</div><blockquote>“Love how everything is organized. You put so much thought and love into this app. This is literally the coolest thing ever ✨”</blockquote><figcaption>Cari D. · keeper</figcaption></figure></div></div></div></section>
+
+
+
+<section style="padding-top:10px"><div class="wrap"><div class="promise">
+  <div class="seal">🛡️</div>
+  <h2>The 7-day promise</h2>
+  <p>Try everything free for 7 days. Love it, and you’re locked in at founding pricing. Not for you? Cancel in PayPal before day 7 and you pay $0. No calls, no emails, no hard feelings.</p>
+  <a class="cta block" href="#order">Start my FREE 7-day trial →</a>
+</div></div></section>
+
+<section style="padding-top:10px"><div class="wrap narrow">
+  <h2 class="center">Questions</h2>
+  <details><summary>What happens after 7 days?</summary><p>Your plan starts at the price you picked. We email you a reminder 2 days before your trial ends.</p></details><details><summary>Can I bring my collection over?</summary><p>Premium imports your spreadsheet or MorphMarket export in one upload. On Founding Breeder, add animals by hand or choose the +$15 setup and we’ll do it.</p></details><details><summary>I’m already a breeder subscriber.</summary><p>You keep your current price.</p></details><details><summary>How do I cancel?</summary><p>In PayPal, go to Settings → Payments → Manage automatic payments, pick Scale &amp; Tell and tap Cancel. Or just email support@scaleandtell.app and we’ll do it for you.</p></details><details><summary>Do I need a PayPal account?</summary><p>No. Any debit or credit card works.</p></details><details><summary>Does it work on my phone?</summary><p>Yes: iPhone, Android and computers. Add it to your home screen like an app. App Store and Google Play are coming.</p></details><details><summary>I have records in a notebook or spreadsheet.</summary><p>Import them from a photo or a spreadsheet. Or add the $15 setup and we’ll do it for you.</p></details>
 </div></section>
 
-<!-- COMPARE -->
-<section id="compare" class="cmp"><div class="wrap narrow">
-  <h2 class="center" style="margin-bottom:14px">More than a spreadsheet</h2>
-  <div class="vs"><table>
-    <thead><tr><th></th><th>Spreadsheet</th><th class="us">Scale &amp; Tell</th></tr></thead>
-    <tbody>
-      <tr><td>📝 Feeding &amp; weight logs</td><td class="y">✓</td><td>✓</td></tr>
-      <tr><td>🗄 Rack view by tub</td><td>✕</td><td>✓</td></tr>
-      <tr><td>🍽 Feed a whole rack at once</td><td>✕</td><td>✓</td></tr>
-      <tr><td>💞 Lock &amp; ovulation dates</td><td>✕</td><td>✓</td></tr>
-      <tr><td>🥚 Clutch due-date reminders</td><td>✕</td><td>✓</td></tr>
-      <tr><td>🧬 Genetics odds</td><td>✕</td><td>✓</td></tr>
-      <tr><td>🎪 Expo Mode for shows</td><td>✕</td><td>✓</td></tr>
-      <tr><td>🌐 Public page + Inbox</td><td>✕</td><td>✓</td></tr>
-      <tr><td>👥 Team logins</td><td>✕</td><td>✓</td></tr>
-    </tbody>
-  </table></div>
-  <a class="cta block" href="#checkout" style="margin-top:18px">Switch to Scale &amp; Tell →</a>
-</div></section>
-
-<!-- PLANS + CHECKOUT -->
-<section class="plans" id="plans" style="scroll-margin-top:54px"><div class="wrap center">
-  <div class="cards" id="cards" role="radiogroup" aria-label="Plans"></div>
-
-<div class="anchorBox"><div class="lim">⏳ Limited pricing for app launch</div><h3>Breeder tools usually cost <em>$132+ a year.</em></h3><div class="ar"><span>Marketplace breeding tools</span><s>from $132/yr</s></div><div class="ar"><span>Desktop husbandry software</span><s>$69.99/yr</s></div><div class="ar us"><span>Founding Breeder</span><span>$39.99/yr</span></div><small>Racks, pairings, clutches, Expo Mode and everything in Founding Keeper. Cancel anytime.</small><a class="anchorCta" href="#checkout">Lock in launch pricing →</a></div>
-<section class="builtBox" aria-label="Built for keepers, by keepers"><div class="bbTag">💜 Built for keepers, by keepers</div><h3>You asked. <em>We built it.</em></h3><p class="bbSub">Every one of these came straight from keepers in our community.</p><ul class="bbList"><li><span>✓</span>Log several things at once</li><li><span>✓</span>Wish List with photos</li><li><span>✓</span>Feeding rotations</li><li><span>✓</span>Day &amp; night ranges</li></ul><p class="bbBy">Requested by <b>Shelby B.</b>, <b>Samantha P.</b> &amp; <b>Mara F.</b></p></section>
-  <div class="reviews" aria-label="What keepers say"><h3 class="revH">What keepers are saying 💜</h3><div class="revRow"><figure class="review"><div class="stars" aria-hidden="true">★★★★★</div><blockquote>“I absolutely love Scale &amp; Tell! It’s made it so much easier to keep track of sheds, weights, food and food quantity. I use the app daily. 10/10 recommend!”</blockquote><figcaption>Anne E. · uses it daily</figcaption></figure><figure class="review"><div class="stars" aria-hidden="true">★★★★★</div><blockquote>“So much easier to set up and use than other apps we’ve tried. I love that it can be shared with another user and easily give info to a pet sitter.”</blockquote><figcaption>Mara F. · crested gecko &amp; blue tongue keeper</figcaption></figure><figure class="review"><div class="stars" aria-hidden="true">★★★★★</div><blockquote>“Love how everything is organized. You put so much thought and love into this app. This is literally the coolest thing ever ✨”</blockquote><figcaption>Cari D. · keeper</figcaption></figure></div></div>
-  <div class="checkout" id="checkout" style="text-align:left">
-    <div class="sum"><div><small style="color:var(--soft);font-weight:700">YOUR PLAN</small><br><b id="sumName">Founding Breeder</b></div><div class="amt" id="sumAmt">$39.99<span style="font-size:15px">/year</span><small>billed yearly · cancel anytime</small></div></div>
-    <p class="payFirst" id="stepBar">🔒 Pick your login, then pay below. Your account is created the moment your payment goes through.</p>
-
-    <form id="acct" novalidate>
-      <label for="em">Email</label>
-      <input id="em" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com">
-      <label for="pw">Create a password</label>
-      <div class="pwrap"><input id="pw" type="password" autocomplete="new-password" minlength="8" required placeholder="Create a password"><button class="eye" type="button" id="eye" aria-label="Show password">Show</button></div>
-      <ul class="pwCheck" id="pwCheck" aria-live="polite"></ul>
-      <button class="cta block hide" id="go" type="submit" style="margin-top:14px">Create my free account →</button>
-      <p class="msg" id="msg1" role="status"></p>
-    </form>
-
-    <div id="pay">
-      <p style="font-weight:700;margin:14px 0 10px">Pay with any debit or credit card. No PayPal account needed.</p>
-      <div id="cardBtn" class="paybox"></div>
-      <div id="ppBtn" class="paybox"></div>
-      <p class="msg" id="msg2" role="status"></p>
-    </div>
-
-    <div id="done" class="hide done">
-      <div class="big">🎉</div>
-      <h2 id="doneTitle">You’re in!</h2>
-      <p id="doneText"></p>
-      <a class="cta" href="https://scaleandtell.app/">Open Scale &amp; Tell →</a>
-    </div>
-
-    <p class="secure">🔒 Secure checkout by PayPal</p>
-    <div class="brands" aria-label="Cards accepted"><span>VISA</span><span>Mastercard</span><span>AMEX</span><span>Discover</span><span>PayPal</span></div>
-  </div>
-  <div class="chips"><span>✓ From $39.99/year</span><span>✓ Cancel anytime</span><span>✓ Works like an app</span><span>♡ 10% to reptile rescue</span></div>
-</div></section>
+<section style="padding-top:0"><div class="wrap"><div class="ps"><p>If you skipped to the bottom: Scale &amp; Tell tracks your racks, pairings, clutches and every feeding, counts down to every due date, and runs your expo table even without signal. It’s free for 7 days.</p><a class="cta block" href="#order">Start my FREE 7-day trial →</a></div></div></section>
 
 <footer><div class="wrap">
-  <p><a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a> · <a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></p>
+  <p>Questions? Email us at <a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a>.</p>
+  <p>Follow along on Facebook: <a href="https://www.facebook.com/scaleandtell">facebook.com/scaleandtell</a></p>
+  <p><a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></p>
 </div></footer>
 
-<div class="sticky" id="sticky"><a class="cta" href="#checkout" id="stickyBtn">Get Founding Breeder · $39.99/year →</a></div>
-
-<script src="./supabase.min.js?v=2.57.4"></script>
+<div class="sticky" id="sticky"><a class="cta" href="#order">Start my FREE 7-day trial →</a></div>
+<script>var PAGE_SEG = 'breed', DEFAULT_PLAN = 'founding_breeder';</script>
 <script>
 'use strict';
 (function () {
-  var URL_ = 'https://fitlubsbesadknkjimqd.supabase.co', KEY = 'sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG';
-  var PLANS = {
-    founding_keeper: { name: 'Founding Keeper', price: '$14.99', unit: '', term: 'one time · yours forever', seg: 'pets', pop: 'All-in-one', once: true,
-      perks: ['<b>40 animals</b> · <b>3 logins</b>', 'Freezer, Feed Day &amp; reminders', 'Vet, meds &amp; shed predictions', 'Care sheets &amp; printables'], cta: 'Get everything' },
-    founding_breeder: { name: 'Founding Breeder', price: '$39.99', unit: '/year', term: 'billed yearly · cancel anytime', seg: 'breed', pop: 'Best for growing breeders',
-      perks: ['<b>150 animals</b> · <b>3 logins</b>', 'Racks, pairings &amp; clutches', 'Public page + Inbox', 'Everything in Founding Keeper'], cta: 'Get Founding Breeder' },
-    premium_breeder: { name: 'Premium Breeder', price: '$59.99', unit: '/year', term: 'billed yearly · cancel anytime', seg: 'breed',
-      perks: ['<b>400 animals</b> · <b>5 logins</b>', 'Your logo &amp; colors', 'Genetics, invoices &amp; waitlist', 'Everything in Founding Breeder'], cta: 'Get Premium Breeder' },
-    rescue: { name: 'Rescue', price: '$39.99', unit: '/year', term: 'billed yearly · verified 501(c)(3)s pay $19.99', seg: 'rescue', pop: 'For rescues',
-      perks: ['<b>400 animals</b> · <b>5 staff logins</b>', 'Intake, medical &amp; fosters', 'E-sign adoption contracts', 'Rescue listing + donate button'], cta: 'Get Rescue' }
-  };
-  var PAGE_SEG = 'breed';
-  var DEFAULT = { pets: 'founding_keeper', breed: 'founding_breeder', rescue: 'rescue' };
-  var seg = PAGE_SEG, plan = 'founding_breeder', email = '', client = null, cfg = null, existing = false, mounted = '';
-  var invited = false, SRC = ((location.search.match(/[?&]from=(page|expo)/) || [0, 'ad'])[1]) + '-';
+  var SB = 'https://fitlubsbesadknkjimqd.supabase.co', KEY = 'sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG';
+  var CLIENT_ID = 'BAAIABhqxHbVHcsKpoLTLRU913osUC4P49YBKB9qW8o9XD9JgdslCTI-KA8Jc1GnTYU2Ht1ylNbqAi3MA8';
+  var PLAN_IDS = { keeper_monthly: 'P-7XS553517N482763ANLSQ7HQ', keeper_yearly: 'P-7CC241668G516111CNLSQ7HY', breeder_monthly: 'P-2XE30701ER373522TNLSQ7HY', founding_breeder: 'P-43362213EP323640TNLSQ7IA',
+    premium_monthly: 'P-7K938529LV9626112NLSQ7IA', premium_breeder: 'P-37F89457SH743423PNLSSVXQ', rescue_monthly: 'P-8A329510LN594824RNLSQ7II', rescue: 'P-69F31976W1326524GNLSSVXY' };
+  var PRICES = { keeper_monthly: [4.99, 'mo'], keeper_yearly: [48, 'yr'], breeder_monthly: [7.99, 'mo'], founding_breeder: [69.99, 'yr'], premium_monthly: [9.99, 'mo'], premium_breeder: [79.99, 'yr'], rescue_monthly: [9.99, 'mo'], rescue: [79.99, 'yr'] };
+  var NAMES = { keeper_monthly: 'Keeper', keeper_yearly: 'Keeper', breeder_monthly: 'Founding Breeder', founding_breeder: 'Founding Breeder', premium_monthly: 'Premium Breeder', premium_breeder: 'Premium Breeder', rescue_monthly: 'Rescue', rescue: 'Rescue' };
+  var YEARLY_OF = { keeper_monthly: 'keeper_yearly', breeder_monthly: 'founding_breeder', premium_monthly: 'premium_breeder', rescue_monthly: 'rescue' };
+  var BUMP_BREEDER = { keeper_yearly: 'founding_breeder', keeper_monthly: 'breeder_monthly' };
+  var SRC = ((location.search.match(/[?&]from=(page|expo)/) || [0, 'ad'])[1]) + '-' + PAGE_SEG;
   var $ = function (id) { return document.getElementById(id); };
-  try { client = window.supabase.createClient(URL_, KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }); } catch (e) {}
-
-  function cards() {
-    var keys = Object.keys(PLANS).filter(function (k) { return PLANS[k].seg === seg; });
-    $('cards').classList.toggle('one', keys.length === 1);
-    $('cards').innerHTML = keys.map(function (k) {
-      var p = PLANS[k];
-      return '<div class="card" role="radio" tabindex="0" data-k="' + k + '" aria-checked="' + (k === plan) + '">' + (p.pop ? '<span class="pop">' + p.pop + '</span>' : '') +
-        '<h3>' + p.name + '</h3><div class="price">' + p.price + '<small>' + p.unit + '</small></div><div class="term">' + p.term + '</div><ul>' +
-        p.perks.map(function (x, i) { return '<li' + (i === 0 && /plus:|Everything/.test(x) ? ' class="plus"' : '') + '>' + x + '</li>'; }).join('') +
-        '</ul><span class="pick">' + (k === plan ? '✓ Selected' : p.cta) + '</span></div>';
-    }).join('');
-  }
-  function choose(k, scroll) {
-    plan = k; var p = PLANS[k];
-    cards();
-    $('sumName').textContent = p.name;
-    $('sumAmt').innerHTML = p.price + (p.unit ? '<span style="font-size:15px">' + p.unit + '</span>' : '') + '<small>' + p.term + '</small>';
-    $('go').classList.toggle('hide', k !== 'free');
-    $('pay').classList.toggle('hide', k === 'free');
-    $('stepBar').classList.toggle('hide', k === 'free');
-    $('acct').classList.remove('hide'); $('done').classList.add('hide');
-    if (k !== 'free' && mounted !== k) mountPay();
-    $('stickyBtn').textContent = ('Get ' + p.name) + ' · ' + p.price + (p.unit || '') + ' →';
-    if (scroll) $('checkout').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-  function setSeg(s) {
-    seg = s;
-    document.querySelectorAll('[data-seg]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.seg === s)); });
-    choose(DEFAULT[s], false);
-  }
-  document.querySelectorAll('[data-seg]').forEach(function (b) { b.onclick = function () { setSeg(b.dataset.seg); }; });
-  $('cards').addEventListener('click', function (e) { var c = e.target.closest('.card'); if (c) choose(c.dataset.k, true); });
-  $('cards').addEventListener('keydown', function (e) { var c = e.target.closest('.card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); choose(c.dataset.k, true); } });
-  document.querySelectorAll('[data-plan]').forEach(function (a) { a.addEventListener('click', function () { setSeg('pets'); choose(a.dataset.plan, false); }); });
-
-  function rules(pw) { return [['At least 8 characters', pw.length >= 8], ['A capital letter', /[A-Z]/.test(pw)], ['A number', /[0-9]/.test(pw)], ['A symbol like ! @ # $', /[^A-Za-z0-9]/.test(pw)]]; }
-  function paintPw() { $('pwCheck').innerHTML = rules($('pw').value).map(function (r) { return '<li class="' + (r[1] ? 'ok' : '') + '">' + (r[1] ? '✓ ' : '○ ') + r[0] + '</li>'; }).join(''); }
-  $('pw').addEventListener('input', paintPw); paintPw();
-  function say(id, t, ok) { var el = $(id); el.textContent = t || ''; el.className = 'msg' + (t ? ok ? ' ok' : ' err' : ''); }
-  function showStep(n) {
-    $('acct').classList.toggle('hide', n === 3); $('pay').classList.toggle('hide', n === 3 || plan === 'free'); $('done').classList.toggle('hide', n !== 3); $('stepBar').classList.toggle('hide', n === 3 || plan === 'free');
-  }
-  // Paid plans: nothing is created until PayPal confirms the payment.
-  function readLogin() {
-    var em = $('em').value.trim().toLowerCase(), pw = $('pw').value;
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || em.length > 120) return 'Enter your email above first.';
-    var miss = rules(pw).filter(function (r) { return !r[1]; }).map(function (r) { return r[0].replace(/ like.*/, '').toLowerCase(); });
-    if (miss.length) return 'Create a password above first. It still needs: ' + miss.join(', ') + '.';
-    email = em; return '';
-  }
-  function friendly(err) {
-    var m = String(err && (err.message || err.msg || err) || '');
-    if (/weak|pwned|leak|breach/i.test(m)) return 'That password has shown up in a data breach. Please choose a different one.';
-    if (/should contain|characters/i.test(m)) return 'Please choose a password with at least 8 characters.';
-    if (/rate|too many/i.test(m)) return 'Too many tries. Please wait a minute and try again.';
-    if (/fetch|network|load failed/i.test(m)) return 'Couldn’t connect. Check your internet and try again.';
-    return m || 'Something went wrong. Please try again.';
-  }
+  var pp = null, subId = '', claim = '', paidSku = '';
+  function track(ev, data) { try { if (window.fbq) fbq('track', ev, data || {}); } catch (e) {} }
+  function say(id, t, ok) { var el = $(id); if (!el) return; el.textContent = t || ''; el.className = 'msg' + (t ? ok ? ' ok' : ' err' : ''); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
   async function invoke(body) {
-    var r = await client.functions.invoke('founder-checkout', { body: body });
-    if (r.error) { var t = ''; try { t = (await r.error.context.json()).error; } catch (e) {} throw Error(t || 'Checkout is unavailable right now. Please try again.'); }
-    return r.data || {};
+    var r = await fetch(SB + '/functions/v1/founder-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY }, body: JSON.stringify(body) });
+    var j = {}; try { j = await r.json(); } catch (e) {}
+    if (!r.ok) { var er = Error(j.error || 'Checkout is unavailable right now. Please try again.'); er.retry = !!j.retry; throw er; }
+    return j;
   }
+  function uuid() { try { return crypto.randomUUID(); } catch (e) { return 'x' + Date.now() + Math.random().toString(16).slice(2); } }
 
-  $('acct').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    if (plan !== 'free') { var bad = readLogin(); say('msg1', bad || 'Now tap a payment button below 👇', !bad); if (!bad) $('pay').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-    var em = $('em').value.trim().toLowerCase(), pw = $('pw').value;
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em) || em.length > 120) return say('msg1', 'Please enter a valid email.');
-    var miss = rules(pw).filter(function (r) { return !r[1]; }).map(function (r) { return r[0].replace(/ like.*/, '').toLowerCase(); });
-    if (miss.length) return say('msg1', 'Your password still needs: ' + miss.join(', ') + '.');
-    if (!client) return say('msg1', 'Couldn’t load secure sign-up. Please refresh and try again.');
-    $('go').disabled = true; say('msg1', plan === 'free' ? 'Creating your account…' : 'Setting up your account…', true);
-    try {
-      var r = await client.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: 'https://scaleandtell.app/', data: { src: ((location.search.match(/[?&]from=(page|expo)/) || [0, 'ad'])[1]) + '-' + PAGE_SEG } } });
-      if (r.error) throw r.error;
-      existing = !!(r.data && r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length === 0);
-      email = em; say('msg1', '');
-      try { if (window.fbq) fbq('track', plan === 'free' ? 'CompleteRegistration' : 'InitiateCheckout', { content_name: PLANS[plan].name }); } catch (x) {}
-      if (plan === 'free') return finish('free');
-      showStep(2); mountPay(); setTimeout(function () { $('checkout').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
-    } catch (err) { say('msg1', friendly(err)); }
-    finally { $('go').disabled = false; }
-  });
+  // ----- the order form -----
+  function base() { var c = document.querySelector('input[name=plan]:checked'); return c ? c.value : DEFAULT_PLAN; }
+  function sku() { var b = base(); return $('bumpBreeder') && $('bumpBreeder').checked && BUMP_BREEDER[b] ? BUMP_BREEDER[b] : b; }
+  function setup() { return !!($('bumpSetup') && $('bumpSetup').checked); }
+  function money(n) { return '$' + (n % 1 ? n.toFixed(2) : String(n)); }
+  function paint() {
+    document.querySelectorAll('.opt').forEach(function (o) { o.classList.toggle('on', !!o.querySelector('input:checked')); });
+    var s = sku(), p = PRICES[s];
+    $('dueAmt').textContent = setup() ? '$15' : '$0';
+    $('dueTxt').textContent = 'Then ' + money(p[0]) + '/' + p[1] + ' for ' + NAMES[s] + ' after your 7-day free trial. Cancel anytime.';
+  }
+  document.querySelectorAll('input[name=plan], #bumpBreeder, #bumpSetup').forEach(function (i) { i.addEventListener('change', paint); });
+  paint();
 
-  function loadSdk(clientId, sub) {
-    var ns = sub ? 'paypalSub' : 'paypalOnce';
-    if (window[ns]) return Promise.resolve(window[ns]);
+  // ----- PayPal: loads the moment the page opens (no server round trips) -----
+  function loadSdk() {
+    if (window.paypalSub) return Promise.resolve(window.paypalSub);
     return new Promise(function (res, rej) {
       var s = document.createElement('script');
-      s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(clientId) + '&currency=USD&components=buttons&enable-funding=card' + (sub ? '&vault=true&intent=subscription' : '&intent=capture');
-      s.setAttribute('data-namespace', ns);
-      s.onload = function () { window[ns] ? res(window[ns]) : rej(Error('PayPal did not load.')); };
-      s.onerror = function () { rej(Error('Secure checkout couldn’t load. Check your connection and try again.')); };
+      s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(CLIENT_ID) + '&vault=true&intent=subscription&components=buttons&enable-funding=card&currency=USD';
+      s.setAttribute('data-namespace', 'paypalSub');
+      s.onload = function () { window.paypalSub ? res(window.paypalSub) : rej(Error('PayPal did not load.')); };
+      s.onerror = function () { rej(Error('Secure checkout couldn’t load. Check your connection and refresh.')); };
       document.head.appendChild(s);
     });
   }
-  async function mountPay() {
-    mounted = plan;
-    $('cardBtn').innerHTML = ''; $('ppBtn').innerHTML = '';
-    say('msg2', 'Loading secure checkout…', true);
+  function startTrialOpts(getSku, withSetup, onDone, msgId) {
+    return {
+      onClick: function () { say(msgId, ''); track('InitiateCheckout', { content_name: NAMES[getSku()], value: PRICES[getSku()][0], currency: 'USD' }); },
+      createSubscription: function (data, actions) {
+        var o = { plan_id: PLAN_IDS[getSku()], custom_id: 'g:' + uuid() };
+        if (withSetup()) o.plan = { payment_preferences: { setup_fee: { value: '15.00', currency_code: 'USD' } } };
+        return actions.subscription.create(o);
+      },
+      onApprove: async function (d) {
+        say(msgId, 'Starting your free trial…', true);
+        try { localStorage.setItem('stSubPending', JSON.stringify({ s: d.subscriptionID, k: getSku(), t: Date.now() })); } catch (e) {}
+        for (var i = 0; i < 8; i++) {
+          try { var r = await onDone(d.subscriptionID); try { localStorage.removeItem('stSubPending'); } catch (e) {} return r; }
+          catch (err) { if (!err.retry || i === 7) { say(msgId, (err.message || 'Something went wrong.') + ' Your trial is safe. Email support@scaleandtell.app if this keeps happening.'); return; } }
+          await new Promise(function (r) { setTimeout(r, 2500); });
+        }
+      },
+      onCancel: function () { say(msgId, 'Checkout closed. Nothing was charged.'); },
+      onError: function () { say(msgId, 'PayPal had a hiccup. Please try again, or email support@scaleandtell.app.'); }
+    };
+  }
+  async function trialStarted(sid, k) {
+    var s = k || sku(), r = await invoke({ action: 'guest_sub_start', subscriptionId: sid, src: SRC });
+    subId = sid; paidSku = s;
+    track('StartTrial', { value: PRICES[s][0], currency: 'USD', predicted_ltv: PRICES[s][1] === 'yr' ? PRICES[s][0] : PRICES[s][0] * 12, content_name: NAMES[s] });
+    if (r.setup) track('Purchase', { value: 15, currency: 'USD', content_name: 'Done-for-you setup' });
+    if (r.claimed) return done(r.setup);
+    showClaim(r.claim, r.email, r.setup);
+  }
+  async function mount() {
     try {
-      cfg = cfg || await invoke({ action: 'config' });
-      if (!cfg.ready) throw Error('Checkout is being set up. Please check back soon.');
-      var p = PLANS[plan], sub = !p.once, pp = await loadSdk(cfg.clientId, sub), planId = '';
-      if (sub) { var pl = await invoke({ action: 'guest_plans' }); planId = pl.plans && pl.plans[plan]; if (!planId) throw Error('This plan isn’t available right now.'); }
-      var opts = {
-        style: { layout: 'vertical', shape: 'pill', height: 48 },
-        onClick: function (data, actions) {
-          var bad = readLogin();
-          if (bad) { say('msg2', bad); say('msg1', bad); $('em').scrollIntoView({ behavior: 'smooth', block: 'center' }); return actions.reject(); }
-          say('msg2', ''); say('msg1', '');
-          try { if (window.fbq) fbq('track', 'InitiateCheckout', { content_name: p.name }); } catch (x) {}
-          return actions.resolve();
-        },
-        onApprove: async function (d) {
-          say('msg2', 'Confirming your payment…', true);
-          try {
-            var pw = $('pw').value;
-            if (sub) { var sr = await invoke({ action: 'guest_subscribed', subscriptionId: d.subscriptionID, email: email, password: pw, src: SRC + PAGE_SEG }); existing = !sr.created; }
-            else {
-              try { localStorage.setItem('stLpPending', JSON.stringify({ o: d.orderID, e: email, t: Date.now() })); } catch (x) {}
-              var c = await invoke({ action: 'guest_capture', orderId: d.orderID, email: email, password: pw, src: SRC + PAGE_SEG });
-              if (!c.active) throw Error(c.error || 'Payment could not be confirmed.');
-              existing = !c.created;
-              try { localStorage.removeItem('stLpPending'); } catch (x) {}
-            }
-            try { if (window.fbq) fbq('track', 'Purchase', { value: Number(p.price.replace('$', '')), currency: 'USD', content_name: p.name }); } catch (x) {}
-            finish(plan);
-          } catch (err) { if (sub && /automatically/i.test(err.message || '')) return finish(plan); say('msg2', friendly(err) + ' If you see a charge, don’t pay again. Email support@scaleandtell.app and we’ll fix it fast.'); }
-        },
-        onCancel: function () { say('msg2', 'Checkout closed. You weren’t charged.'); },
-        onError: function () { say('msg2', 'Something went wrong with checkout. If you see a pending charge, don’t pay again. It will drop off, or email support@scaleandtell.app.'); }
-      };
-      if (sub) opts.createSubscription = function (data, actions) { return actions.subscription.create({ plan_id: planId, custom_id: 'e:' + email }); };
-      else opts.createOrder = async function () { var o = await invoke({ action: 'guest_create', email: email, src: SRC + PAGE_SEG }); if (o.active) { finish('owned'); throw Error('owned'); } return o.id; };
-      var card = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.CARD, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'black' } }));
-      if (card.isEligible()) await card.render('#cardBtn');
-      var ppb = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.PAYPAL, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'gold' } }));
-      if (ppb.isEligible()) await ppb.render('#ppBtn');
-      say('msg2', '');
-    } catch (err) { say('msg2', friendly(err)); }
+      pp = await loadSdk();
+      var opts = startTrialOpts(sku, setup, trialStarted, 'msgPay');
+      var card = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.CARD, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'black', label: 'subscribe' } }));
+      if (card.isEligible()) await card.render('#ppCard');
+      var ppb = pp.Buttons(Object.assign({}, opts, { fundingSource: pp.FUNDING.PAYPAL, style: { layout: 'vertical', shape: 'pill', height: 48, color: 'gold', label: 'subscribe' } }));
+      if (ppb.isEligible()) await ppb.render('#ppPal');
+      $('ppLoading').classList.add('hide');
+    } catch (e) { $('ppLoading').classList.add('hide'); say('msgPay', e.message || 'Checkout couldn’t load. Please refresh.'); }
   }
-  function finish(kind) {
-    showStep(3);
-    var p = PLANS[plan];
-    if (kind === 'owned') { $('doneTitle').textContent = 'You already have it ♡'; $('doneText').innerHTML = 'Founding Keeper is already on <b>' + esc(email) + '</b>. Sign in to Scale &amp; Tell to use it.'; return; }
-    if (kind === 'free') { $('doneTitle').textContent = existing ? 'Welcome back ♡' : 'Almost there! ♡'; $('doneText').innerHTML = existing ? 'You already have an account with <b>' + esc(email) + '</b>. Open Scale &amp; Tell and sign in.' : 'We just emailed <b>' + esc(email) + '</b>. Tap the link to confirm your account, then open Scale &amp; Tell and sign in.'; return; }
-    $('doneTitle').textContent = 'Welcome, ' + p.name + '! 🎉';
-    $('doneText').innerHTML = existing
-      ? 'Your plan is now on your account (<b>' + esc(email) + '</b>). Open Scale &amp; Tell and sign in with your <b>existing password</b>. If it still shows your old plan, close the app all the way and open it again.'
-      : invited ? 'Your plan is paid and waiting. We emailed <b>' + esc(email) + '</b> a link to set your password, then sign in to Scale &amp; Tell.'
-      : 'Your account is ready! Open Scale &amp; Tell and sign in with <b>' + esc(email) + '</b> and the password you just created. No confirmation email needed.';
-  }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
+  mount();
 
-  // A payment approved but not confirmed (closed tab, lost signal) is finished on the next visit.
+  // ----- after the trial starts: optional yearly switch + create the login -----
+  function showClaim(tok, em, isSetup) {
+    claim = tok;
+    try { localStorage.setItem('stLpClaim', JSON.stringify({ c: tok, t: Date.now() })); } catch (x) {}
+    $('payStep').classList.add('hide'); $('claimStep').classList.remove('hide');
+    if (em && !$('em').value) $('em').value = em;
+    if (isSetup) $('setupNote').classList.remove('hide');
+    var y = YEARLY_OF[paidSku];
+    if (y && pp) {
+      var m = PRICES[paidSku][0] * 12, yr = PRICES[y][0], save = m - yr;
+      $('switchBox').classList.remove('hide');
+      $('switchTxt').innerHTML = 'Switch to yearly for <b>' + money(yr) + '/yr</b> instead of ' + money(Math.round(m * 100) / 100) + ' a year monthly. That’s <b>' + money(Math.round(save * 100) / 100) + ' saved</b>, about ' + Math.floor(save / PRICES[paidSku][0]) + ' months free. Still free for 7 days.';
+      var so = startTrialOpts(function () { return y; }, function () { return false; }, async function (newSid) {
+        var r = await invoke({ action: 'guest_switch', oldSub: subId, newSub: newSid });
+        subId = newSid; paidSku = y; $('switchBox').innerHTML = '<p class="msg ok">✓ Switched to yearly. Your monthly plan was canceled, so you’ll only ever be billed once a year.</p>';
+        track('StartTrial', { value: PRICES[y][0], currency: 'USD', content_name: NAMES[y] + ' yearly switch' });
+        if (r.claimed) done(false);
+      }, 'msgSwitch');
+      pp.Buttons(Object.assign({}, so, { style: { layout: 'horizontal', shape: 'pill', height: 44, color: 'gold', label: 'subscribe', tagline: false } })).render('#switchBtn').catch(function () {});
+    }
+    setTimeout(function () { $('order').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+  }
+  function rules(pw) { return [['8+ characters', pw.length >= 8], ['A capital letter', /[A-Z]/.test(pw)], ['A number', /[0-9]/.test(pw)], ['A symbol like ! @ #', /[^A-Za-z0-9]/.test(pw)]]; }
+  function paintPw() { $('pwCheck').innerHTML = rules($('pw').value).map(function (r) { return '<li class="' + (r[1] ? 'ok' : '') + '">' + (r[1] ? '✓ ' : '○ ') + r[0] + '</li>'; }).join(''); }
+  $('pw').addEventListener('input', paintPw); paintPw();
+  $('eye').onclick = function () { var t = $('pw').type === 'password'; $('pw').type = t ? 'text' : 'password'; $('eye').textContent = t ? 'Hide' : 'Show'; };
+  $('acct').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var em = $('em').value.trim().toLowerCase(), pw = $('pw').value;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return say('msgClaim', 'Enter a valid email.');
+    var miss = rules(pw).filter(function (r) { return !r[1]; }).map(function (r) { return r[0].toLowerCase(); });
+    if (miss.length) return say('msgClaim', 'Your password still needs: ' + miss.join(', ') + '.');
+    $('go').disabled = true; say('msgClaim', 'Creating your login…', true);
+    try {
+      var r = await invoke({ action: 'guest_claim', claim: claim, email: em, password: pw, src: SRC });
+      try { localStorage.removeItem('stLpClaim'); } catch (x) {}
+      track('CompleteRegistration', { content_name: NAMES[paidSku] || 'Scale & Tell' });
+      done(r.setup, r.created === false && !r.already, em);
+    } catch (err) { say('msgClaim', err.message); }
+    finally { $('go').disabled = false; }
+  });
+  function done(isSetup, existing, em) {
+    $('payStep').classList.add('hide'); $('claimStep').classList.add('hide'); $('doneStep').classList.remove('hide');
+    $('doneText').innerHTML = (existing ? 'Your trial is on your existing account. Sign in with your <b>current password</b>.' : 'Your account is ready. Sign in with ' + (em ? '<b>' + esc(em) + '</b> and ' : '') + 'the password you just made.') +
+      (isSetup ? '<br><br>📬 Check your email for your <b>setup form</b>. Tell us about your animals and we’ll build everything for you.' : '');
+  }
+
+  // Came back from the "create your login" email, or closed the tab before finishing.
   (async function () {
-    var p = null; try { p = JSON.parse(localStorage.getItem('stLpPending') || 'null'); } catch (e) {}
-    if (!p || !p.o || Date.now() - p.t > 3 * 864e5 || !client) return;
-    try { var c = await invoke({ action: 'guest_capture', orderId: p.o, email: p.e, src: SRC + PAGE_SEG }); existing = !c.created; invited = !!c.created; localStorage.removeItem('stLpPending'); if (c.active) { email = p.e; plan = 'founding_keeper'; choose(plan, false); finish('paid'); $('checkout').scrollIntoView(); } }
-    catch (e) { if (!/unavailable|connect/i.test(e.message)) try { localStorage.removeItem('stLpPending'); } catch (x) {} }
+    var tok = new URLSearchParams(location.search).get('claim') || '';
+    if (!tok) { try { var sv = JSON.parse(localStorage.getItem('stLpClaim') || 'null'); if (sv && Date.now() - sv.t < 30 * 864e5) tok = sv.c; } catch (e) {} }
+    if (!tok) {
+      try { var ps = JSON.parse(localStorage.getItem('stSubPending') || 'null'); if (ps && ps.s && Date.now() - ps.t < 3 * 864e5) { try { await trialStarted(ps.s, ps.k); localStorage.removeItem('stSubPending'); } catch (e) {} } } catch (e) {}
+      return;
+    }
+    try { var ci = await invoke({ action: 'guest_claim_info', claim: tok });
+      if (ci.claimed) { try { localStorage.removeItem('stLpClaim'); } catch (x) {} $('payStep').classList.add('hide'); $('doneStep').classList.remove('hide'); $('doneText').innerHTML = 'Your login is already created. Open Scale &amp; Tell and sign in.'; }
+      else { paidSku = ''; showClaim(tok, ci.email, false); }
+    } catch (e) {}
   })();
 
-  // Ads can link straight to a plan: start.html?plan=founding_breeder
-  var q = new URLSearchParams(location.search).get('plan');
-  if (q && PLANS[q] && PLANS[q].seg === PAGE_SEG) { setSeg(PAGE_SEG); choose(q, false); } else setSeg(PAGE_SEG);
+  // Launch spots (keeper page)
+  if (PAGE_SEG === 'pets' && $('spots')) (async function () {
+    try {
+      var r = await fetch(SB + '/rest/v1/rpc/st_launch_spots', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: '{}' });
+      var n = Number(await r.json());
+      if (!r.ok || !Number.isFinite(n)) return;
+      document.querySelectorAll('.spotsN').forEach(function (el) { el.textContent = n > 0 ? 'Only ' + n + ' founding spot' + (n === 1 ? '' : 's') + ' left' : 'Founding spots are almost gone'; });
+    } catch (e) {}
+  })();
 
-  // Sticky button on phones until they reach the plans.
+  // Sticky button on phones until the order form is on screen
   var io = 'IntersectionObserver' in window && new IntersectionObserver(function (es) { es.forEach(function (x) { $('sticky').style.transform = x.isIntersecting ? 'translateY(120%)' : ''; }); });
-  if (io) { io.observe($('checkout')); }
+  if (io) io.observe($('order'));
   $('sticky').style.transition = 'transform .2s';
-  $('stickyBtn').addEventListener('click', function () { setTimeout(function () { try { $('em').focus({ preventScroll: true }); } catch (e) {} }, 500); });
-  $('eye').onclick = function () { var t = $('pw').type === 'password'; $('pw').type = t ? 'text' : 'password'; $('eye').textContent = t ? 'Hide' : 'Show'; };
-  var fx = $('fx'), dots = $('fxdots').children;
-  fx.addEventListener('scroll', function () { var w = fx.firstElementChild.getBoundingClientRect().width + 14, i = Math.round(fx.scrollLeft / w); for (var k = 0; k < dots.length; k++) dots[k].className = k === i ? 'on' : ''; }, { passive: true });
+  var fx = $('fx'); if (fx) { var dots = $('fxdots').children; fx.addEventListener('scroll', function () { var w = fx.firstElementChild.getBoundingClientRect().width + 14, i = Math.round(fx.scrollLeft / w); for (var k = 0; k < dots.length; k++) dots[k].className = k === i ? 'on' : ''; }, { passive: true }); }
 })();
+
 </script>
 </body>
 </html>

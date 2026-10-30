@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Scale &amp; Tell · Verify a rescue</title>
+<link rel="icon" href="./icon-192.png">
+<style>
+body{margin:0;background:#fffaf7;color:#34213f;font:17px/1.5 system-ui,-apple-system,Arial,sans-serif}
+.w{max-width:520px;margin:40px auto;padding:0 16px;text-align:center}
+h1{font:italic 700 30px Georgia,serif;color:#45205b}
+button{display:block;width:100%;border:0;border-radius:14px;padding:16px;font:800 18px system-ui,Arial;cursor:pointer;margin:12px 0}
+#yes{background:#2f6b2f;color:#fff}#no{background:#fff;color:#a3263b;border:2px solid #a3263b}
+#out{font-weight:700;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="w">
+  <h1>Verify this rescue’s 501(c)(3)?</h1>
+  <p>Approving marks them ✓ Verified and lowers their PayPal price to the half-off verified price. They get an email either way.</p>
+  <button id="yes">✓ Approve</button>
+  <button id="no">Decline</button>
+  <p id="out" role="status"></p>
+</div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search), t = (q.get('t') || '').replace(/[^0-9a-f-]/gi, '');
+  if (q.get('d') === '1') document.getElementById('no').style.order = '-1';
+  async function go(decline) {
+    if (decline && !confirm('Decline this rescue’s verification?')) return;
+    document.getElementById('yes').disabled = document.getElementById('no').disabled = true;
+    var out = document.getElementById('out'); out.textContent = 'Working…';
+    try {
+      var r = await fetch('https://fitlubsbesadknkjimqd.supabase.co/functions/v1/founder-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG' }, body: JSON.stringify({ action: 'rescue_approve', t: t, decline: decline }) });
+      var j = await r.json(); out.textContent = j.message || j.error || 'Done.';
+    } catch (e) { out.textContent = 'Couldn’t reach the server. Try again.'; document.getElementById('yes').disabled = document.getElementById('no').disabled = false; }
+  }
+  document.getElementById('yes').onclick = function () { go(false); };
+  document.getElementById('no').onclick = function () { go(true); };
+})();
+</script>
+</body>
+</html>
