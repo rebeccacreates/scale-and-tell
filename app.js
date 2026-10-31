@@ -3716,7 +3716,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.94";
+const SCALE_LC_VERSION = "3.95";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -4123,7 +4123,7 @@ function render() {
       animals.length +
       " animal" +
       (animals.length === 1 ? "" : "s") +
-      '. Tap one to open it.</p><button class="action" onclick="addAnimal()">+ Add animal</button>' +
+      '. Tap one to open it.</p><button class="action" onclick="addAnimal()">+ Add animal</button>' + (stHasFeature("eggs") ? '<button class="action secondary" onclick="eggStart()">🥚 Add an egg</button>' : "") +
       (legacySampleCandidates().length
         ? '<div class="notice">This account still contains unused starter examples: ' +
           esc(legacySampleCandidates().join(", ")) +
@@ -14914,3 +14914,89 @@ async function stRescueLetter() {
     setTimeout(render, 1500);
   } catch (e) { say(e.message || "Couldn’t upload. Please try again."); }
 }
+
+
+/* ===================== V3.95 · Egg to hatchling (per-account feature "eggs") ===================== */
+// Turned on per account in Supabase → account_features (feature = "eggs"). Off for everyone else.
+let stFeatures = null, stFeaturesFor = "", stFeaturesLoading = false;
+function stHasFeature(f) {
+  const uid = cloudSession?.user?.id || "";
+  if (!uid) return false;
+  if (stFeaturesFor !== uid && !stFeaturesLoading) stLoadFeatures();
+  return !!stFeatures && stFeaturesFor === uid && stFeatures.has(f);
+}
+async function stLoadFeatures() {
+  if (!cloudClient || !cloudSession?.user?.id) return;
+  stFeaturesLoading = true;
+  const uid = cloudSession.user.id;
+  try {
+    const owner = typeof cloudJournalUid === "function" ? cloudJournalUid() : uid;
+    const { data } = await cloudClient.from("account_features").select("feature").in("user_id", [...new Set([uid, owner])]);
+    const had = stFeatures ? [...stFeatures].join() : "";
+    stFeatures = new Set((data || []).map((r) => r.feature)); stFeaturesFor = uid;
+    if ([...stFeatures].join() !== had) render();
+  } catch (e) {} finally { stFeaturesLoading = false; }
+}
+const EGG_DAYS = { "leopard gecko": 55, "crested gecko": 70, "gargoyle gecko": 75, "african fat-tailed gecko": 60, "bearded dragon": 60, "ball python": 57, "corn snake": 60, "kingsnake": 60, "milk snake": 60, "western hognose": 55, "hognose": 55, "blue tongue skink": 100 };
+function eggTypicalDays(sp) { const k = String(sp || "").toLowerCase(); const hit = Object.keys(EGG_DAYS).find((x) => k.includes(x)); return hit ? EGG_DAYS[hit] : 0; }
+function eggAddDays(d, n) { const x = new Date(d + "T12:00"); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); }
+function eggStart() { if (cloudSession && stOwnsEntitlements() && typeof stCanAddAnimal === "function" && !stCanAddAnimal()) return; openPanel("Add an Egg"); }
+BIZ_PANELS["Add an Egg"] = () =>
+  '<p class="resourceIntro">Track a single egg from laying to hatching, then it becomes a regular animal profile with its hatch date filled in.</p>' +
+  bizField("egName", "Name or nickname", "", "text", "Egg 1, Peanut…", 'maxlength="40"') +
+  '<label>Species<input id="egSp" list="egSpList" maxlength="80" placeholder="Leopard gecko" oninput="eggSuggest()"></label><datalist id="egSpList">' + Object.keys(EGG_DAYS).map((x) => '<option value="' + x.replace(/\b\w/g, (c) => c.toUpperCase()) + '">').join("") + "</datalist>" +
+  '<div class="saleGrid">' + bizField("egLaid", "Date laid", today(), "date", "", 'onchange="eggSuggest()"') + bizField("egDue", "Expected hatch date", "", "date") + "</div>" +
+  '<p class="lcSmall" id="egHint">Pick a species to see a typical incubation length.</p>' +
+  '<div class="saleGrid">' + bizField("egTemp", "Incubation temp (°F)", "", "number", "82", 'step="0.1"') + bizField("egHum", "Humidity (%)", "", "number", "80", 'step="1"') + "</div>" +
+  bizField("egMom", "Mom (optional)", "", "text", "", 'maxlength="40"') +
+  '<label>Notes<textarea id="egNotes" rows="3" maxlength="400" placeholder="Incubator, substrate (vermiculite, perlite, Hatchrite)…"></textarea></label>' +
+  '<button class="action" onclick="eggSave()">Add egg 🥚</button><button class="action secondary" onclick="openPanel(\'My Reptiles\')">Cancel</button>';
+function eggSuggest() {
+  const n = eggTypicalDays(bizV("egSp")), laid = bizD("egLaid") || today(), hint = document.getElementById("egHint");
+  if (!n) { if (hint) hint.textContent = "Add your expected hatch date, or check your species’ care sheet."; return; }
+  const due = document.getElementById("egDue"); if (due && !due.dataset.touched) due.value = eggAddDays(laid, n);
+  if (hint) hint.textContent = "Typical incubation is about " + n + " days, but it changes with temperature. Adjust the date to fit your incubator.";
+}
+document.addEventListener("input", (e) => { if (e.target?.id === "egDue") e.target.dataset.touched = "1"; });
+function eggSave() {
+  const name = bizV("egName").slice(0, 40), sp = bizV("egSp").slice(0, 80) || "Reptile egg";
+  if (!name) return stToast("Give the egg a name or nickname.");
+  if (animals.some((a) => a.toLowerCase() === name.toLowerCase())) return stToast("An animal already uses that name.");
+  const laid = bizD("egLaid") || today();
+  animals.push(name); species[name] = sp;
+  profiles[name] = { ...(profiles[name] || {}), notes: bizV("egNotes").slice(0, 400), dam: bizV("egMom").slice(0, 40),
+    egg: { laid, due: bizD("egDue"), temp: bizV("egTemp").slice(0, 6), hum: bizV("egHum").slice(0, 5), log: [] } };
+  saveRoster(); bizSaveProfiles();
+  selectedAnimal = name; stToast("Egg added 🥚 Good luck!"); openPanel(name);
+}
+function eggCardMarkup(a) {
+  const g = profiles[a]?.egg;
+  if (!g) return "";
+  if (g.hatched) return '<div class="habitatSummary"><strong>🐣 Hatched ' + esc(niceDate(g.hatched)) + "</strong><p>From an egg laid " + esc(niceDate(g.laid)) + " · " + bizDays(g.laid, g.hatched) + " days of incubation.</p></div>";
+  const day = bizDays(g.laid, today()) + 1, left = g.due ? bizDays(today(), g.due) : null;
+  const log = (g.log || []).slice().sort((x, y) => y.date.localeCompare(x.date));
+  return '<div class="habitatSummary"><strong>🥚 Day ' + day + " of incubation</strong><p>" + (left === null ? "Add an expected hatch date to see a countdown." : left > 0 ? "About " + left + " day" + (left === 1 ? "" : "s") + " to go (" + esc(niceDate(g.due)) + ")" : "In the hatch window now. Watch for pipping! 👀") +
+    (g.temp || g.hum ? "<br>Target: " + [g.temp ? g.temp + "°F" : "", g.hum ? g.hum + "%" : ""].filter(Boolean).join(" · ") : "") + "</p></div>" +
+    '<details class="profileFold"><summary>Log an incubation check</summary><div class="saleGrid">' + bizField("ekDate", "Date", today(), "date") + bizField("ekTemp", "Temp (°F)", "", "number", "", 'step="0.1"') + bizField("ekHum", "Humidity (%)", "", "number", "", 'step="1"') + "</div>" +
+    '<label>Candling / notes<input id="ekNote" maxlength="200" placeholder="Pink and veined, good size"></label><button class="action" onclick="eggLog(\'' + esc(a).replace(/'/g, "\\'") + '\')">Save check</button></details>' +
+    (log.length ? '<div class="incLog">' + log.slice(0, 20).map((x) => "<div><b>" + esc(niceDate(x.date)) + "</b><span>" + [x.temp ? x.temp + "°F" : "", x.hum ? x.hum + "%" : "", esc(x.note || "")].filter(Boolean).join(" · ") + "</span></div>").join("") + "</div>" : "") +
+    '<button class="action" onclick="eggHatched(\'' + esc(a).replace(/'/g, "\\'") + '\')">🐣 It hatched!</button>';
+}
+function eggLog(a) {
+  const g = profiles[a]?.egg; if (!g) return;
+  const rec = { date: bizD("ekDate") || today(), temp: bizV("ekTemp").slice(0, 6), hum: bizV("ekHum").slice(0, 5), note: bizV("ekNote").slice(0, 200) };
+  if (!rec.temp && !rec.hum && !rec.note) return stToast("Add a temp, humidity or note first.");
+  g.log = [...(g.log || []), rec].slice(-200); bizSaveProfiles(); stToast("Check saved ♡"); render();
+}
+function eggHatched(a) {
+  const g = profiles[a]?.egg; if (!g) return;
+  const d = prompt("Hatch date (YYYY-MM-DD)", today());
+  if (d === null) return;
+  if (!validDate(d)) return stToast("Use a date like " + today());
+  g.hatched = d; profiles[a].hatchDate = d; bizSaveProfiles();
+  stToast("Welcome to the world, " + a + "! 🐣"); render();
+}
+(function () {
+  const base = profileOverviewMarkup;
+  profileOverviewMarkup = function (a) { return eggCardMarkup(a) + base.apply(this, arguments); };
+})();
