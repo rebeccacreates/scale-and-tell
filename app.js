@@ -3716,7 +3716,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.95";
+const SCALE_LC_VERSION = "3.96";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -15000,3 +15000,21 @@ function eggHatched(a) {
   const base = profileOverviewMarkup;
   profileOverviewMarkup = function (a) { return eggCardMarkup(a) + base.apply(this, arguments); };
 })();
+
+/* ---------- V3.96 · Founders get 5 logins (server: team_logins / st_my_logins) ---------- */
+let stMyLogins = 0, stMyLoginsFor = null;
+const _stLogins396 = stLogins;
+stLogins = function () {
+  const base = _stLogins396();
+  return stMyLoginsFor && stMyLoginsFor === cloudSession?.user?.id ? Math.max(base, stMyLogins) : base;
+};
+const _stLoadFeatures396 = stLoadFeatures;
+stLoadFeatures = async function () {
+  await _stLoadFeatures396();
+  if (!cloudClient || !cloudSession?.user?.id) return;
+  const uid = cloudSession.user.id;
+  try {
+    const { data, error } = await cloudClient.rpc("st_my_logins");
+    if (!error && typeof data === "number" && (data !== stMyLogins || stMyLoginsFor !== uid)) { stMyLogins = data; stMyLoginsFor = uid; render(); }
+  } catch (e) {}
+};
