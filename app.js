@@ -3716,7 +3716,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.96";
+const SCALE_LC_VERSION = "3.97";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -12910,6 +12910,10 @@ function helpMarkup() {
 /* V3.86 · ONE list of releases. Add the newest at the top each update: the What's New popup, and the ready-made
    update emails + banners in Send Update Email all build themselves from it. */
 const ST_RELEASES = [
+  { v: "3.97", date: "2026-10-31", subject: "Add several photos at once + fix photo dates ♡", banner: "New: add several photos at once ♡", items: [
+    ["📸", "Several photos at once", "In the Photo Journal, pick as many photos as you like and add them in one tap."],
+    ["📅", "Photo dates you can fix", "Each photo keeps the date it was taken on your phone, and you can change any photo’s date. Then & Now shows the real dates."],
+  ] },
   { v: "3.94", date: "2026-10-31", subject: "Herps & Hers member price is back ♡", banner: "Members: Founding Keeper is $14.99 once ♡", items: [
     ["💜", "Herps & Hers members", "Your Founding Keeper upgrade is still $14.99 one time, no subscription. Find it in Menu → Become a Founding Keeper."],
   ] },
@@ -15017,4 +15021,110 @@ stLoadFeatures = async function () {
     const { data, error } = await cloudClient.rpc("st_my_logins");
     if (!error && typeof data === "number" && (data !== stMyLogins || stMyLoginsFor !== uid)) { stMyLogins = data; stMyLoginsFor = uid; render(); }
   } catch (e) {}
+};
+
+/* ---------- V3.97 · Photos: several at once, a "date taken" for each, and dates you can fix (member request) ---------- */
+function stFileDate(f) {
+  // Phones usually keep the date the photo was taken as the file date. Never in the future.
+  const t = f && f.lastModified ? new Date(f.lastModified) : null;
+  if (!t || isNaN(t) || t > new Date()) return today();
+  return [t.getFullYear(), String(t.getMonth() + 1).padStart(2, "0"), String(t.getDate()).padStart(2, "0")].join("-");
+}
+photoWorkspaceMarkup = function (a, choose) {
+  return (
+    '<p class="muted">Your selected picture appears on Home and your profile. Without one, Scale & Tell uses a matching illustrated default.</p>' +
+    (choose
+      ? '<label>Animal<select id="photoAnimal" onchange="selectedAnimal=this.value;renderPhotos()">' + animalOptions() + "</select></label>"
+      : '<select id="photoAnimal" aria-label="Selected animal" hidden><option selected>' + esc(a) + "</option></select>") +
+    '<label>Photos (pick one or several)<input id="photoInput" type="file" accept="image/*" multiple onchange="stPhotoPicked(this)"></label>' +
+    '<label>Date taken<input id="photoDate" type="date" max="' + today() + '"></label>' +
+    '<p class="lcSmall" id="photoDateHint">Leave it blank and we use each photo’s own date from your phone. You can change any photo’s date later.</p>' +
+    '<label>Caption<input id="photoCaption" maxlength="100" placeholder="Optional memory"></label>' +
+    '<button class="action" id="photoSaveButton" onclick="addPhoto()">Add photo</button>' +
+    '<p id="photoStatus" role="status" aria-live="polite" class="muted">Select photos, then tap Add.</p><div id="photoGallery"></div>'
+  );
+};
+function stPhotoPicked(input) {
+  const n = input?.files?.length || 0, b = document.getElementById("photoSaveButton");
+  if (b) b.textContent = n > 1 ? "Add " + n + " photos" : "Add photo";
+  photoStatus(n > 1 ? n + " photos selected." : n ? "1 photo selected." : "Select photos, then tap Add.", true);
+}
+function stCompressPhoto(f) {
+  return new Promise((ok, bad) => {
+    if (!f.type.startsWith("image/") || f.size > 12000000) return bad(Error("size"));
+    const r = new FileReader();
+    r.onerror = () => bad(Error("read"));
+    r.onload = () => {
+      const img = new Image();
+      img.onerror = () => bad(Error("decode"));
+      img.onload = () => {
+        try {
+          const c = document.createElement("canvas"), s = Math.min(1, 700 / img.width, 700 / img.height);
+          c.width = Math.max(1, Math.round(img.width * s)); c.height = Math.max(1, Math.round(img.height * s));
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+          const src = c.toDataURL("image/jpeg", 0.52);
+          src.startsWith("data:image/jpeg;base64,") ? ok(src) : bad(Error("convert"));
+        } catch (e) { bad(e); }
+      };
+      img.src = r.result;
+    };
+    r.readAsDataURL(f);
+  });
+}
+addPhoto = async function () {
+  const select = document.getElementById("photoAnimal"), input = document.getElementById("photoInput"),
+    caption = document.getElementById("photoCaption"), dateEl = document.getElementById("photoDate"),
+    button = document.getElementById("photoSaveButton");
+  const a = select?.value, files = [...(input?.files || [])].slice(0, 20);
+  if (!a || !files.length) return photoStatus("Please choose an animal and at least one photo.", false);
+  const picked = dateEl?.value && validDate(dateEl.value) ? dateEl.value : "";
+  if (button) { button.disabled = true; button.textContent = files.length > 1 ? "Saving " + files.length + " photos…" : "Saving photo…"; }
+  const items = [], skipped = [];
+  for (let k = 0; k < files.length; k++) {
+    photoStatus("Processing photo " + (k + 1) + " of " + files.length + "…", true);
+    try { items.push({ src: await stCompressPhoto(files[k]), caption: caption?.value.trim() || "", date: picked || stFileDate(files[k]) }); }
+    catch (e) { skipped.push(files[k].name || "a photo"); }
+  }
+  const done = () => { if (button) { button.disabled = false; button.textContent = "Add photo"; } };
+  if (!items.length) { done(); return photoStatus("Those photos couldn’t be read. Try JPEGs under 12 MB.", false); }
+  const updated = [...(photos[a] || []), ...items];
+  try {
+    const all = { ...photos, [a]: updated };
+    scaleStoreSet("scaleTellPhotos10", JSON.stringify(all));
+    const verify = JSON.parse(localStorage.getItem("scaleTellPhotos10") || "{}");
+    if (!verify[a] || verify[a].length !== updated.length) throw Error("verify");
+    photos = all;
+  } catch (e) { done(); return photoStatus("Photos were NOT saved. Browser storage may be full. Export a backup and try fewer photos.", false); }
+  if (input) input.value = ""; if (caption) caption.value = ""; if (dateEl) dateEl.value = "";
+  renderPhotos(); done();
+  photoStatus("✓ " + items.length + " photo" + (items.length === 1 ? "" : "s") + " saved to " + a + "’s gallery (" + updated.length + " total)." + (skipped.length ? " Skipped " + skipped.length + " that couldn’t be read." : ""), true);
+};
+function setPhotoDate(i, value, a) {
+  a = a || document.getElementById("photoAnimal")?.value;
+  if (!a || !photos[a]?.[i]) return;
+  if (!validDate(value) || value > today()) return photoStatus("Pick a real date that isn’t in the future.", false);
+  const gallery = photos[a].map((p, j) => (j === i ? { ...p, date: value } : p));
+  if (persistPhotoChange(a, gallery)) { photoStatus("✓ Photo date changed to " + niceDate(value) + ".", true); if (document.getElementById("progressCanvas")) render(); }
+}
+const _renderPhotos397 = renderPhotos;
+renderPhotos = function () {
+  _renderPhotos397();
+  const a = document.getElementById("photoAnimal")?.value || selectedAnimal, el = document.getElementById("photoGallery");
+  if (!el) return;
+  el.querySelectorAll(".photoCard").forEach((card, i) => {
+    const p = (photos[a] || [])[i]; if (!p) return;
+    const lab = document.createElement("label"); lab.className = "lcSmall"; lab.textContent = "Date taken ";
+    const inp = document.createElement("input"); inp.type = "date"; inp.max = today(); inp.value = validDate(p.date) ? p.date : "";
+    inp.onchange = () => setPhotoDate(i, inp.value, a);
+    lab.appendChild(inp); card.querySelector(".recordActions")?.before(lab);
+  });
+};
+const _progressPanel397 = BIZ_PANELS["Photo Progress"];
+BIZ_PANELS["Photo Progress"] = () => {
+  const html = _progressPanel397();
+  const a = animals.includes(progressAnimal) ? progressAnimal : animals[0];
+  if (!a || progressPick.length !== 2) return html;
+  const fix = '<div class="lcPanel"><p class="lcSmall"><b>Wrong dates?</b> Set when each photo was really taken:</p>' +
+    progressPick.map((i) => { const p = photos[a]?.[i]; return p ? '<label>' + esc(p.caption || "Photo") + '<input type="date" max="' + today() + '" value="' + (validDate(p.date) ? p.date : "") + '" onchange="setPhotoDate(' + i + ',this.value,' + esc(JSON.stringify(a)).replace(/"/g, "&quot;") + ')"></label>' : ""; }).join("") + "</div>";
+  return html.replace('<canvas id="progressCanvas"', fix + '<canvas id="progressCanvas"');
 };
