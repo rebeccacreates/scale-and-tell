@@ -338,6 +338,12 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
   .plain ul{grid-template-columns:1fr}
   .order{padding:16px 14px 10px}
 }
+.steps2{display:flex;gap:8px;margin:0 0 6px;font-size:12.5px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:var(--soft)}
+.steps2 span{flex:1;border-top:4px solid var(--line);padding-top:6px}
+.steps2 span.on{border-color:var(--plum);color:var(--plum)}
+.leadWho{font-size:14px;color:var(--soft);margin:4px 0 2px}
+.leadWho a{color:var(--plum)}
+.otoTag{display:inline-block;background:var(--plum);color:#fff;font-size:11px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;border-radius:99px;padding:4px 10px;margin-bottom:6px}
 
 </style>
 <script>
@@ -363,16 +369,33 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
     <div class="order" id="order">
       <div id="payStep">
         <h3>Start your free 7-day trial</h3>
+        <div class="steps2"><span class="on" id="st1">1. Your email</span><span id="st2">2. Your plan</span></div>
+        <form id="leadForm" novalidate>
+          <label for="leadName">First name</label>
+          <input id="leadName" autocomplete="given-name" maxlength="60" placeholder="Your first name">
+          <label for="leadEmail">Email (where we send your login)</label>
+          <input id="leadEmail" type="email" autocomplete="email" inputmode="email" maxlength="120" placeholder="you@example.com">
+          <button class="cta block" type="submit" style="margin-top:14px">Continue to step 2 →</button>
+          <p class="msg" id="msgLead" role="status"></p>
+          <p class="ppnote">🔒 We never share your email. Nothing is charged today.</p>
+        </form>
+        <div id="planStep" class="hide">
+        <p class="leadWho" id="leadWho"></p>
         <label class="opt"><input type="radio" name="plan" value="keeper_yearly" checked><span class="ot"><b>Yearly · $48/yr</b><small>Just $4/mo · save 20%</small></span><span class="op">$48<small>per year</small></span><span class="bv">Best value</span></label><label class="opt"><input type="radio" name="plan" value="keeper_monthly"><span class="ot"><b>Monthly</b><small>Billed monthly</small></span><span class="op">$4.99<small>per month</small></span></label><label class="bump"><input type="checkbox" id="bumpBreeder"><span><b>YES! Add Breeder tools</b> (racks, pairings, clutches, Expo Mode): +$3/mo or +$21.99/yr.</span></label><label class="bump"><input type="checkbox" id="bumpSetup"><span><b>YES! Set it up for me (+$15, one time):</b> Rebecca adds your animals, reminders and feeding schedule for you. You just fill out a short form.</span></label>
         <div class="due"><span>Due today<small id="dueTxt"></small></span><span class="amt" id="dueAmt">$0</span></div>
         <p class="ppnote" id="ppLoading">Loading secure checkout…</p>
         <div class="pp"><div id="ppCard"></div><div id="ppPal"></div></div>
         <p class="msg" id="msgPay" role="status"></p>
         <p class="ppnote">🔒 Secure checkout by PayPal. No PayPal account needed. Cancel before day 7 and you pay nothing.</p>
+        </div>
       </div>
       <div id="claimStep" class="hide">
         <div class="claimHead"><div class="big">✅</div><h3>Your free trial started!</h3><p>Last step: create your login so you can open the app.</p></div>
+        <div id="otoBox" class="hide">
+        <div id="setupOffer" class="switch hide"><span class="otoTag">One-time offer · only on this page</span><h3>Want us to set it all up for you?</h3><p>For a one-time <b>$15</b>, Rebecca adds your animals, feeding schedules, reminders and photos for you. You just fill out a 10-minute form. Skip the typing and be ready by feed day.</p><div id="setupBtn"></div><p class="msg" id="msgSetup" role="status"></p></div>
         <div id="switchBox" class="switch hide"><h3>Want 2+ months free?</h3><p id="switchTxt"></p><div id="switchBtn"></div><p class="msg" id="msgSwitch" role="status"></p></div>
+        <button type="button" class="ghost" id="otoSkip" style="display:block;margin:0 auto 10px">No thanks, just create my login ↓</button>
+        </div>
         <p id="setupNote" class="payFirst hide">📬 We also emailed you your <b>setup form</b>. Fill it out whenever you’re ready and we’ll build everything for you.</p>
         <form id="acct" novalidate>
           <label for="em">Email</label>
@@ -468,7 +491,7 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
   var BUMP_BREEDER = { keeper_yearly: 'founding_breeder', keeper_monthly: 'breeder_monthly' };
   var SRC = ((location.search.match(/[?&]from=(page|expo)/) || [0, 'ad'])[1]) + '-' + PAGE_SEG;
   var $ = function (id) { return document.getElementById(id); };
-  var pp = null, subId = '', claim = '', paidSku = '';
+  var pp = null, subId = '', claim = '', paidSku = '', leadId = '', leadEmail = '';
   function track(ev, data) { try { if (window.fbq) fbq('track', ev, data || {}); } catch (e) {} }
   function say(id, t, ok) { var el = $(id); if (!el) return; el.textContent = t || ''; el.className = 'msg' + (t ? ok ? ' ok' : ' err' : ''); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
@@ -528,7 +551,7 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
     };
   }
   async function trialStarted(sid, k) {
-    var s = k || sku(), r = await invoke({ action: 'guest_sub_start', subscriptionId: sid, src: SRC });
+    var s = k || sku(), r = await invoke({ action: 'guest_sub_start', subscriptionId: sid, src: SRC, lead: leadId });
     subId = sid; paidSku = s;
     track('StartTrial', { value: PRICES[s][0], currency: 'USD', predicted_ltv: PRICES[s][1] === 'yr' ? PRICES[s][0] : PRICES[s][0] * 12, content_name: NAMES[s] });
     if (r.setup) track('Purchase', { value: 15, currency: 'USD', content_name: 'Done-for-you setup' });
@@ -548,13 +571,66 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
   }
   mount();
 
+  // ----- Step 1 of the two-step order form: email first, so we can follow up if they don't finish -----
+  function toStep2(em, nm) {
+    leadEmail = em;
+    $('leadForm').classList.add('hide'); $('planStep').classList.remove('hide');
+    $('st1').classList.remove('on'); $('st2').classList.add('on');
+    $('leadWho').innerHTML = 'Starting your trial as <b>' + esc(em) + '</b> · <a href="#" id="leadChange">change</a>';
+    $('leadChange').onclick = function (e) { e.preventDefault(); $('planStep').classList.add('hide'); $('leadForm').classList.remove('hide'); $('st2').classList.remove('on'); $('st1').classList.add('on'); };
+  }
+  $('leadForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var em = $('leadEmail').value.trim().toLowerCase(), nm = $('leadName').value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return say('msgLead', 'Please enter a valid email.');
+    say('msgLead', '');
+    toStep2(em, nm);
+    track('Lead', { content_name: PAGE_SEG });
+    try { var r = await invoke({ action: 'guest_lead', email: em, name: nm, page: location.pathname.replace(/^\/|\.html$/g, '') || 'keeper', sku: sku(), src: SRC }); leadId = r.lead || ''; } catch (x) {}
+    try { localStorage.setItem('stLead', JSON.stringify({ e: em, n: nm, id: leadId, t: Date.now() })); } catch (x) {}
+  });
+  try { var sl = JSON.parse(localStorage.getItem('stLead') || 'null'); if (sl && sl.e && Date.now() - sl.t < 7 * 864e5) { leadId = sl.id || ''; $('leadEmail').value = sl.e; $('leadName').value = sl.n || ''; toStep2(sl.e, sl.n); } } catch (e) {}
+
+  // ----- One-time offer right after the trial starts: done-for-you setup ($15) -----
+  function loadOnceSdk() {
+    if (window.paypalOnce) return Promise.resolve(window.paypalOnce);
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(CLIENT_ID) + '&intent=capture&components=buttons&enable-funding=card&currency=USD';
+      s.setAttribute('data-namespace', 'paypalOnce');
+      s.onload = function () { window.paypalOnce ? res(window.paypalOnce) : rej(Error('PayPal did not load.')); };
+      s.onerror = function () { rej(Error('PayPal couldn’t load.')); };
+      document.head.appendChild(s);
+    });
+  }
+  async function showSetupOffer() {
+    $('setupOffer').classList.remove('hide');
+    try {
+      var po = await loadOnceSdk();
+      await po.Buttons({
+        style: { layout: 'vertical', shape: 'pill', height: 44, color: 'gold', label: 'pay' },
+        createOrder: async function () { var o = await invoke({ action: 'guest_setup_create', subscriptionId: subId }); if (o.already) throw Error('already'); return o.id; },
+        onApprove: async function (d) {
+          say('msgSetup', 'Adding your setup…', true);
+          try { await invoke({ action: 'guest_setup_capture', orderId: d.orderID }); track('Purchase', { value: 15, currency: 'USD', content_name: 'Done-for-you setup' });
+            $('setupOffer').innerHTML = '<p class="msg ok">✓ Setup added! Check your email for your setup form.</p>'; $('setupNote').classList.remove('hide'); }
+          catch (err) { say('msgSetup', err.message + ' If you see a charge, email support@scaleandtell.app and we’ll fix it.'); }
+        },
+        onError: function () { say('msgSetup', 'PayPal had a hiccup. You weren’t charged. Try again or skip.'); }
+      }).render('#setupBtn');
+    } catch (e) { $('setupOffer').classList.add('hide'); }
+  }
+  $('otoSkip').onclick = function () { $('otoBox').classList.add('hide'); try { $('pw').focus(); } catch (e) {} };
+
   // ----- after the trial starts: optional yearly switch + create the login -----
   function showClaim(tok, em, isSetup) {
     claim = tok;
     try { localStorage.setItem('stLpClaim', JSON.stringify({ c: tok, t: Date.now() })); } catch (x) {}
-    $('payStep').classList.add('hide'); $('claimStep').classList.remove('hide');
-    if (em && !$('em').value) $('em').value = em;
+    $('payStep').classList.add('hide'); $('claimStep').classList.remove('hide'); $('sticky').style.display = 'none';
+    if (!$('em').value) $('em').value = leadEmail || em || '';
     if (isSetup) $('setupNote').classList.remove('hide');
+    $('otoBox').classList.remove('hide');
+    if (!isSetup) showSetupOffer();
     var y = YEARLY_OF[paidSku];
     if (y && pp) {
       var m = PRICES[paidSku][0] * 12, yr = PRICES[y][0], save = m - yr;
@@ -568,6 +644,7 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
       }, 'msgSwitch');
       pp.Buttons(Object.assign({}, so, { style: { layout: 'horizontal', shape: 'pill', height: 44, color: 'gold', label: 'subscribe', tagline: false } })).render('#switchBtn').catch(function () {});
     }
+    if ($('setupOffer').classList.contains('hide') && $('switchBox').classList.contains('hide')) $('otoBox').classList.add('hide');
     setTimeout(function () { $('order').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
   }
   function rules(pw) { return [['8+ characters', pw.length >= 8], ['A capital letter', /[A-Z]/.test(pw)], ['A number', /[0-9]/.test(pw)], ['A symbol like ! @ #', /[^A-Za-z0-9]/.test(pw)]]; }
