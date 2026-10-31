@@ -1155,7 +1155,7 @@ function menuMarkup() {
       ? '<div class="menuBadgeRow">' + stBadgeMarkup() + '<button class="authLink" onclick="stShareBadge()">Share my badge</button></div>'
       : "") +
     (stPlan() === "member"
-      ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Upgrade&quot;)"><strong>♡ Become a Founding Keeper</strong><small>7 days free · your badge in the Herps &amp; Hers group with a weekly shout-out, 40 animals, 3 logins, vet reminders and more</small></button>'
+      ? '<button class="menuTile menuFeature" onclick="openPanel(&quot;Upgrade&quot;)"><strong>♡ Become a Founding Keeper</strong><small>$14.99 once · your badge in the Herps &amp; Hers group with a weekly shout-out, 40 animals, 3 logins, vet reminders and more</small></button>'
       : "") +
     '<p class="resourceIntro">Everything your keeper journal needs, in one place.</p><button class="menuTile" onclick="openPanel(&quot;Plans&quot;)"><strong>Plans &amp; animal spaces</strong><small>' +
     animals.length +
@@ -2161,7 +2161,7 @@ function memberUpgradeMarkup(onHome) {
   return (
     '<div class="memberUpgrade">' +
     (onHome ? '<button class="memberUpgradeX" aria-label="Hide for a week" onclick="memberUpgradeSnooze()">×</button>' : "") +
-    '<span class="accessTag">Herps &amp; Hers member</span><h3>Become a Founding Keeper ♡</h3><p>Try it <b>free for 7 days</b> (then $4.99/mo or $48/yr) and get:</p><ul>' +
+    '<span class="accessTag">Herps &amp; Hers member</span><h3>Become a Founding Keeper ♡</h3><p>Upgrade once for <b>$14.99</b> (Herps &amp; Hers member price, no subscription) and get:</p><ul>' +
     "<li>Your <b>Founding Keeper badge in the Herps &amp; Hers group</b>, announced in our weekly post</li>" +
     "<li>Room for <b>40 animals</b> (you have " + stAnimalLimit() + ")</li>" +
     "<li><b>3 logins</b> to share with family</li>" +
@@ -3716,7 +3716,7 @@ function deviceDirectory() {
   );
 }
 
-const SCALE_LC_VERSION = "3.93";
+const SCALE_LC_VERSION = "3.94";
 const SCALE_SUPPORT_EMAIL = "support@scaleandtell.app";
 const SCALE_LC_ICON = "icon-180.png";
 /* Android/desktop Chrome can install with one tap; iPhone only allows Share → Add to Home Screen. */
@@ -12910,6 +12910,9 @@ function helpMarkup() {
 /* V3.86 · ONE list of releases. Add the newest at the top each update: the What's New popup, and the ready-made
    update emails + banners in Send Update Email all build themselves from it. */
 const ST_RELEASES = [
+  { v: "3.94", date: "2026-10-31", subject: "Herps & Hers member price is back ♡", banner: "Members: Founding Keeper is $14.99 once ♡", items: [
+    ["💜", "Herps & Hers members", "Your Founding Keeper upgrade is still $14.99 one time, no subscription. Find it in Menu → Become a Founding Keeper."],
+  ] },
   { v: "3.93", date: "2026-10-31", subject: "Free trials, verified rescues & the founders chat ♡", banner: "New: 7-day free trial on every plan ♡", items: [
     ["🎁", "Try any plan free for 7 days", "Every plan now starts with a 7-day free trial, monthly or yearly. Bought Founding Keeper for $14.99? You keep it forever."],
     ["✅", "Verified rescues pay half", "Rescues can upload their 501(c)(3) letter in Business Tools → Rescue Profile. Once approved, the price drops automatically."],
@@ -14854,7 +14857,7 @@ plansMarkup = function () {
   return '<p class="resourceIntro">You&#39;re using <b>' + used + " of " + stAnimalLimit() + "</b> animal spaces." + (stCanUseBreeder() ? " Breeder tools are on." : "") + " <b>Every plan starts with a 7-day free trial.</b></p>" +
     stFoundersChatMarkup() +
     '<h3 class="sectionTitle">For keepers</h3>' +
-    card("founding_keeper", "$48 / year or $4.99 / month", "For hobby keepers.", ["Up to <b>40 animals</b>", "Pet-sitter sheet, feeder freezer, reminders, photos and backups", "Four app designs, Care Binder, My Year in Scales, printables", "<b>3 logins</b> to share with family", "Medication &amp; vet reminders, shed predictions, photo progress and an emergency card", badge("Founding Keeper")], stTrialChoices("keeper_yearly", "keeper_monthly")) +
+    card("founding_keeper", isMember ? "$14.99 once · member price" : "$48 / year or $4.99 / month", "For hobby keepers.", ["Up to <b>40 animals</b>", "Pet-sitter sheet, feeder freezer, reminders, photos and backups", "Four app designs, Care Binder, My Year in Scales, printables", "<b>3 logins</b> to share with family", "Medication &amp; vet reminders, shed predictions, photo progress and an emergency card", badge("Founding Keeper")], isMember ? '<button class="action" onclick="openPanel(\'Founding Keeper Studio\')">Upgrade for $14.99 once</button><p class="lcSmall">Herps &amp; Hers member price. No subscription.</p>' : stTrialChoices("keeper_yearly", "keeper_monthly")) +
     '<h3 class="sectionTitle">For breeders &amp; rescues</h3><p class="lcSmall">Breeder plans add racks, rack feeding, pairings, clutches, hatchlings and Expo Mode.</p>' +
     card("founding_breeder", "$69.99 / year or $7.99 / month", "Breeders, including hobby breeders.", ["Up to <b>150 animals</b>", "Everything in Founding Keeper", "Racks, rack feeding, pairings, clutches &amp; litters", "Expo Mode that works without signal", "3 logins for your team", "Public page, inquiry Inbox and animal sharing", badge("Founding Breeder")], stTrialChoices("founding_breeder", "breeder_monthly")) +
     card("premium_breeder", "$79.99 / year or $9.99 / month", "Breeding businesses. Only $10 more a year.", ["Up to <b>400 animals</b>", "Everything in Founding Breeder", "<b>5 logins</b> for your team", "Your logo and colors on the app and printouts", "MorphMarket export", "Genetics calculator, invoices &amp; receipts, bulk import, shipping weather check, waitlist and sales summary"], stTrialChoices("premium_breeder", "premium_monthly")) +
@@ -14863,15 +14866,24 @@ plansMarkup = function () {
     stRecommendMarkup();
 };
 // The one-time $14.99 checkout is retired: Founding Keeper now starts with a 7-day free trial (past buyers keep their plan).
+const stOneTimeCheckoutMarkup = founderCheckoutMarkup, stOneTimeMount = founderMountPayPal;
+function stIsGroupMember() { return stOwnsEntitlements() && stSkus.includes("member"); }
 founderCheckoutMarkup = function () {
+  // Herps & Hers members keep the $14.99 one-time Founding Keeper upgrade.
+  if (stIsGroupMember()) return '<p class="studioPackNote"><b>Herps &amp; Hers member price: $14.99 once.</b> No subscription.</p>' + stOneTimeCheckoutMarkup.apply(this, arguments);
   if (!cloudSession) return '<p class="lcSmall">Sign in to start your free trial.</p>';
   return '<div class="founderCheckout">' + stTrialChoices("keeper_yearly", "keeper_monthly") +
     '<p class="lcSmall">Every paid plan supports Scale &amp; Tell’s growth, and 10% of paid-plan profits go to reptile rescues that members help pick.</p></div>';
 };
-founderMountPayPal = async function () {};
+founderMountPayPal = async function () { if (stIsGroupMember()) return stOneTimeMount.apply(this, arguments); };
 (function () {
   const base = founderStudioMarkup;
-  founderStudioMarkup = function () { return stFoundersChatMarkup() + base.apply(this, arguments); };
+  founderStudioMarkup = function () {
+    let h = stFoundersChatMarkup() + base.apply(this, arguments);
+    if (stIsGroupMember()) h = h.replace("<strong>Free for 7 days, then $4.99/mo or $48/yr. Optional.</strong>", "<strong>$14.99 · one-time for Herps &amp; Hers members, optional.</strong>")
+      .replace("Starts with a 7-day free trial. Cancel anytime in PayPal before day 7 and you pay nothing.", "Unlocks automatically on this account right after payment. No subscription.");
+    return h;
+  };
 })();
 // Rescue Profile: upload the 501(c)(3) letter for verification (Rebecca approves in one tap; the price drops automatically).
 (function () {
