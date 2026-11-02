@@ -345,6 +345,16 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
 .leadWho a{color:var(--plum)}
 .otoTag{display:inline-block;background:var(--plum);color:#fff;font-size:11px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;border-radius:99px;padding:4px 10px;margin-bottom:6px}
 
+/* V3.98 · proof line + mobile app peek */
+.proofLine{font-size:15px;font-weight:700;color:var(--ink);margin:2px 0 4px}
+.proofLine span{color:#e8a317;letter-spacing:1px;margin-right:4px}
+.peek{display:none}
+@media (max-width:820px){
+  .peek{display:block;position:relative;margin:12px 0 4px;height:250px;border-radius:22px;overflow:hidden;border:6px solid #2b1238;box-shadow:0 14px 30px #45205b30;background:#fff}
+  .peek img{width:100%;height:auto;display:block}
+  .peek span{position:absolute;left:0;right:0;bottom:0;padding:26px 12px 10px;background:linear-gradient(180deg,#2b123800,#2b1238e6 55%);color:#fff;font-weight:800;font-size:15px;text-align:center}
+}
+
 </style>
 <script>
 (function (id) {
@@ -363,9 +373,11 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
 
 <section class="hero2"><div class="wrap">
   <div>
-    <h1 class="hook">Your clutch is due in 35 days… did you write that down?</h1>
-    <p class="subhead">Racks, pairings, clutches, every feeding and Expo Mode for show day, in one app on your phone.</p>
+    <h1 class="hook" id="heroH">Your clutch is due in 35 days… did you write that down?</h1>
+    <p class="subhead" id="heroS">Racks, pairings, clutches, every feeding and Expo Mode for show day, in one app on your phone.</p>
     <p class="tryline">Try it <b>FREE for 7 days</b>. Built by a keeper, for breeders who are done with spreadsheets.</p>
+    <p class="proofLine"><span aria-hidden="true">★★★★★</span> Used by <b>120+</b> keepers, breeders &amp; rescues</p>
+    <div class="peek"><img id="peekImg" src="./lp-b-racks.webp" alt="A screen from the Scale and Tell app" width="560" height="1212"><span id="peekCap">📦 Racks, pairings &amp; clutches in one place</span></div>
     <div class="order" id="order">
       <div id="payStep">
         <h3>Start your free 7-day trial</h3>
@@ -415,8 +427,9 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
       </div>
     </div>
   </div>
-  <div class="phone"><img src="./lp-b-racks.webp" alt="Scale and Tell app" width="560" height="1212"></div>
+  <div class="phone"><img id="heroImg" src="./lp-b-racks.webp" alt="Scale and Tell app" width="560" height="1212"></div>
 </div></section>
+
 
 <section style="padding:22px 0 0"><div class="wrap"><div class="anchor2">Marketplace breeding tools start at <b>$132/yr</b>, and they don’t track your feedings. Founding Breeder is <b>$69.99/yr</b> for everything above, on your phone at the rack and on your computer. And your first 7 days are free.</div></div></section>
 
