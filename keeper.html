@@ -9,7 +9,9 @@
 <meta name="description" content="Send your sitter one link with exactly who eats, what and when. Try Scale &amp; Tell free for 7 days.">
 <meta property="og:title" content="Going out of town? Wait! Who’s going to feed the snakes?!">
 <meta property="og:description" content="Send your sitter one link with exactly who eats, what and when. Try Scale &amp; Tell free for 7 days.">
-<meta property="og:image" content="https://scaleandtell.app/share-preview.jpg">
+<meta property="og:image" content="https://scaleandtell.app/share-keeper.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:url" content="https://scaleandtell.app/keeper">
 <link rel="icon" href="./icon-192.png">
 <link rel="preconnect" href="https://www.paypal.com">
@@ -436,7 +438,7 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
  feed:{h:'Feed night: who’s due to eat tonight? 🐀',s:'I couldn’t keep 3 snakes on 3 different schedules straight, so I built Scale &amp; Tell. Now I see who’s due, tap “Ate,” and every feeding and shed is saved, with a heads-up before the next shed.',i:'./lp-feedday-oro.webp',c:'🍽 Feed Day: see who’s due and log it in 3 taps',t:'Scale &amp; Tell · Who’s due to eat tonight?'},
  shed:{h:'Found a shed? Log it in seconds. ✨',s:'Every shed, feeding and weight in one place, and Scale &amp; Tell gives you a heads-up before the next shed.',i:G,c:'🔮 Last shed, next shed, all in one view'}};
  V.snakes.st=V.feed.st="<h2>Hi, I’m Rebecca 👋</h2><p>I started Herps &amp; Hers, and I keep 3 snakes: Oro &amp; Kane (ball pythons) and Roux (corn snake).</p><p><b>3 snakes. 3 different schedules.</b> Each one eats on a different schedule and sheds at a different time. My “system” was notes on the tanks and my notes app, and I never kept up with it.</p><p><b>The night I lost track.</b> One feed night I stood there with a thawed rat and honestly couldn’t remember if Oro had eaten Tuesday or Thursday. Who ate last? Who’s due tonight? When’s Roux’s next shed? I couldn’t keep it straight.</p><p><b>So I built Scale &amp; Tell myself.</b> Now I open the app and it shows me who’s due to eat tonight. I tap “Ate,” every feeding and shed is saved, and it gives me a heads-up before the next shed.</p><p><b>Built with our community.</b> When I asked the Herps &amp; Hers community, keepers, breeders and rescues all said the same thing: “I wish there was ONE app that just did all of it.” So when members ask for something, I build it, often same day.</p><p>I’d love for you to try it free for 7 days.</p><p class=\"sig\">— Rebecca 💜</p>";
- var m=location.search.match(/[?&]a=(\w+)/),v=m&&V[m[1]];if(!v)return;
+ var m=location.search.match(/[?&]a=(\w+)/),v=(m&&V[m[1]])||V[window.ST_A];if(!v)return;
  document.getElementById('heroH').innerHTML=v.h;document.getElementById('heroS').innerHTML=v.s;
  ['peekImg','heroImg'].forEach(function(id){var e=document.getElementById(id);if(e)e.src=v.i;});
  if(v.st){var sw=function(){var sb=document.getElementById('storyBody');if(sb)sb.innerHTML=v.st;};if(document.getElementById('storyBody'))sw();else document.addEventListener('DOMContentLoaded',sw);}var c=document.getElementById('peekCap');if(c)c.textContent=v.c;if(v.t){var d=document.createElement('textarea');d.innerHTML=v.t;document.title=d.value;}
