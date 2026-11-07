@@ -35,6 +35,6 @@ var p=P[r]||['Thank you 💜','<p>Thanks for being part of Scale &amp; Tell!</p>
 document.getElementById('box').innerHTML='<h1>'+p[0]+'</h1>'+p[1];
 var f=document.getElementById('nf');
 if(f)f.addEventListener('submit',async function(e){e.preventDefault();var t=document.getElementById('nt').value.trim(),m=document.getElementById('nm');if(!t){m.textContent='Please write a quick note first.';return;}m.textContent='Sending…';
- try{var res=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({c:c,note:t})});if(!res.ok)throw 0;f.classList.add('hide');document.getElementById('nd').classList.remove('hide');}catch(_){m.textContent='That didn’t send. Please email support@scaleandtell.app instead.';}});
+ try{var res=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json',apikey:'sb_publishable_-aCjAUOdC1u3Vr0L0IQFbg_M8T88XwG'},body:JSON.stringify({c:c,note:t})});if(!res.ok)throw 0;f.classList.add('hide');document.getElementById('nd').classList.remove('hide');}catch(_){m.textContent='That didn’t send. Please email support@scaleandtell.app instead.';}});
 })();
 </script></body></html>

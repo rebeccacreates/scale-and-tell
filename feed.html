@@ -528,7 +528,16 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
   var $ = function (id) { return document.getElementById(id); };
   var pp = null, subId = '', claim = '', paidSku = '', leadId = '', leadEmail = '';
   // Every event carries an ID so server-side (Conversions API) copies of it can be de-duplicated later.
-  function track(ev, data) { try { if (window.fbq) fbq('track', ev, data || {}, { eventID: ev + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8) }); } catch (e) {} }
+  function newId(ev) { return ev + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8); }
+  function track(ev, data, id) { id = id || newId(ev); try { if (window.fbq) fbq('track', ev, data || {}, { eventID: id }); } catch (e) {} return id; }
+  // What the server needs to send the same event to Meta (Conversions API): browser + click IDs, so Meta can match it to the ad.
+  function metaCtx(extra) {
+    var ck = function (n) { var m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : ''; };
+    var fbc = ck('_fbc'), cl = (location.search.match(/[?&]fbclid=([^&]+)/) || [])[1];
+    if (!fbc && cl) fbc = 'fb.1.' + Date.now() + '.' + cl;
+    return Object.assign({ fbp: ck('_fbp'), fbc: fbc, url: location.href.split('#')[0] }, extra || {});
+  }
+  function capi(ev, extra) { try { fetch(SB + '/functions/v1/meta-events', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', apikey: KEY }, body: JSON.stringify(metaCtx(Object.assign({ ev: ev }, extra))) }); } catch (e) {} }
   // Advanced matching: once we know their email (and first name), hand it to the pixel. Meta hashes it in the browser.
   function matchUser(em, nm) { try { if (window.fbq && em) fbq('init', '2580184572460750', { em: em, fn: (nm || '').split(/\s+/)[0].toLowerCase() || undefined }); } catch (e) {} }
   function say(id, t, ok) { var el = $(id); if (!el) return; el.textContent = t || ''; el.className = 'msg' + (t ? ok ? ' ok' : ' err' : ''); }
@@ -589,10 +598,12 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
     };
   }
   async function trialStarted(sid, k) {
-    var s = k || sku(), r = await invoke({ action: 'guest_sub_start', subscriptionId: sid, src: SRC, lead: leadId });
+    var s = k || sku(), tid = newId('StartTrial'), pid = newId('Purchase');
+    var r = await invoke({ action: 'guest_sub_start', subscriptionId: sid, src: SRC, lead: leadId });
     subId = sid; paidSku = s;
-    track('StartTrial', { value: PRICES[s][0], currency: 'USD', predicted_ltv: PRICES[s][1] === 'yr' ? PRICES[s][0] : PRICES[s][0] * 12, content_name: NAMES[s] });
-    if (r.setup) track('Purchase', { value: 15, currency: 'USD', content_name: 'Done-for-you setup' });
+    track('StartTrial', { value: PRICES[s][0], currency: 'USD', predicted_ltv: PRICES[s][1] === 'yr' ? PRICES[s][0] : PRICES[s][0] * 12, content_name: NAMES[s] }, tid);
+    if (r.setup) track('Purchase', { value: 15, currency: 'USD', content_name: 'Done-for-you setup' }, pid);
+    capi('StartTrial', { id: tid, sub: sid }); if (r.setup) capi('Purchase', { id: pid, sub: sid });
     if (r.claimed) return done(r.setup);
     showClaim(r.claim, r.email, r.setup);
   }
@@ -624,8 +635,9 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
     say('msgLead', '');
     toStep2(em, nm);
     matchUser(em, nm);
-    track('Lead', { content_name: PAGE_SEG });
+    var lid = track('Lead', { content_name: PAGE_SEG });
     try { var r = await invoke({ action: 'guest_lead', email: em, name: nm, page: location.pathname.replace(/^\/|\.html$/g, '') || 'keeper', sku: sku(), src: SRC }); leadId = r.lead || ''; } catch (x) {}
+    capi('Lead', { id: lid, email: em });
     try { localStorage.setItem('stLead', JSON.stringify({ e: em, n: nm, id: leadId, t: Date.now() })); } catch (x) {}
   });
   try { var sl = JSON.parse(localStorage.getItem('stLead') || 'null'); if (sl && sl.e && Date.now() - sl.t < 7 * 864e5) { leadId = sl.id || ''; matchUser(sl.e, sl.n); $('leadEmail').value = sl.e; $('leadName').value = sl.n || ''; toStep2(sl.e, sl.n); } } catch (e) {}
