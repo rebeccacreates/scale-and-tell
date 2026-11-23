@@ -15636,3 +15636,24 @@ BIZ_PANELS["Learn"] = () => '<button class="resourceTile" onclick="openPanel(\'C
     return fz;
   };
 })();
+
+// 3.99m: deleting an account does not cancel a Stripe plan, so stop and say so before anything is deleted.
+(function () {
+  const baseDelete = deleteMyAccount;
+  deleteMyAccount = async function () {
+    const status = document.getElementById("lcDeleteStatus");
+    try {
+      const uid = cloudSession?.user?.id;
+      if (cloudClient && uid) {
+        const { data } = await cloudClient.from("stripe_subs").select("sku,status,canceled_at")
+          .eq("user_id", uid).in("status", ["trialing", "active", "past_due", "unpaid"]).is("canceled_at", null).limit(1);
+        if (data && data.length) {
+          if (status) status.innerHTML = '<b>You still have an active plan.</b> Deleting your account does <b>not</b> cancel it, so it would keep billing. ' +
+            'Cancel your plan first, then come back here to delete your account.<br><button class="action" style="margin-top:8px" onclick="stOpenPortal()">Cancel my plan</button>';
+          return;
+        }
+      }
+    } catch (e) {}
+    return baseDelete.apply(this, arguments);
+  };
+})();
