@@ -15178,7 +15178,7 @@ function stZeroBox(price, per) {
   return '<div class="stZero"><div class="stZeroTop"><span>Due today</span><b>$0.00</b></div><p class="stZeroSub">You won’t be charged a penny today.</p><ol class="stTl">' +
     "<li><b>Today</b><span>Your free trial starts. Full access, <b>$0</b>.</span></li>" +
     "<li><b>" + stDay(4) + "</b><span>We email you a reminder before your trial ends.</span></li>" +
-    "<li><b>" + stDay(7) + "</b><span>Your plan starts: " + esc(price) + "/" + (per === "year" ? "yr" : "mo") + ". Cancel before then and you pay nothing.</span></li></ol></div>";
+    "<li><b>" + stDay(7) + "</b><span>Your plan starts: " + esc(price) + "/" + (per === "year" ? "yr" : "mo") + ". Cancel before then and you pay nothing. Payments are non-refundable.</span></li></ol></div>";
 }
 async function stSubFinish(sub, done) {
   for (let i = 0; i < 6; i++) {

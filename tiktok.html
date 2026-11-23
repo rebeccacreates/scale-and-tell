@@ -528,7 +528,7 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
 
 <section style="padding-top:10px"><div class="wrap narrow">
   <h2 class="center">Questions</h2>
-  <details><summary>What happens after 7 days?</summary><p>Your plan starts at $4.99/mo or $48/yr. We email you a reminder 3 days before your trial ends.</p></details><details><summary>How do I cancel?</summary><p>In the app, tap Menu → My Account → Manage plan → Cancel. Cancel before your trial ends and you’re never charged. Or just email support@scaleandtell.app and we’ll do it for you.</p></details><details><summary>Why do you need my card for a free trial?</summary><p>So your plan keeps going without a hiccup if you love it. You’re not charged today, and if you cancel before day 8 you pay nothing. Payments are handled securely by Stripe; we never see your card number.</p></details>
+  <details><summary>What happens after 7 days?</summary><p>Your plan starts at $4.99/mo or $48/yr. We email you a reminder 3 days before your trial ends. Payments are non-refundable, so cancel before then if it’s not for you.</p></details><details><summary>How do I cancel?</summary><p>In the app, tap Menu → My Account → Manage plan → Cancel. Cancel before your trial ends and you’re never charged. Or just email support@scaleandtell.app and we’ll do it for you.</p></details><details><summary>Why do you need my card for a free trial?</summary><p>So your plan keeps going without a hiccup if you love it. You’re not charged today, and if you cancel before day 8 you pay nothing. Payments are non-refundable. They’re handled securely by Stripe; we never see your card number.</p></details>
 </div></section>
 
 
@@ -584,7 +584,7 @@ footer .fb{display:inline-flex;align-items:center;gap:6px}
     document.querySelectorAll('.opt').forEach(function (o) { o.classList.toggle('on', !!o.querySelector('input:checked')); });
     var s = sku(), p = PRICES[s];
     $('tlRemind').textContent = fmt(4); $('tlCharge').textContent = fmt(7);
-    $('dueTxt').textContent = 'Your plan starts: ' + money(p[0]) + '/' + p[1] + ' for ' + NAMES[s] + '. Cancel before then and you pay nothing.';
+    $('dueTxt').textContent = 'Your plan starts: ' + money(p[0]) + '/' + p[1] + ' for ' + NAMES[s] + '. Cancel before then and you pay nothing. Payments are non-refundable.';
     document.querySelectorAll('.chgDate').forEach(function (e) { e.textContent = firstCharge; });
   }
   document.querySelectorAll('input[name=plan], #bumpBreeder').forEach(function (i) { i.addEventListener('change', paint); });
