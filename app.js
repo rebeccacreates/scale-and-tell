@@ -15657,3 +15657,72 @@ BIZ_PANELS["Learn"] = () => '<button class="resourceTile" onclick="openPanel(\'C
     return baseDelete.apply(this, arguments);
   };
 })();
+
+// 3.99o: Guided setup. New keepers get a spotlight on the next "Get set up" step on Home
+// ("tap here… now here… last one here") instead of the 4-slide text tour. Welcome Tour stays in the Menu.
+(function () {
+  const OFF = "stCoachOff";
+  const TIPS = [
+    ["Start here", "Add your first reptile. Just a name and species, it takes a minute."],
+    ["Nice! Now tap here", "Log the last time they ate, so the app knows when they’re due next."],
+    ["Last step", "Turn on reminders and we’ll tell you who’s due."],
+  ];
+  const css = document.createElement("style");
+  css.textContent =
+    "#stCoachRing{position:absolute;z-index:850;border-radius:14px;pointer-events:none;box-shadow:0 0 0 4px #f6b93b,0 0 0 9999px rgba(28,10,38,.55);transition:all .25s}" +
+    "#stCoachTip{position:absolute;z-index:851;left:16px;right:16px;max-width:420px;margin:0 auto;background:#fff;color:#2b1238;border-radius:16px;padding:14px 16px 12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:15px;line-height:1.35}" +
+    "#stCoachTip b{display:block;font-size:17px;margin-bottom:2px}#stCoachTip .stCoachRow{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;color:#6b5a75}" +
+    "#stCoachTip button{background:none;border:0;color:#6b5a75;text-decoration:underline;font:inherit;padding:4px}" +
+    "#stCoachTip:before{content:'';position:absolute;left:50%;margin-left:-9px;border:9px solid transparent}#stCoachTip.below:before{top:-18px;border-bottom-color:#fff}#stCoachTip.above:before{bottom:-18px;border-top-color:#fff}";
+  document.head.appendChild(css);
+  const isOff = () => { try { return localStorage.getItem(OFF) === "1" || !!localStorage.getItem("scaleTellStartHidden"); } catch (e) { return false; } };
+  const clear = () => { document.getElementById("stCoachRing")?.remove(); document.getElementById("stCoachTip")?.remove(); };
+  window.stCoachSkip = function () { try { localStorage.setItem(OFF, "1"); } catch (e) {} clear(); };
+  let timer = null, tries = 0;
+  function place() {
+    clear();
+    if (isOff()) return;
+    const made = Date.parse(cloudSession?.user?.created_at || "");
+    if (!made || Date.now() - made > 14 * 864e5) return; // new accounts only (first 2 weeks)
+    const card = document.getElementById("startCard");
+    if (!card || !card.offsetParent || document.body.classList.contains("authLocked")) return;
+    if (document.getElementById("sheet")?.classList.contains("on")) { if (tries++ < 20) later(); return; }
+    tries = 0;
+    const all = [...card.querySelectorAll(".startStep")];
+    const target = all.find((b) => !b.classList.contains("done") && !b.disabled);
+    if (!target) return;
+    const i = all.indexOf(target), tip = TIPS[i] || TIPS[0];
+    target.scrollIntoView({ block: "center", behavior: "instant" });
+    const r = target.getBoundingClientRect(), y = window.scrollY, pad = 6;
+    const ring = document.createElement("div");
+    ring.id = "stCoachRing";
+    Object.assign(ring.style, { top: r.top + y - pad + "px", left: r.left - pad + "px", width: r.width + pad * 2 + "px", height: r.height + pad * 2 + "px" });
+    const t = document.createElement("div");
+    t.id = "stCoachTip";
+    t.setAttribute("role", "status");
+    t.innerHTML = "<b>" + esc(tip[0]) + "</b>" + esc(tip[1]) + '<div class="stCoachRow"><span>Step ' + (i + 1) + " of " + all.length + '</span><button type="button" onclick="stCoachSkip()">Skip the tour</button></div>';
+    document.body.append(ring, t);
+    const below = r.bottom + 150 < window.innerHeight;
+    t.className = below ? "below" : "above";
+    t.style.top = (below ? r.bottom + y + 18 : r.top + y - t.offsetHeight - 18) + "px";
+    target.addEventListener("click", clear, { once: true });
+  }
+  const later = () => { clearTimeout(timer); timer = setTimeout(() => { try { place(); } catch (e) {} }, 450); };
+  const baseShow = startCardShow;
+  startCardShow = function () { const r = baseShow.apply(this, arguments); later(); return r; };
+  window.addEventListener("resize", later);
+  // New keepers get the spotlight instead of the auto-opening text tour (still in Menu → Welcome Tour).
+  const baseStatus = cloudSetStatus;
+  cloudSetStatus = function () {
+    try {
+      const uid = cloudSession?.user?.id;
+      if (uid && !isOff() && !animals.length) localStorage.setItem("scaleTellTourSeen35:" + uid, "1");
+    } catch (e) {}
+    return baseStatus.apply(this, arguments);
+  };
+  // Opening any panel or sheet hides the spotlight; it comes back on Home with the next step.
+  const baseOpen = openPanel;
+  openPanel = function () { clear(); return baseOpen.apply(this, arguments); };
+  const baseClose = closePanel;
+  closePanel = function () { const r = baseClose.apply(this, arguments); later(); return r; };
+})();
