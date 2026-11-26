@@ -19,9 +19,9 @@ async function set(on) {
     const r = await fetch(URL_ + "/functions/v1/scale-hub", { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" }, body: JSON.stringify({ action: "email_unsub", token: t, on }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw Error(j.error || "Something went wrong.");
-    $("h").textContent = on ? "You’re subscribed again ♡" : "You’re unsubscribed";
-    $("p").textContent = on ? "You’ll get Scale & Tell app update emails." : "You won’t get Scale & Tell app update emails anymore. Account emails, like password resets, still arrive.";
-    $("b").innerHTML = on ? "" : '<button class="sec" onclick="set(true)">Oops, keep me subscribed</button>';
+    $("h").textContent = on ? "You’re subscribed again" : "You’re unsubscribed from emails";
+    $("p").textContent = on ? "You’ll get Scale & Tell tips and app update emails." : "You won’t get Scale & Tell tips or app update emails anymore. Account and billing emails, like payment notices and password resets, still arrive.";
+    $("b").innerHTML = on ? "" : '<div style="margin:18px 0 6px;padding:14px 16px;border-radius:14px;background:#fff7e6;border:1px solid #f6b93b;text-align:left"><b>This does not cancel your plan.</b><br>To cancel, open the app and tap <b>Menu → My Account → Manage plan → Cancel subscription</b>. Or email <a href="mailto:support@scaleandtell.app">support@scaleandtell.app</a> and we’ll cancel it for you.</div><button onclick="location.href=\'./\'">Open the app to cancel my plan</button><br><button class="sec" onclick="set(true)">Oops, keep me subscribed to emails</button>';
   } catch (e) { $("h").textContent = "Couldn’t update"; $("p").textContent = e.message + " You can also turn update emails off in the app under Menu → My Account."; }
 }
 if (t.length !== 36) { $("h").textContent = "Link not complete"; $("p").textContent = "Open the app and go to Menu → My Account to change your email settings."; }
