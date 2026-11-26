@@ -15726,3 +15726,22 @@ BIZ_PANELS["Learn"] = () => '<button class="resourceTile" onclick="openPanel(\'C
   const baseClose = closePanel;
   closePanel = function () { const r = baseClose.apply(this, arguments); later(); return r; };
 })();
+
+/* 3.99p · Plain plum header (no illustration) is the image itself; bigger tap areas for its menu and bell,
+   and no hearts / fancy italics in Home headings for every design. */
+(function () {
+  var css = document.createElement("style");
+  css.textContent = ".headerArt .headerHot{top:3%;height:36%}" +
+    '#homeMain :is(h1,h2,h3,h4),#startCard>b{font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;font-style:normal!important;font-weight:800!important;letter-spacing:-.01em}';
+  document.head.appendChild(css);
+  function strip() {
+    document.querySelectorAll("#homeMain h1,#homeMain h2,#homeMain h3,#homeMain h4,#startCard>b").forEach(function (h) {
+      if (/[♡♥]/.test(h.innerHTML)) h.innerHTML = h.innerHTML.replace(/\s*[♡♥]\s*/g, " ").trim();
+    });
+  }
+  function start() {
+    try { strip(); } catch (e) {}
+    new MutationObserver(function () { try { strip(); } catch (e) {} }).observe(document.body, { subtree: true, childList: true });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();
