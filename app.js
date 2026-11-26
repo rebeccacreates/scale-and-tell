@@ -15731,11 +15731,14 @@ BIZ_PANELS["Learn"] = () => '<button class="resourceTile" onclick="openPanel(\'C
    and no hearts / fancy italics in Home headings for every design. */
 (function () {
   var css = document.createElement("style");
-  css.textContent = ".headerArt .headerHot{top:3%;height:36%}" +
+  css.textContent = ".headerArt .headerHot{top:3%;height:36%}#homeToday.stDupHidden{display:none}" +
     '#homeMain :is(h1,h2,h3,h4),#startCard>b{font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;font-style:normal!important;font-weight:800!important;letter-spacing:-.01em}';
   document.head.appendChild(css);
   function strip() {
-    document.querySelectorAll("#homeMain h1,#homeMain h2,#homeMain h3,#homeMain h4,#startCard>b").forEach(function (h) {
+    // New keepers: the "Get set up" checklist already says "add your first animal", so hide the duplicate "Let's get started" card.
+    var ht = document.getElementById("homeToday");
+    if (ht) { var dup = !!document.getElementById("startCard") && !animals.length; if (ht.classList.contains("stDupHidden") !== dup) ht.classList.toggle("stDupHidden", dup); }
+    document.querySelectorAll("#homeMain h1,#homeMain h2,#homeMain h3,#homeMain h4,#startCard>b,.homeTodayClear").forEach(function (h) {
       if (/[♡♥]/.test(h.innerHTML)) h.innerHTML = h.innerHTML.replace(/\s*[♡♥]\s*/g, " ").trim();
     });
   }
