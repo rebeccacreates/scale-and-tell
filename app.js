@@ -6057,7 +6057,7 @@ function saveEntry() {
 }
 
 const SPECIES_GROUPS = [
-  ["Snakes", ["Ball Python", "Corn Snake", "Kingsnake", "Milk Snake", "Western Hognose", "Garter Snake", "Boa Constrictor", "Reticulated Python", "Burmese Python", "Blood Python", "Children’s Python", "Spotted Python", "Green Tree Python", "Carpet Python", "Woma Python", "Kenyan Sand Boa", "Rosy Boa", "Dumeril’s Boa", "Rat Snake", "Bull / Gopher Snake", "Pine Snake", "Rough Green Snake"]],
+  ["Snakes", ["Ball Python", "Corn Snake", "Kingsnake", "Milk Snake", "Western Hognose", "African House Snake", "Garter Snake", "Boa Constrictor", "Reticulated Python", "Burmese Python", "Blood Python", "Children’s Python", "Spotted Python", "Green Tree Python", "Carpet Python", "Woma Python", "Kenyan Sand Boa", "Rosy Boa", "Dumeril’s Boa", "Rat Snake", "Bull / Gopher Snake", "Pine Snake", "Rough Green Snake"]],
   ["Lizards", ["Bearded Dragon", "Leopard Gecko", "Crested Gecko", "Gargoyle Gecko", "Leachianus Gecko", "African Fat-Tailed Gecko", "Tokay Gecko", "Day Gecko", "Mourning Gecko", "Veiled Chameleon", "Panther Chameleon", "Jackson’s Chameleon", "Uromastyx", "Ackie Monitor", "Savannah Monitor", "Argentine Tegu", "Green Iguana", "Frilled Dragon", "Chinese Water Dragon", "Rankin’s Dragon", "Green Anole", "Skink", "Blue Tongue Skink"]],
   ["Turtles & tortoises", ["Sulcata Tortoise", "Russian Tortoise", "Hermann’s Tortoise", "Leopard Tortoise", "Red-Footed Tortoise", "Tortoise", "Box Turtle", "Red-Eared Slider", "Musk Turtle", "Aquatic Turtle"]],
   ["Amphibians", ["White’s Tree Frog", "African Dwarf Frog", "Pac-Man Frog", "Tomato Frog", "Red-Eyed Tree Frog", "Frog", "Axolotl", "Dart Frog", "Tree Frog", "Toad", "Fire-Bellied Toad", "Newt", "Salamander"]],
